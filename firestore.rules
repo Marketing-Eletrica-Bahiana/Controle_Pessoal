@@ -1,0 +1,85 @@
+rules_version = '2';
+
+// Regras que o app espera. O texto das regras já publicadas no console não veio junto com o pedido
+// da Etapa 1, então este arquivo foi escrito a partir das permissões combinadas. Antes de publicar,
+// comparar com Firestore Database > Regras no console do Firebase (ver README.md).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Só e-mails @eletricabahiana.com.br, com login do Google.
+    function logado() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.matches('.*@eletricabahiana[.]com[.]br$');
+    }
+    function email() { return request.auth.token.email.lower(); }
+    function cadastro() { return get(/databases/$(database)/documents/usuarios/$(email())).data; }
+
+    // Entra quem existe em "usuarios" com ativo = true.
+    function ativo() {
+      return logado()
+        && exists(/databases/$(database)/documents/usuarios/$(email()))
+        && cadastro().ativo == true;
+    }
+    function admin() { return ativo() && cadastro().papel == 'admin'; }
+    function organizador() { return ativo() && cadastro().papel in ['admin', 'organizador']; }
+
+    function listaAberta(listaId) {
+      return get(/databases/$(database)/documents/listas/$(listaId)).data.status == 'aberta';
+    }
+
+    // Cada pessoa lê o próprio cadastro (para saber se tem acesso). Só o admin lista e grava,
+    // e não tira o próprio acesso nem deixa de ser admin.
+    match /usuarios/{id} {
+      allow read: if logado() && (id == email() || admin());
+      allow create, delete: if admin() && id != email();
+      allow update: if admin()
+        && (id != email() || (request.resource.data.ativo == true && request.resource.data.papel == 'admin'));
+    }
+
+    match /setores/{id} {
+      allow read: if ativo();
+      allow write: if admin();
+    }
+
+    match /colaboradores/{id} {
+      allow read: if ativo();
+      allow write: if admin();
+    }
+
+    match /fornecedores/{id} {
+      allow read: if ativo();
+      allow write: if admin();
+    }
+
+    // O organizador cadastra eletricista novo (na hora do treinamento); só o admin edita e desativa.
+    match /eletricistas/{id} {
+      allow read: if ativo();
+      allow create: if organizador();
+      allow update, delete: if admin();
+    }
+
+    match /listas/{listaId} {
+      allow read: if ativo();
+      allow write: if admin();
+
+      // Check-in: o organizador marca presença (e o status do controle de aniversariantes) e
+      // acrescenta participantes não convocados, só em lista aberta. O admin faz tudo.
+      match /presencas/{id} {
+        allow read: if ativo();
+        allow create: if admin()
+          || (organizador() && listaAberta(listaId) && request.resource.data.convocado == false);
+        allow update: if admin()
+          || (organizador() && listaAberta(listaId)
+              && request.resource.data.diff(resource.data).affectedKeys()
+                   .hasOnly(['presente', 'horaCheckin', 'checkinPor', 'status', 'observacao']));
+        allow delete: if admin();
+      }
+    }
+
+    // Histórico de cada pessoa: consulta nas presenças de todas as listas de uma vez.
+    match /{caminho=**}/presencas/{id} {
+      allow read: if ativo();
+    }
+  }
+}

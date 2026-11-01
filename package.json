@@ -1,0 +1,9 @@
+{
+  "name": "controle-pessoal",
+  "private": true,
+  "description": "Controle Pessoal da Elétrica Bahiana. Site estático, sem etapa de build; este arquivo só existe para rodar os testes.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"tests/**/*.test.js\""
+  }
+}

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#001780" />
+    <title>Controle Pessoal | Elétrica Bahiana</title>
+    <link rel="icon" type="image/png" href="marca/logos/Icone_Azul.png" />
+    <link rel="apple-touch-icon" href="marca/logos/Icone_Azul.png" />
+    <link rel="stylesheet" href="fontes/fontes.css" />
+    <!-- Reserva: Lato do Google Fonts, carregada sem bloquear a página. Só é usada se a fonte local falhar. -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
+    <link rel="stylesheet" href="css/estilos.css" />
+    <!-- Bibliotecas por CDN, sem etapa de build. SheetJS e Chart.js só carregam quando uma tela precisa. -->
+    <script type="importmap">
+      {
+        "imports": {
+          "firebase/app": "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js",
+          "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs",
+          "chart.js": "https://cdn.jsdelivr.net/npm/chart.js@4.6.1/auto/+esm"
+        }
+      }
+    </script>
+    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js" />
+    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js" />
+    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js" />
+  </head>
+  <body>
+    <div id="raiz">
+      <div class="fundo-marca">
+        <main class="fundo-marca__conteudo">
+          <p class="carregando" role="status">Carregando...</p>
+          <noscript>O Controle Pessoal precisa do JavaScript ligado no navegador.</noscript>
+        </main>
+      </div>
+    </div>
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>
