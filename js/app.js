@@ -16,8 +16,8 @@ const TELAS = {
   dashboard: () => import('./telas/emConstrucao.js'),
   colaboradores: () => import('./telas/colaboradores.js'),
   aniversariantes: () => import('./telas/emConstrucao.js'),
-  fornecedores: () => import('./telas/emConstrucao.js'),
-  eletricistas: () => import('./telas/emConstrucao.js'),
+  fornecedores: () => import('./telas/fornecedores.js'),
+  eletricistas: () => import('./telas/eletricistas.js'),
   listas: () => import('./telas/emConstrucao.js'),
   usuarios: () => import('./telas/usuarios.js'),
 }

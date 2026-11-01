@@ -1805,3 +1805,119 @@ a.tabela__nome:hover {
     gap: 8px;
   }
 }
+
+/* Campo com sugestões (escolher vendedor) */
+
+.sugestoes__caixa {
+  position: relative;
+}
+
+.sugestoes__caixa input {
+  padding-right: 44px !important;
+}
+
+.sugestoes__limpar {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.sugestoes {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 5;
+  max-height: 280px;
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+  list-style: none;
+  background: var(--branco);
+  border: 1px solid var(--medio);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra-janela);
+}
+
+.sugestoes__item {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px;
+  border-radius: var(--raio-etiqueta);
+  cursor: pointer;
+}
+
+.sugestoes__item:hover,
+.sugestoes__item.ativo {
+  background: var(--medio-10);
+}
+
+.sugestoes__item.escolhido {
+  box-shadow: inset 3px 0 0 var(--brilhante);
+}
+
+.sugestoes__nome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: var(--marinho);
+}
+
+.sugestoes__vazio {
+  padding: 8px 12px;
+  color: var(--texto-suave);
+}
+
+/* WhatsApp e contatos */
+
+.botao--whatsapp {
+  background: var(--branco);
+  color: var(--marinho);
+  border-color: var(--medio);
+  white-space: nowrap;
+}
+
+.botao--whatsapp .icone {
+  color: var(--brilhante);
+}
+
+.contato {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9375rem;
+  overflow-wrap: anywhere;
+}
+
+.contato li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.contato .icone {
+  width: 16px;
+  height: 16px;
+  color: var(--medio);
+}
+
+.cartao-fornecedor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-top: 3px solid var(--marinho);
+}
+
+.cartao-fornecedor h2 {
+  font-family: var(--fonte-destaque);
+  font-size: 1.25rem;
+}
+
+.opcao--destaque .opcao {
+  font-weight: 700;
+}

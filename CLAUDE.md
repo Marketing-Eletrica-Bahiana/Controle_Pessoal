@@ -24,7 +24,7 @@ listas de presença com check-in pelo celular. Explicação para quem usa no `RE
 1. (Feita) Base: login com Google, conferência de `usuarios/{email}`, menu das abas, cabeçalho
    com nome, cargo e papel, aba Usuários completa, `firestore.rules`, README e publicação.
 2. (Feita) Colaboradores e setores, importação de planilha e "Baixar lista" (ver "Colaboradores").
-3. Fornecedores e Eletricistas do CAE.
+3. (Feita) Fornecedores e Eletricistas do CAE (ver "Fornecedores e eletricistas").
 4. Listas de presença e check-in.
 5. Aniversariantes.
 6. Dashboard e revisão geral.
@@ -85,8 +85,11 @@ Nomes exatos (as regras dependem deles):
   `atualizadoEm`. IDs automáticos.
 - `setores/{id}`: `nome`, `gerentes` e `supervisores` (listas de IDs de colaboradores). ID tirado
   do nome sem acentos (`"recursos-humanos"`), para a importação nunca duplicar setor.
-- `fornecedores/{id}`, `eletricistas/{id}`, `listas/{id}` com a subcoleção `presencas/{id}`
-  (campos definidos nas próximas etapas).
+- `fornecedores/{id}`: `nome` (marca), `contatoNome`, `contatoEmail`, `contatoTelefone`
+  (`"(71) 3333-4444"`), `ativo`, `criadoEm`. Só o nome é obrigatório.
+- `eletricistas/{id}`: `nome`, `whatsapp` (só números com DDD, 10 ou 11), `vendedorId`,
+  `vendedorNome`, `consentimentoLgpd`, `dataConsentimento`, `dataCadastro` (Timestamps), `ativo`.
+- `listas/{id}` com a subcoleção `presencas/{id}` (campos definidos nas próximas etapas).
 - O app só grava os campos acima (as regras publicadas podem conferir os nomes).
 
 ## Colaboradores (Etapa 2)
@@ -114,6 +117,29 @@ Tela em `js/telas/colaboradores.js` (janelas em `js/telas/colaboradores/formular
 - "Baixar lista" exporta o que está filtrado na tela (`Colaboradores [setor] [loja] DD-MM-AAAA.xlsx`),
   com colunas que voltam certinho na importação.
 - SheetJS só grava a planilha (sem cor no cabeçalho: a versão gratuita não pinta células).
+
+## Fornecedores e eletricistas (Etapa 3)
+
+- Fornecedores (`js/telas/fornecedores.js`, regras em `js/lib/fornecedores.js`): cartões com busca e
+  situação; ficha `#/fornecedores/{id}` com contato e o bloco "Participações". Marca repetida (sem
+  diferenciar acentos) não é aceita. Pessoas enviadas pelas marcas ficam só dentro das listas.
+- Eletricistas (`js/telas/eletricistas.js`, janelas em `js/telas/eletricistas/formulario.js`,
+  regras em `js/lib/eletricistas.js`): busca por nome, filtro por vendedor (pelo nome gravado) e
+  situação; ficha `#/eletricistas/{id}`; "Baixar lista" com colunas que voltam na importação.
+- WhatsApp aceito com ou sem máscara, +55 ou 0 na frente; guardado só com números; exibido como
+  `(71) 99999-9999`; botão abre `https://wa.me/55...`. WhatsApp repetido em outro cadastro não
+  é aceito.
+- LGPD: caixa "O eletricista autorizou o uso dos dados para contato da Elétrica Bahiana (LGPD)".
+  Desmarcada, o campo do WhatsApp fica desligado e nada é salvo; tirar a autorização de quem já
+  tinha apaga o WhatsApp e a `dataConsentimento`.
+- Vendedor: campo com sugestões (`js/ui/escolherPessoa.js`) entre colaboradores ativos, os do
+  setor comercial primeiro (`ehSetorComercial`: nome do setor com "comercial" ou "venda").
+- Admin e organizador cadastram; só admin edita, desativa e importa. O cadastro devolve o ID na
+  hora e espera o servidor por até 3,5 s: sem internet, fica no aparelho e sobe depois (para o
+  check-in).
+- Importação: vendedor achado pelo nome (igual, ou um só colaborador com todas as palavras); sem
+  achar, o nome fica só como texto. WhatsApp só entra com "Autorizou LGPD" = Sim na linha ou com a
+  caixa "Todos os eletricistas desta planilha autorizaram"; a planilha nunca retira autorização.
 
 ## Papéis
 
