@@ -18,7 +18,7 @@ const TELAS = {
   aniversariantes: () => import('./telas/emConstrucao.js'),
   fornecedores: () => import('./telas/fornecedores.js'),
   eletricistas: () => import('./telas/eletricistas.js'),
-  listas: () => import('./telas/emConstrucao.js'),
+  listas: () => import('./telas/listas.js'),
   usuarios: () => import('./telas/usuarios.js'),
 }
 

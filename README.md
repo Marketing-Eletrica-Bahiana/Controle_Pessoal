@@ -64,6 +64,20 @@ publicado. Para publicar uma versão nova:
 Quem usa a linha de comando do Firebase também pode publicar com
 `firebase deploy --only firestore:rules`.
 
+## Índice para o histórico das pessoas (recomendado)
+
+A ficha de cada colaborador e eletricista mostra o histórico de listas. Para essa consulta ficar
+rápida e barata, o Firestore precisa de um índice de "grupo de coleções" no campo `pessoaId` das
+presenças (registrado em [`firestore.indexes.json`](firestore.indexes.json)). Sem ele, o app
+continua funcionando, mas lê lista por lista.
+
+1. No console do Firebase, abra **Firestore Database > Índices > Campo único** (ou "Isenções").
+2. Clique em **Adicionar isenção** e preencha: ID da coleção `presencas`, campo `pessoaId`, e
+   marque **Grupo de coleções** com a ordem **Crescente**.
+3. Salve e espere o índice ficar pronto (alguns minutos).
+
+Pela linha de comando: `firebase deploy --only firestore:indexes`.
+
 ## Tecnologia
 
 - Site estático, sem etapa de build: HTML, CSS e JavaScript em módulos (ES modules).

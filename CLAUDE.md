@@ -25,7 +25,7 @@ listas de presença com check-in pelo celular. Explicação para quem usa no `RE
    com nome, cargo e papel, aba Usuários completa, `firestore.rules`, README e publicação.
 2. (Feita) Colaboradores e setores, importação de planilha e "Baixar lista" (ver "Colaboradores").
 3. (Feita) Fornecedores e Eletricistas do CAE (ver "Fornecedores e eletricistas").
-4. Listas de presença e check-in.
+4. (Feita) Listas de presença e check-in (ver "Listas").
 5. Aniversariantes.
 6. Dashboard e revisão geral.
 
@@ -89,7 +89,14 @@ Nomes exatos (as regras dependem deles):
   (`"(71) 3333-4444"`), `ativo`, `criadoEm`. Só o nome é obrigatório.
 - `eletricistas/{id}`: `nome`, `whatsapp` (só números com DDD, 10 ou 11), `vendedorId`,
   `vendedorNome`, `consentimentoLgpd`, `dataConsentimento`, `dataCadastro` (Timestamps), `ativo`.
-- `listas/{id}` com a subcoleção `presencas/{id}` (campos definidos nas próximas etapas).
+- `listas/{id}`: `nome`, `tipo`, `data` (`"AAAA-MM-DD"`), `loja` (uma das lojas ou
+  `"Outro local"`), `local`, `fornecedores` (IDs das marcas), `status` (`"aberta"` |
+  `"encerrada"`), `criadoPor` (nome de quem criou), `criadoEm`.
+- `listas/{id}/presencas/{id}`: `tipoPessoa` (`"colaborador"` | `"eletricista"` | `"fornecedor"` |
+  `"convidado"`), `pessoaId` (vazio para fornecedor e convidado), `nome`, `detalhe` (setor e loja;
+  "Vendedor: Nome"; nome da marca; "Convidado"), `fornecedorId`, `convocado`, `presente`,
+  `horaCheckin`, `checkinPor` (nome de quem fez o check-in). Colaborador e eletricista usam o ID
+  `colaborador_{id}` e `eletricista_{id}`: a mesma pessoa nunca entra duas vezes na lista.
 - O app só grava os campos acima (as regras publicadas podem conferir os nomes).
 
 ## Colaboradores (Etapa 2)
@@ -140,6 +147,42 @@ Tela em `js/telas/colaboradores.js` (janelas em `js/telas/colaboradores/formular
 - Importação: vendedor achado pelo nome (igual, ou um só colaborador com todas as palavras); sem
   achar, o nome fica só como texto. WhatsApp só entra com "Autorizou LGPD" = Sim na linha ou com a
   caixa "Todos os eletricistas desta planilha autorizaram"; a planilha nunca retira autorização.
+
+## Listas (Etapa 4)
+
+Tela em `js/telas/listas.js` (visão geral e página da lista) com as partes em `js/telas/listas/`
+(`checkin.js`, `convocados.js`, `resumo.js`, `formulario.js`, `historico.js`); regras em
+`js/lib/listas.js` (com testes); gravação em `js/dados/listas.js`.
+
+- Endereços: `#/listas`, `#/listas/{id}` (abre no check-in se aberta, no resumo se encerrada),
+  `#/listas/{id}/checkin`, `/convocados` e `/resumo`.
+- Tipos: Treinamento CAE, Treinamento Comercial, Evento, Ação de Endomarketing, Outro (os dois de
+  aniversário entram na Etapa 5). "Outro local" pede o local.
+- Admin cria, edita, encerra, reabre e exclui (apaga as presenças junto, com confirmação). Nova
+  lista abre direto em Convocados.
+- Convocados (admin): colaboradores um a um, setor inteiro ou loja inteira (só ativos e quem ainda
+  não está); eletricistas (busca, filtro por vendedor, "Marcar todos os mostrados"); pessoa de
+  fornecedor (marca + nome, várias seguidas). A marca entra sozinha em `fornecedores` da lista.
+- Check-in (admin e organizador, celular): busca grande, filtros Todos/Faltam/Presentes, contador
+  "presentes / convocados" (convocados presentes sobre convocados) e "+ N não convocados", barra
+  presa no topo (abaixo do cabeçalho, medido em `--altura-cabecalho`). Botão grande; "Desfazer".
+  Ao vivo por `onSnapshot`; não espera o servidor (cache do aparelho) e mostra "Enviando..."
+  enquanto há gravação pendente. Após check-in pela busca, a busca é limpa. Lista encerrada não
+  aceita check-in (tela e regras).
+- "Adicionar participante não convocado": colaborador ou eletricista cadastrado (quem já está na
+  lista só recebe o check-in), eletricista novo (formulário com LGPD) ou convidado só com o nome.
+  Entra com `convocado: false` e já presente.
+- Resumo: convocados, convocados presentes (com %), ausentes, não convocados que vieram, pessoas
+  enviadas por marca. Treinamento Comercial destaca quem do setor comercial (setor atual do
+  cadastro) foi convocado e faltou.
+- Planilhas (admin e organizador): "Baixar presentes" (Nome, Tipo, Detalhe, Hora do check-in; a
+  primeira coluna é Nome para o sorteador) e "Baixar lista completa" (mais Convocado, Presente e
+  quem fez o check-in). Nome: `[lista] DD-MM-AAAA presentes.xlsx` / `... completa.xlsx`.
+- Histórico nas fichas de colaborador e eletricista: consulta em grupo de `presencas` por
+  `pessoaId` (índice em `firestore.indexes.json`, passo a passo no README); sem o índice, lê lista
+  por lista pelo ID previsível. Resultado: Compareceu, Faltou, Veio sem convite, Ainda não chegou.
+- Participações na ficha da marca: listas com a marca em `fornecedores` e quem ela enviou (consulta
+  por `fornecedorId` em cada lista).
 
 ## Papéis
 

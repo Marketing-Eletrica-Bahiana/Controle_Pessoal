@@ -1921,3 +1921,373 @@ a.tabela__nome:hover {
 .opcao--destaque .opcao {
   font-weight: 700;
 }
+
+/* Listas de presença */
+
+.cartao-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-top: 3px solid var(--brilhante);
+}
+
+.cartao-lista--encerrada {
+  border-top-color: var(--marinho);
+}
+
+.cartao-lista h2 {
+  font-family: var(--fonte-destaque);
+  font-size: 1.25rem;
+}
+
+.cartao-lista h2 a {
+  color: var(--marinho);
+  text-decoration: none;
+}
+
+.cartao-lista h2 a:hover {
+  text-decoration: underline;
+}
+
+.cartao-lista__etiquetas,
+.lista-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.lista-meta > span:not(.etiqueta) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--marinho);
+  font-weight: 700;
+}
+
+.lista-meta .icone {
+  width: 16px;
+  height: 16px;
+  color: var(--medio);
+}
+
+.resumo-tipos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lista-simples {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.indicadores--duas {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Escolha de várias pessoas (janelas de convocar e adicionar) */
+
+.segmentado {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 16px;
+  border-radius: var(--raio);
+  background: var(--medio-10);
+}
+
+.segmentado__opcao {
+  display: inline-flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: var(--raio-etiqueta);
+  background: transparent;
+  color: var(--marinho);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.segmentado__opcao .icone {
+  width: 18px;
+  height: 18px;
+}
+
+.segmentado__opcao.ativo {
+  background: var(--brilhante);
+  color: var(--branco);
+  box-shadow: var(--brilho-circuito);
+}
+
+.escolha {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.escolha--rolavel {
+  max-height: 46vh;
+  overflow-y: auto;
+  border: 1px solid var(--medio-20);
+  border-radius: var(--raio);
+}
+
+.escolha__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 16px;
+  padding: 8px 12px;
+}
+
+.escolha__item:nth-child(even) {
+  background: var(--medio-10);
+}
+
+.escolha__vazio {
+  padding: 12px;
+  color: var(--texto-suave);
+}
+
+.opcoes--grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px 16px;
+}
+
+.janela-modal__acoes--entre {
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Check-in: pensado para o celular */
+
+.checkin {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.checkin__topo {
+  position: sticky;
+  top: calc(var(--altura-cabecalho, 125px) + 8px);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0 -8px;
+  padding: 12px 8px;
+  background: var(--branco);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra-cartao);
+}
+
+.checkin__numeros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px;
+  color: var(--marinho);
+}
+
+.checkin__presentes {
+  font-family: var(--fonte-destaque);
+  font-size: 2.5rem;
+  line-height: 1;
+  color: var(--brilhante);
+}
+
+.checkin__de {
+  font-family: var(--fonte-destaque);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.checkin__rotulo {
+  font-weight: 700;
+}
+
+.checkin__extra {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--marinho);
+}
+
+.barra {
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--raio-pilula);
+  background: var(--medio-20);
+}
+
+.barra > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brilhante);
+  box-shadow: var(--brilho-circuito);
+  transition: width var(--transicao);
+}
+
+.checkin__filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filtro-pilula {
+  min-height: 36px;
+  padding: 4px 16px;
+  border: 1px solid var(--medio);
+  border-radius: var(--raio-pilula);
+  background: var(--branco);
+  color: var(--marinho);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.filtro-pilula.ativo {
+  background: var(--marinho);
+  border-color: var(--marinho);
+  color: var(--branco);
+}
+
+.checkin__situacao {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--raio);
+  background: var(--brilhante-10);
+  color: var(--marinho);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.checkin__lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checkin__pessoa {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--medio-20);
+  border-left: 4px solid var(--medio-20);
+  border-radius: var(--raio);
+  background: var(--branco);
+}
+
+.checkin__pessoa.presente {
+  border-left-color: var(--brilhante);
+  background: var(--brilhante-10);
+}
+
+.checkin__info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.checkin__nome {
+  font-size: 1.0625rem;
+  color: var(--marinho);
+  overflow-wrap: anywhere;
+}
+
+.checkin__detalhe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 0.875rem;
+  color: var(--texto-suave);
+}
+
+.checkin__acao {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.checkin__botao {
+  min-width: 132px;
+  min-height: 52px;
+  font-size: 1.0625rem;
+}
+
+.checkin__hora {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--brilhante);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.checkin__vazio {
+  padding: 16px;
+  color: var(--texto-suave);
+  text-align: center;
+}
+
+.checkin__adicionar {
+  border-style: dashed;
+}
+
+@media (max-width: 760px) {
+  .checkin__topo {
+    top: 0;
+    margin: 0 -16px;
+    padding: 12px 16px;
+    border-radius: 0;
+  }
+
+  .checkin__pessoa {
+    padding: 12px;
+  }
+
+  .checkin__botao {
+    min-width: 112px;
+  }
+
+  .lista-acoes .botao span {
+    font-size: 0.8125rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .checkin__filtros {
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  .filtro-pilula {
+    flex: 1 1 auto;
+    padding: 4px 8px;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+  }
+}

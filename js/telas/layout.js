@@ -69,6 +69,10 @@ export function montarLayout(raiz, pessoa, { aoSair }) {
     ),
   )
 
+  // Altura do cabeçalho fixo, para o topo do check-in grudar logo abaixo dele.
+  const cabecalho = raiz.querySelector('.cabecalho')
+  new ResizeObserver(() => document.documentElement.style.setProperty('--altura-cabecalho', `${cabecalho.offsetHeight}px`)).observe(cabecalho)
+
   function marcarAba(id) {
     for (const item of itens) {
       const ativo = item.dataset.aba === id
