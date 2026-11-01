@@ -15,7 +15,7 @@ import {
 } from '../../ui/componentes.js'
 import { el, icone, trocar } from '../../ui/dom.js'
 import { baixarPlanilha } from '../../ui/planilha.js'
-import { VARIANTE_DO_STATUS, periodo } from './comum.js'
+import { periodo } from './comum.js'
 
 const ROTULOS_DOS_FILTROS = { todos: 'Todos', pendente: 'Pendentes', participou: 'Participou', nao_participou: 'Não participou' }
 

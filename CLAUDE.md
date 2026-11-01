@@ -27,7 +27,7 @@ listas de presença com check-in pelo celular. Explicação para quem usa no `RE
 3. (Feita) Fornecedores e Eletricistas do CAE (ver "Fornecedores e eletricistas").
 4. (Feita) Listas de presença e check-in (ver "Listas").
 5. (Feita) Aniversariantes (ver "Aniversariantes").
-6. Dashboard e revisão geral.
+6. (Feita) Dashboard e revisão geral (ver "Dashboard" e "Revisão").
 
 A pessoa autorizou fazer as etapas 2 a 6 em sequência, sem pedir aprovação entre elas, depois de
 conferida a integração da Etapa 1.
@@ -236,6 +236,45 @@ Mesma do Controle_Atividades, com variáveis no topo de `css/estilos.css`:
 - Variável CSS com `url(...)` precisa de endereço completo (ver `fundoMarca`), senão o navegador
   procura a imagem dentro de `css/`.
 
+## Dashboard (Etapa 6)
+
+Tela inicial depois do login: `js/telas/dashboard.js`; cálculos em `js/lib/dashboard.js` (com
+testes); consultas em `js/dados/dashboard.js`; gráficos em `js/ui/grafico.js` (Chart.js por CDN,
+carregado só aqui, só cores da paleta, sem animação com `prefers-reduced-motion`).
+
+- Números gerais: colaboradores ativos (total e por loja), eletricistas ativos (contagem no
+  banco), fornecedores ativos, listas realizadas no ano (até hoje, sem controles de aniversário).
+- Listas abertas e próximas (as futuras primeiro) com atalho para o check-in.
+- Aniversariantes do mês atual (nascimento e tempo de casa), hoje em destaque, e quantos "Pendente"
+  faltam em cada controle do mês.
+- Setores: cartão com gerentes, supervisores e total; abre `#/colaboradores/setores/{id}`.
+- Filtro de período (mês ou ano inteiro + ano), guardado ao navegar, vale para:
+  - Fornecedores: marcas ativas, quantas participaram e ranking (barras deitadas, 10 primeiras).
+  - CAE: eletricistas, presença média (média das taxas dos treinamentos com convocados), média de
+    presentes, gráfico convocados x presentes dos 8 últimos e tabela.
+  - Treinamentos do Comercial: presença média, faltas do comercial (soma), gráfico da taxa e tabela
+    com quantos do comercial faltaram em cada um.
+- Só entram listas que já aconteceram (data até hoje).
+
+## Revisão (Etapa 6)
+
+- Navegação: todas as rotas abrem; endereço desconhecido ou sem permissão volta ao Dashboard;
+  registro inexistente mostra "não encontrado" com link de volta; `404.html` cobre endereço sem `#`.
+- Permissões da tela iguais às regras: organizador só vê Baixar lista/planilha, Novo eletricista,
+  check-in, adicionar não convocado e marcar status de aniversariantes.
+- Erros: tudo passa por `mensagemDeErro` (`js/lib/erros.js`), em português.
+- Cores e textos: só as 7 cores da paleta (conferido por busca de `#...` e `rgba(...)`), sem
+  travessão. Ícones: só os usados (59).
+- Desempenho das consultas:
+  - Coleções pequenas (`colaboradores`, `setores`, `fornecedores`, `listas`) têm um ouvinte só,
+    compartilhado entre as telas (`js/dados/fontes.js`); `eletricistas` só nas telas que precisam.
+  - Presenças: só a lista aberta na tela fica ouvindo. Histórico da pessoa por consulta em grupo
+    (com índice); participações da marca só nas listas da marca.
+  - Dashboard por contagens no banco (`getCountFromServer`), guardadas para listas encerradas;
+    faltas do comercial leem só os ausentes de cada Treinamento Comercial.
+  - Cache do aparelho (Firestore) deixa reabrir as telas rápido e o check-in funcionar sem
+    internet.
+
 ## Demonstração local (fora do repositório)
 
 `.claude/demo/` (ignorada pelo git): `servidor.mjs` serve a pasta em `http://localhost:5180/` e
@@ -244,8 +283,19 @@ Mesma do Controle_Atividades, com variáveis no topo de `css/estilos.css`:
 `/demo.html?papel=admin|organizador|semacesso|fora`; `?zerar` volta à semente. Nunca grava no
 Firestore real.
 
+## Notas técnicas
+
+- Login com `signInWithPopup`; se o popup não funcionar (navegador bloqueia ou celular), cai no
+  `signInWithRedirect`. O redirecionamento pode falhar em navegadores que bloqueiam cookies de
+  terceiros, porque o site está no GitHub Pages e o login no domínio do Firebase.
+- Testes de tela feitos na demonstração local; o login real e as regras publicadas só podem ser
+  conferidos com uma conta de verdade.
+
 ## Pendências
 
 - Regras: o pedido da Etapa 1 não trouxe o texto publicado no console. `firestore.rules` foi
-  escrito a partir das permissões combinadas; comparar com o console e deixar os dois iguais.
+  escrito a partir das permissões combinadas e cobre tudo o que o app grava (inclusive `status` e
+  `observacao` nas presenças, presença criada pelo organizador com `convocado: false`, leitura em
+  grupo de `presencas`). Comparar com o console e deixar os dois iguais.
+- Índice de `pessoaId` para grupos de coleção (README); sem ele, o histórico lê lista por lista.
 - Arquivos da Klavika em `fontes/` quando chegarem.

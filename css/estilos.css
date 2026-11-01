@@ -856,27 +856,6 @@ a {
   overflow-wrap: anywhere;
 }
 
-/* Tela provisória (até cada etapa chegar) */
-
-.tela-provisoria {
-  display: flex;
-  align-items: center;
-  gap: 32px;
-  padding: 32px;
-}
-
-.tela-provisoria__mascote {
-  width: auto;
-  height: 240px;
-  flex-shrink: 0;
-}
-
-.tela-provisoria__texto {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
 /* Formulários */
 
 .formulario {
@@ -1457,20 +1436,17 @@ a.tabela__nome:hover {
     flex: 1 1 auto;
   }
 
-  .estado-vazio,
-  .tela-provisoria {
+  .estado-vazio {
     flex-direction: column;
     padding: 24px 16px;
     text-align: center;
   }
 
-  .estado-vazio__texto,
-  .tela-provisoria__texto {
+  .estado-vazio__texto {
     align-items: center;
   }
 
-  .estado-vazio__mascote,
-  .tela-provisoria__mascote {
+  .estado-vazio__mascote {
     height: 150px;
   }
 
@@ -2479,5 +2455,180 @@ a.tabela__nome:hover {
 
   .controle-do-mes {
     justify-content: flex-start;
+  }
+}
+
+/* Dashboard */
+
+.pagina--dashboard > .pagina {
+  gap: 16px;
+}
+
+.periodo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 24px;
+  border-radius: var(--raio);
+  background: var(--marinho);
+  color: var(--branco);
+  box-shadow: var(--sombra-cartao);
+}
+
+.periodo .bloco__titulo,
+.periodo .bloco__titulo .icone {
+  color: var(--branco);
+}
+
+.periodo .texto-suave {
+  color: var(--branco-85);
+}
+
+.periodo .campo__rotulo {
+  color: var(--branco);
+}
+
+.lista-rapida {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lista-rapida li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--medio-10);
+}
+
+.lista-rapida__data {
+  flex-shrink: 0;
+  min-width: 56px;
+  padding: 4px 8px;
+  border-radius: var(--raio-etiqueta);
+  background: var(--brilhante);
+  color: var(--branco);
+  font-family: var(--fonte-destaque);
+  font-weight: 700;
+  text-align: center;
+}
+
+.lista-rapida__texto {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.aniversarios {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.aniversarios-coluna h3 {
+  margin-bottom: 8px;
+  font-size: 1rem;
+}
+
+.lista-aniversarios {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lista-aniversarios li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 2px 4px;
+  border-radius: var(--raio-etiqueta);
+}
+
+.lista-aniversarios li.hoje {
+  background: var(--brilhante-10);
+  box-shadow: inset 3px 0 0 var(--vermelho);
+}
+
+.lista-aniversarios a {
+  color: var(--marinho);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.lista-aniversarios a:hover {
+  text-decoration: underline;
+}
+
+.lista-aniversarios__dia {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--brilhante);
+}
+
+.pendentes-do-mes {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--medio-20);
+  font-size: 0.9375rem;
+}
+
+.grade-cartoes--compacta {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.cartao-setor--compacto {
+  gap: 12px;
+  padding: 16px;
+}
+
+.cartao-setor--compacto h3 {
+  font-family: var(--fonte-destaque);
+  font-size: 1.125rem;
+}
+
+.grafico {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+}
+
+.grafico figcaption {
+  font-weight: 700;
+  color: var(--marinho);
+}
+
+.grafico__area {
+  position: relative;
+  width: 100%;
+}
+
+.grafico__vazio {
+  color: var(--texto-suave);
+}
+
+@media (max-width: 760px) {
+  .periodo {
+    padding: 16px;
+  }
+
+  .aniversarios {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .indicadores--duas {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

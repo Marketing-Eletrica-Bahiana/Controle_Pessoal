@@ -4,7 +4,7 @@ import { LOJAS } from '../config.js'
 import { definirAtivoColaborador } from '../dados/colaboradores.js'
 import { ouvirFontes } from '../dados/fontes.js'
 import {
-  CABECALHO_DA_LISTA, SEM_SETOR, aniversarioDe, colaboradoresDoSetor, contarPorLoja, filtrarColaboradores, linhaDaLista,
+  CABECALHO_DA_LISTA, SEM_SETOR, aniversarioDe, contarPorLoja, filtrarColaboradores, linhaDaLista,
   resumoDosSetores,
 } from '../lib/colaboradores.js'
 import { formatarData, hojeISO, partesDeHoje } from '../lib/datas.js'

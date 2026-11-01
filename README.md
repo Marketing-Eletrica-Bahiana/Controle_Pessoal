@@ -2,7 +2,8 @@
 
 App interno da Elétrica Bahiana para organizar, num lugar só:
 
-- **Dashboard**: os números gerais da empresa e dos treinamentos.
+- **Dashboard** (tela inicial): números gerais, listas abertas, aniversariantes do mês, setores,
+  participação das marcas, presença nos treinamentos do CAE e do Comercial.
 - **Colaboradores**: quem trabalha em cada setor e loja, com gerentes e supervisores.
 - **Aniversariantes**: do mês (nascimento) e de empresa (tempo de casa).
 - **Fornecedores**: as marcas parceiras (Soprano, Legrand, Ledvance...).
@@ -26,6 +27,18 @@ a equipe de Marketing."
 
 A tela esconde os botões que a pessoa não pode usar, e as regras do Firestore garantem o mesmo
 no banco de dados.
+
+## Check-in no evento
+
+1. Abra a aba **Listas** no celular e toque em **Fazer check-in** na lista do dia.
+2. Busque o nome no campo grande do topo e toque em **Check-in**. Errou? Toque em **Desfazer**.
+3. Chegou alguém que não estava na lista? **Adicionar participante não convocado**: busque o
+   colaborador ou eletricista, cadastre um eletricista novo (com a autorização LGPD) ou anote um
+   convidado só com o nome.
+4. Duas pessoas podem fazer check-in ao mesmo tempo, cada uma no seu celular. Se a internet cair,
+   os check-ins ficam guardados no aparelho e sobem sozinhos quando a conexão voltar (não saia do
+   app antes disso).
+5. No fim, **Baixar presentes** gera a planilha para o sorteador (a primeira coluna é "Nome").
 
 ## Como cadastrar um novo usuário
 
