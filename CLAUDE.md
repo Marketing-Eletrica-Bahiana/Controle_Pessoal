@@ -296,6 +296,7 @@ Firestore real.
 - Regras: o pedido da Etapa 1 não trouxe o texto publicado no console. `firestore.rules` foi
   escrito a partir das permissões combinadas e cobre tudo o que o app grava (inclusive `status` e
   `observacao` nas presenças, presença criada pelo organizador com `convocado: false`, leitura em
-  grupo de `presencas`). Comparar com o console e deixar os dois iguais.
+  grupo de `presencas`). Em 31/10/2026 a pessoa decidiu publicar este arquivo no console no lugar
+  das regras antigas; falta ela confirmar que publicou.
 - Índice de `pessoaId` para grupos de coleção (README); sem ele, o histórico lê lista por lista.
 - Arquivos da Klavika em `fontes/` quando chegarem.

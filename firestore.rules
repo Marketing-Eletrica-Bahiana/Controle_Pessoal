@@ -1,8 +1,8 @@
 rules_version = '2';
 
-// Regras que o app espera. O texto das regras já publicadas no console não veio junto com o pedido
-// da Etapa 1, então este arquivo foi escrito a partir das permissões combinadas. Antes de publicar,
-// comparar com Firestore Database > Regras no console do Firebase (ver README.md).
+// Regras do Controle Pessoal, publicadas no console do Firebase (Firestore Database > Regras).
+// Este arquivo é o registro do que está publicado: ao mudar uma regra, publicar de novo e manter
+// os dois textos iguais (ver README.md).
 service cloud.firestore {
   match /databases/{database}/documents {
 
