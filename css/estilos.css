@@ -1567,3 +1567,241 @@ a.tabela__nome:hover {
     font-size: 1.75rem;
   }
 }
+
+/* Barra acima das listas: contagem e botões */
+
+.pagina__resultado {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pagina__barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.tabela--compacta td {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+/* Cartões de setor */
+
+.cartao-setor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-top: 3px solid var(--brilhante);
+}
+
+.cartao-setor__topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cartao-setor__topo h2 {
+  font-family: var(--fonte-destaque);
+  font-size: 1.25rem;
+}
+
+.cartao-setor__responsaveis {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--raio);
+  background: var(--medio-10);
+}
+
+.responsaveis {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  color: var(--marinho);
+}
+
+.responsaveis__rotulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--medio);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.responsaveis__rotulo .icone {
+  width: 16px;
+  height: 16px;
+  color: var(--brilhante);
+}
+
+.cartao-setor__lojas {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9375rem;
+}
+
+.cartao-setor__lojas li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--medio-10);
+}
+
+.cartao-setor__lojas strong {
+  color: var(--marinho);
+}
+
+/* Responsáveis do setor (janela) */
+
+.responsaveis__resumo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: var(--raio);
+  background: var(--medio-10);
+}
+
+.responsaveis__resumo > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px 2px 12px;
+  border-radius: var(--raio-pilula);
+  background: var(--brilhante);
+  color: var(--branco);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.chip__tirar {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--branco);
+  font-size: 1.125rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.chip__tirar:hover {
+  background: var(--branco-40);
+}
+
+.responsaveis__lista {
+  display: flex;
+  flex-direction: column;
+  max-height: 46vh;
+  overflow-y: auto;
+  border: 1px solid var(--medio-20);
+  border-radius: var(--raio);
+}
+
+.responsaveis__linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 16px;
+}
+
+.responsaveis__linha:nth-child(even) {
+  background: var(--medio-10);
+}
+
+.responsaveis__papel {
+  min-height: 40px;
+  padding: 4px 8px;
+  border: 1px solid var(--medio);
+  border-radius: var(--raio);
+  background: var(--branco);
+}
+
+/* Importação de planilha */
+
+.importador__mapa {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--medio-20);
+  border-radius: var(--raio);
+}
+
+.importador__campo {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 320px) minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+}
+
+.importador__campo:nth-child(even) {
+  background: var(--medio-10);
+}
+
+.importador__rotulo {
+  font-weight: 700;
+  color: var(--marinho);
+}
+
+.importador__exemplos {
+  font-size: 0.875rem;
+  color: var(--texto-suave);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.importador__ajuda-opcao {
+  margin-left: 28px;
+}
+
+.indicadores--compactos .indicador {
+  padding: 16px 16px 24px;
+}
+
+.indicadores--compactos .indicador::after {
+  left: 16px;
+}
+
+.indicadores--compactos .indicador__valor {
+  font-size: 1.75rem;
+}
+
+@media (max-width: 760px) {
+  .importador__campo {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .responsaveis__linha {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+}

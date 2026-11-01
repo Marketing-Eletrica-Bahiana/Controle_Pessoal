@@ -14,7 +14,7 @@ const raiz = document.getElementById('raiz')
 // Cada aba carrega o próprio arquivo só quando é aberta.
 const TELAS = {
   dashboard: () => import('./telas/emConstrucao.js'),
-  colaboradores: () => import('./telas/emConstrucao.js'),
+  colaboradores: () => import('./telas/colaboradores.js'),
   aniversariantes: () => import('./telas/emConstrucao.js'),
   fornecedores: () => import('./telas/emConstrucao.js'),
   eletricistas: () => import('./telas/emConstrucao.js'),

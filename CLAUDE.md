@@ -23,7 +23,7 @@ listas de presença com check-in pelo celular. Explicação para quem usa no `RE
 
 1. (Feita) Base: login com Google, conferência de `usuarios/{email}`, menu das abas, cabeçalho
    com nome, cargo e papel, aba Usuários completa, `firestore.rules`, README e publicação.
-2. Colaboradores e setores, importação de planilha e "Baixar lista".
+2. (Feita) Colaboradores e setores, importação de planilha e "Baixar lista" (ver "Colaboradores").
 3. Fornecedores e Eletricistas do CAE.
 4. Listas de presença e check-in.
 5. Aniversariantes.
@@ -78,8 +78,42 @@ Nomes exatos (as regras dependem deles):
 - `usuarios/{email em minúsculas}`: `nome`, `cargo`, `papel` (`"admin"` | `"organizador"`),
   `ativo`. O app grava só esses quatro campos. Cadastro novo em transação ("Essa pessoa já está
   cadastrada.").
-- `setores/{id}`, `colaboradores/{id}`, `fornecedores/{id}`, `eletricistas/{id}`,
-  `listas/{id}` com a subcoleção `presencas/{id}` (campos definidos nas próximas etapas).
+- `colaboradores/{id}`: `nome`, `setor` (nome do setor), `loja` (`"Salvador (Matriz)"`,
+  `"Lauro de Freitas"` ou `"Aracaju"`; `LOJAS` em `js/config.js`), `cargo`, `lideranca`
+  (`"Gerente"`, `"Supervisor"` ou `""`), `nascimentoDia` e `nascimentoMes` (números ou null; o
+  ano nunca é guardado, LGPD), `admissao` (`"AAAA-MM-DD"` ou null), `ativo`, `criadoEm`,
+  `atualizadoEm`. IDs automáticos.
+- `setores/{id}`: `nome`, `gerentes` e `supervisores` (listas de IDs de colaboradores). ID tirado
+  do nome sem acentos (`"recursos-humanos"`), para a importação nunca duplicar setor.
+- `fornecedores/{id}`, `eletricistas/{id}`, `listas/{id}` com a subcoleção `presencas/{id}`
+  (campos definidos nas próximas etapas).
+- O app só grava os campos acima (as regras publicadas podem conferir os nomes).
+
+## Colaboradores (Etapa 2)
+
+Tela em `js/telas/colaboradores.js` (janelas em `js/telas/colaboradores/formularios.js`), regras em
+`js/lib/colaboradores.js` e `js/lib/importacao.js` (com testes), gravação em
+`js/dados/colaboradores.js`.
+
+- Endereços: `#/colaboradores` (lista geral), `#/colaboradores/setores` (cartões),
+  `#/colaboradores/setores/{id}` (setor aberto; `__sem-setor` para quem não tem setor) e
+  `#/colaboradores/ficha/{id}`. Os filtros ficam guardados enquanto a pessoa navega.
+- Lista: busca por nome; filtros setor, loja, liderança e situação (ativos por padrão).
+- Setor do colaborador é texto; casa com `setores` pelo nome sem diferenciar maiúsculas e
+  acentos. Setor novo é criado ao salvar ou importar.
+- Liderança e setores andam juntos: mudar liderança ou setor no cadastro inclui ou tira o ID das
+  listas do setor (`ajustesDeLideranca`, só quando muda). Definir responsáveis no setor (qualquer
+  colaborador ativo, de qualquer setor) acerta a liderança das pessoas envolvidas
+  (`liderancasAoDefinirResponsaveis`). Responsáveis desativados não aparecem nos cartões.
+- Desativar em vez de apagar (confirmação). Nome repetido não é aceito no cadastro.
+- Importação (`js/ui/importador.js`, a mesma janela serve para eletricistas): arquivo, aba e
+  linha dos títulos achados sozinhos; a pessoa confere a coluna de cada campo (com exemplos);
+  prévia com novos, já existentes (mesmo nome sem acentos), repetidos, sem nome e avisos por linha.
+  Quem já existe só recebe os campos preenchidos ("Atualizar quem já existe" pode ser desmarcado).
+  Datas do Excel chegam como número de série. Grava em lotes de 450.
+- "Baixar lista" exporta o que está filtrado na tela (`Colaboradores [setor] [loja] DD-MM-AAAA.xlsx`),
+  com colunas que voltam certinho na importação.
+- SheetJS só grava a planilha (sem cor no cabeçalho: a versão gratuita não pinta células).
 
 ## Papéis
 

@@ -76,8 +76,9 @@ export function lerDiaMes(texto) {
 }
 
 // Número de série de data do Excel (1 = 01/01/1900), contando o 29/02/1900 que o Excel inventa.
+// Abaixo de 3654 (ano 1910) é quase sempre um número digitado por engano, não uma data.
 export function serialExcelParaISO(serial) {
-  if (typeof serial !== 'number' || !Number.isFinite(serial) || serial < 1 || serial > 120000) return null
+  if (typeof serial !== 'number' || !Number.isFinite(serial) || serial < 3654 || serial > 120000) return null
   const data = new Date(Date.UTC(1899, 11, 30) + Math.floor(serial) * 86400000)
   return montarISO(data.getUTCFullYear(), data.getUTCMonth() + 1, data.getUTCDate())
 }
@@ -99,7 +100,8 @@ export function lerDataDaPlanilha(valor) {
     return { dia, mes, ano }
   }
   const texto = String(valor).trim().toLowerCase()
-  if (/^\d+(\.\d+)?$/.test(texto) && Number(texto) > 31) return lerDataDaPlanilha(Number(texto))
+  // Número de série escrito como texto (planilha .csv). Abaixo de 10000 (ano de 1927) é um ano solto, não uma data.
+  if (/^\d+(\.\d+)?$/.test(texto)) return Number(texto) >= 10000 ? lerDataDaPlanilha(Number(texto)) : null
 
   let partes = texto.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)
   if (partes) return conferir(Number(partes[3]), Number(partes[2]), Number(partes[1]))
