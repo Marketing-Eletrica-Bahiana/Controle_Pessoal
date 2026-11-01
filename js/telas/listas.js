@@ -140,7 +140,7 @@ export function cartaoDaLista(l, marcas = new Map()) {
       'div',
       { class: 'acoes acoes--esquerda' },
       aniversario
-        ? link({ texto: 'Abrir controle', icone: 'cake', href: endereco('listas', l.id), variante: 'principal', classe: 'botao--pequeno' })
+        ? link({ texto: 'Abrir controle', icone: 'cake', href: endereco('aniversariantes', 'controle', l.id), variante: 'principal', classe: 'botao--pequeno' })
         : l.status === 'aberta'
           ? link({ texto: 'Fazer check-in', icone: 'clipboard-check', href: endereco('listas', l.id, 'checkin'), variante: 'principal', classe: 'botao--pequeno' })
           : link({ texto: 'Ver resumo', icone: 'chart-column', href: endereco('listas', l.id, 'resumo'), classe: 'botao--pequeno' }),
@@ -187,9 +187,10 @@ function montarDetalhe(raiz, { pessoa, params }) {
       trocar(topo, cabecalhoPagina({ titulo: 'Lista não encontrada', icone: 'clipboard-list', voltar: { href: '#/listas', texto: 'Listas' } }))
       return trocar(corpo, aviso('Essa lista não existe mais. Ela pode ter sido apagada.', { erro: true }))
     }
+    // Controle de aniversariantes usa a tela de status da aba Aniversariantes, não o check-in.
     if (ehListaDeAniversario(l)) {
-      trocar(topo, cabecalhoPagina({ titulo: l.nome, icone: 'cake', voltar: { href: '#/listas', texto: 'Listas' } }))
-      return trocar(corpo, aviso('Este controle de aniversariantes se abre na aba Aniversariantes.'))
+      window.location.replace(endereco('aniversariantes', 'controle', l.id))
+      return
     }
     desenharTopo(l)
     const parte = parteAtual()

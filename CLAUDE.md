@@ -26,7 +26,7 @@ listas de presença com check-in pelo celular. Explicação para quem usa no `RE
 2. (Feita) Colaboradores e setores, importação de planilha e "Baixar lista" (ver "Colaboradores").
 3. (Feita) Fornecedores e Eletricistas do CAE (ver "Fornecedores e eletricistas").
 4. (Feita) Listas de presença e check-in (ver "Listas").
-5. Aniversariantes.
+5. (Feita) Aniversariantes (ver "Aniversariantes").
 6. Dashboard e revisão geral.
 
 A pessoa autorizou fazer as etapas 2 a 6 em sequência, sem pedir aprovação entre elas, depois de
@@ -183,6 +183,33 @@ Tela em `js/telas/listas.js` (visão geral e página da lista) com as partes em 
   por lista pelo ID previsível. Resultado: Compareceu, Faltou, Veio sem convite, Ainda não chegou.
 - Participações na ficha da marca: listas com a marca em `fornecedores` e quem ela enviou (consulta
   por `fornecedorId` em cada lista).
+
+## Aniversariantes (Etapa 5)
+
+Telas em `js/telas/aniversariantes.js` (mês) e `js/telas/aniversariantes/` (`controle.js`,
+`historico.js`, `comum.js`); regras em `js/lib/aniversariantes.js` (com testes); gravação em
+`js/dados/aniversariantes.js`.
+
+- Endereços: `#/aniversariantes` (mês escolhido, abre no mês atual, guardado ao navegar),
+  `#/aniversariantes/historico` e `#/aniversariantes/controle/{id}`. Uma lista de aniversário
+  aberta pela aba Listas vai direto para a tela de status (nunca para o check-in comum).
+- Do mês: colaboradores ativos com `nascimentoMes` do mês, por dia. De empresa: ativos com mês de
+  admissão igual e pelo menos um ano de casa no ano escolhido (mostra "N anos"). Quem faz hoje
+  ganha a faixa "Hoje tem festa!" e a etiqueta "Hoje!".
+- Controle do mês (só admin gera): lista em `listas` com ID previsível
+  `aniversariantes-AAAA-MM` ou `aniversario-empresa-AAAA-MM`, nome "Aniversariantes de
+  Novembro/2026" ou "Aniversário de empresa de Novembro/2026", `data` no dia 1, `loja` vazia.
+  Gerado em transação: não gera duas vezes. Todos entram como convocados com `status:
+  "pendente"` e `observacao: ""`. Quem virou aniversariante depois (cadastro novo) entra pelo botão
+  "Incluir que faltam".
+- Status (admin e organizador, lista aberta): Pendente, Participou, Não participou. `presente`
+  acompanha "Participou"; `horaCheckin` e `checkinPor` guardam quando e quem marcou. Observação até
+  300 letras, salva ao sair do campo; o texto em edição não é apagado por mudanças que chegam.
+- Histórico: por colaborador, os meses com o status (chips), filtros de ano e tipo, e o ranking dos
+  10 que mais ficaram com "Não participou".
+- Planilha do mês (`Aniversariantes Mês-AAAA.xlsx`): abas "Aniversariantes" e "Aniversário de
+  empresa" com o status do controle ("Controle não gerado" quando não existe). O controle também
+  tem "Baixar planilha" própria.
 
 ## Papéis
 

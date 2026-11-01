@@ -2278,16 +2278,206 @@ a.tabela__nome:hover {
   }
 }
 
-@media (max-width: 420px) {
+@media (max-width: 480px) {
   .checkin__filtros {
-    flex-wrap: nowrap;
     gap: 6px;
   }
 
   .filtro-pilula {
-    flex: 1 1 auto;
-    padding: 4px 8px;
+    padding: 4px 10px;
     font-size: 0.8125rem;
     white-space: nowrap;
+  }
+}
+
+/* Aniversariantes */
+
+.seletor-mes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.seletor-mes select {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--medio);
+  border-radius: var(--raio);
+  background: var(--branco);
+  font-weight: 700;
+  color: var(--marinho);
+}
+
+.seletor-mes__espaco {
+  flex: 1;
+}
+
+.destaque-hoje {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  border-radius: var(--raio);
+  background: var(--gradiente-principal);
+  color: var(--branco);
+  box-shadow: var(--sombra-cartao);
+}
+
+.destaque-hoje .icone {
+  width: 40px;
+  height: 40px;
+}
+
+.destaque-hoje strong {
+  font-family: var(--fonte-destaque);
+  font-size: 1.375rem;
+}
+
+.tabela tbody tr.linha--hoje {
+  background: var(--brilhante-10);
+  box-shadow: inset 4px 0 0 var(--vermelho);
+}
+
+.controle-do-mes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.controle__lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.controle__pessoa {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--medio-20);
+  border-left: 4px solid var(--medio-20);
+  border-radius: var(--raio);
+  background: var(--branco);
+}
+
+.controle__pessoa--participou {
+  border-left-color: var(--brilhante);
+}
+
+.controle__pessoa--nao_participou {
+  border-left-color: var(--vermelho);
+}
+
+.controle__topo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.controle__dia {
+  flex-shrink: 0;
+  min-width: 56px;
+  padding: 4px 8px;
+  border-radius: var(--raio-etiqueta);
+  background: var(--marinho);
+  color: var(--branco);
+  font-family: var(--fonte-destaque);
+  font-weight: 700;
+  text-align: center;
+}
+
+.controle__status {
+  margin: 0;
+  flex-wrap: nowrap;
+}
+
+.controle__status .segmentado__opcao {
+  min-height: 40px;
+  padding: 6px 10px;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.controle__status .segmentado__opcao:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.controle__status .status--participou.ativo {
+  background: var(--brilhante);
+}
+
+.controle__status .status--nao_participou.ativo {
+  background: var(--vermelho);
+  box-shadow: none;
+}
+
+.controle__status .status--pendente.ativo {
+  background: var(--marinho);
+  box-shadow: none;
+}
+
+.controle__observacao {
+  position: relative;
+  grid-column: 1 / -1;
+}
+
+.controle__observacao input {
+  min-height: 40px !important;
+}
+
+.controle__salvo {
+  position: absolute;
+  right: 12px;
+  top: 10px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--brilhante);
+}
+
+.controle__pessoa > .texto-suave {
+  grid-column: 1 / -1;
+}
+
+.controle__pessoa > .texto-suave:empty {
+  display: none;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+@media (max-width: 760px) {
+  .controle__pessoa {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .controle__status .segmentado__opcao {
+    flex: 1 1 0;
+    padding: 6px 4px;
+    font-size: 0.8125rem;
+  }
+
+  .controle__status .segmentado__opcao .icone {
+    display: none;
+  }
+
+  .seletor-mes__espaco {
+    display: none;
+  }
+
+  .controle-do-mes {
+    justify-content: flex-start;
   }
 }
