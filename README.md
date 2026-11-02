@@ -4,7 +4,7 @@ App interno da Elétrica Bahiana para organizar, num lugar só:
 
 - **Dashboard** (tela inicial): números gerais, listas abertas, aniversariantes do mês, setores,
   participação das marcas, presença nos treinamentos do CAE e do Comercial.
-- **Colaboradores**: quem trabalha em cada setor e loja, com gerentes e supervisores.
+- **Colaboradores**: quem trabalha em cada setor e loja, com gerentes, coordenadores e supervisores.
 - **Aniversariantes**: do mês (nascimento) e de empresa (tempo de casa).
 - **Fornecedores**: as marcas parceiras (Soprano, Legrand, Ledvance...).
 - **Eletricistas do CAE**: cadastro dos eletricistas, com o vendedor de cada um.

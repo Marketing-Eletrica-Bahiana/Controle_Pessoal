@@ -80,11 +80,13 @@ Nomes exatos (as regras dependem deles):
   cadastrada.").
 - `colaboradores/{id}`: `nome`, `setor` (nome do setor), `loja` (`"Salvador (Matriz)"`,
   `"Lauro de Freitas"` ou `"Aracaju"`; `LOJAS` em `js/config.js`), `cargo`, `lideranca`
-  (`"Gerente"`, `"Supervisor"` ou `""`), `nascimentoDia` e `nascimentoMes` (números ou null; o
+  (`"Gerente"`, `"Coordenador"`, `"Supervisor"` ou `""`), `nascimentoDia` e `nascimentoMes` (números ou null; o
   ano nunca é guardado, LGPD), `admissao` (`"AAAA-MM-DD"` ou null), `ativo`, `criadoEm`,
   `atualizadoEm`. IDs automáticos.
-- `setores/{id}`: `nome`, `gerentes` e `supervisores` (listas de IDs de colaboradores). ID tirado
-  do nome sem acentos (`"recursos-humanos"`), para a importação nunca duplicar setor.
+- `setores/{id}`: `nome`, `gerentes`, `coordenadores` e `supervisores` (listas de IDs de
+  colaboradores). Setor antigo pode não ter `coordenadores`: o código trata como lista vazia e o
+  campo aparece quando alguém entra nele. ID tirado do nome sem acentos (`"recursos-humanos"`),
+  para a importação nunca duplicar setor.
 - `fornecedores/{id}`: `nome` (marca), `contatoNome`, `contatoEmail`, `contatoTelefone`
   (`"(71) 3333-4444"`), `ativo`, `criadoEm`. Só o nome é obrigatório.
 - `eletricistas/{id}`: `nome`, `whatsapp` (só números com DDD, 10 ou 11), `vendedorId`,
@@ -111,15 +113,24 @@ Tela em `js/telas/colaboradores.js` (janelas em `js/telas/colaboradores/formular
 - Lista: busca por nome; filtros setor, loja, liderança e situação (ativos por padrão).
 - Setor do colaborador é texto; casa com `setores` pelo nome sem diferenciar maiúsculas e
   acentos. Setor novo é criado ao salvar ou importar.
+- Hierarquia: Gerente > Coordenador > Supervisor, cada nível opcional. `NIVEIS_DE_LIDERANCA` em
+  `js/lib/colaboradores.js` é a única lista dos níveis (valor, plural, campo no setor e ícone), na
+  ordem hierárquica; formulário, filtro, janela de responsáveis, importação e exibição saem dela.
 - Liderança e setores andam juntos: mudar liderança ou setor no cadastro inclui ou tira o ID das
   listas do setor (`ajustesDeLideranca`, só quando muda). Definir responsáveis no setor (qualquer
-  colaborador ativo, de qualquer setor) acerta a liderança das pessoas envolvidas
-  (`liderancasAoDefinirResponsaveis`). Responsáveis desativados não aparecem nos cartões.
+  colaborador ativo, de qualquer setor) acerta a liderança das pessoas envolvidas para o nível mais
+  alto que ocupam (`liderancasAoDefinirResponsaveis`). Responsáveis desativados não aparecem.
+- Exibição da liderança (`js/telas/colaboradores/lideranca.js`): cartões do setor, setor aberto e
+  Dashboard, sempre na ordem hierárquica e sem o título de nível vazio. Setor sem ninguém não mostra
+  o quadro nos cartões; o setor aberto avisa "Ninguém definido como responsável".
 - Desativar em vez de apagar (confirmação). Nome repetido não é aceito no cadastro.
 - Importação (`js/ui/importador.js`, a mesma janela serve para eletricistas): arquivo, aba e
   linha dos títulos achados sozinhos; a pessoa confere a coluna de cada campo (com exemplos);
   prévia com novos, já existentes (mesmo nome sem acentos), repetidos, sem nome e avisos por linha.
   Quem já existe só recebe os campos preenchidos ("Atualizar quem já existe" pode ser desmarcado).
+  Liderança reconhece Gerente, Coordenador/Coordenadora e Supervisor/Supervisora; "não" tira a
+  liderança e a pessoa sai da lista do setor; célula vazia não muda nada. Mudar de nível ou de setor
+  pela planilha também tira a pessoa da lista antiga.
   Datas do Excel chegam como número de série. Grava em lotes de 450.
 - "Baixar lista" exporta o que está filtrado na tela (`Colaboradores [setor] [loja] DD-MM-AAAA.xlsx`),
   com colunas que voltam certinho na importação.
@@ -247,7 +258,8 @@ carregado só aqui, só cores da paleta, sem animação com `prefers-reduced-mot
 - Listas abertas e próximas (as futuras primeiro) com atalho para o check-in.
 - Aniversariantes do mês atual (nascimento e tempo de casa), hoje em destaque, e quantos "Pendente"
   faltam em cada controle do mês.
-- Setores: cartão com gerentes, supervisores e total; abre `#/colaboradores/setores/{id}`.
+- Setores: cartão com a liderança em ordem hierárquica e o total; abre
+  `#/colaboradores/setores/{id}`.
 - Filtro de período (mês ou ano inteiro + ano), guardado ao navegar, vale para:
   - Fornecedores: marcas ativas, quantas participaram e ranking (barras deitadas, 10 primeiras).
   - CAE: eletricistas, presença média (média das taxas dos treinamentos com convocados), média de

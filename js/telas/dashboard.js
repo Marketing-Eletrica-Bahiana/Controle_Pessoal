@@ -16,6 +16,7 @@ import { formatarNumero, plural, primeiroNome } from '../lib/texto.js'
 import { aviso, blocoDeErro, bloco, cabecalhoPagina, carregando, etiqueta, filtroSelecao, indicadores, link, tabela } from '../ui/componentes.js'
 import { el, icone, trocar } from '../ui/dom.js'
 import { CORES, grafico } from '../ui/grafico.js'
+import { liderancaDoSetor } from './colaboradores/lideranca.js'
 
 const periodo = { ano: partesDeHoje().ano, mes: 0 }
 
@@ -183,7 +184,6 @@ export function montar(raiz, { pessoa }) {
   // 2. Setores
   function desenharSetores() {
     const { setores } = resumoDosSetores(dados.setores, dados.colaboradores)
-    const nomes = (lista) => lista.map((c) => c.nome).join(', ')
     trocar(
       caixas.setores,
       bloco(
@@ -192,17 +192,12 @@ export function montar(raiz, { pessoa }) {
           ? el(
               'div',
               { class: 'grade-cartoes grade-cartoes--compacta' },
-              setores.map(({ setor, gerentes, supervisores, total }) =>
+              setores.map(({ setor, lideranca, total }) =>
                 el(
                   'a',
                   { class: 'cartao cartao--clicavel cartao-setor cartao-setor--compacto', href: endereco('colaboradores', 'setores', setor.id) },
                   el('div', { class: 'cartao-setor__topo' }, el('h3', {}, setor.nome), etiqueta(plural(total, 'pessoa', 'pessoas'), 'forte')),
-                  el(
-                    'div',
-                    { class: 'cartao-setor__responsaveis' },
-                    el('p', { class: 'responsaveis' }, el('span', { class: 'responsaveis__rotulo' }, icone('crown'), gerentes.length > 1 ? 'Gerentes' : 'Gerente'), gerentes.length ? el('strong', {}, nomes(gerentes)) : el('span', { class: 'texto-suave' }, 'não definido')),
-                    supervisores.length > 0 && el('p', { class: 'responsaveis' }, el('span', { class: 'responsaveis__rotulo' }, icone('star'), supervisores.length > 1 ? 'Supervisores' : 'Supervisor'), el('strong', {}, nomes(supervisores))),
-                  ),
+                  liderancaDoSetor(lideranca),
                 ),
               ),
             )

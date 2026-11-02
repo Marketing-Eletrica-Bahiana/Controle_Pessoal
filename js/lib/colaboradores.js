@@ -3,7 +3,13 @@ import { LOJAS } from '../config.js'
 import { formatarData, formatarDiaMes, hojeISO, lerData, lerDataDaPlanilha, lerDiaMes, montarISO } from './datas.js'
 import { compararTexto, combinaBusca, limparEspacos, normalizar, paraId } from './texto.js'
 
-export const LIDERANCAS = ['Gerente', 'Supervisor']
+// Níveis de liderança em ordem hierárquica. Cada um é opcional: há setores sem gerente ou sem coordenador.
+export const NIVEIS_DE_LIDERANCA = [
+  { valor: 'Gerente', plural: 'Gerentes', campo: 'gerentes', icone: 'crown' },
+  { valor: 'Coordenador', plural: 'Coordenadores', campo: 'coordenadores', icone: 'badge-check' },
+  { valor: 'Supervisor', plural: 'Supervisores', campo: 'supervisores', icone: 'star' },
+]
+export const LIDERANCAS = NIVEIS_DE_LIDERANCA.map((n) => n.valor)
 export const SEM_SETOR = '__sem-setor'
 
 // Campos da planilha de importação (a ordem é a da tela).
@@ -31,6 +37,7 @@ export function normalizarLideranca(texto) {
   const t = normalizar(texto)
   if (!t || ['nao', 'nenhuma', 'sem', 'n'].includes(t)) return ''
   if (t.includes('gerent')) return 'Gerente'
+  if (t.includes('coorden')) return 'Coordenador'
   if (t.includes('supervis')) return 'Supervisor'
   return null
 }
@@ -135,8 +142,8 @@ export function resumoDosSetores(setores, colaboradores) {
     return {
       setor,
       pessoas,
-      gerentes: (setor.gerentes ?? []).map(ativoPorId).filter(Boolean),
-      supervisores: (setor.supervisores ?? []).map(ativoPorId).filter(Boolean),
+      // Na ordem hierárquica e só os níveis com alguém. Setor antigo sem "coordenadores" conta como lista vazia.
+      lideranca: NIVEIS_DE_LIDERANCA.map((n) => ({ ...n, pessoas: (setor[n.campo] ?? []).map(ativoPorId).filter(Boolean) })).filter((n) => n.pessoas.length),
       ...contarPorLoja(pessoas),
     }
   })
@@ -145,55 +152,45 @@ export function resumoDosSetores(setores, colaboradores) {
   return { setores: resumo.sort((a, b) => compararTexto(a.setor.nome, b.setor.nome)), semSetor }
 }
 
-// Mudanças nas listas de gerentes e supervisores dos setores quando o cadastro de um colaborador
-// muda de setor ou de liderança. Devolve [{ setorId, campo: 'gerentes' | 'supervisores', acao: 'incluir' | 'tirar' }].
-export function ajustesDeLideranca({ setores, id, antes, depois }) {
-  if (antes && normalizar(antes.setor) === normalizar(depois.setor) && (antes.lideranca ?? '') === (depois.lideranca ?? '')) return []
+// Mudanças nas listas de liderança dos setores para o colaborador ficar só no nível certo.
+// No próprio setor entra na lista do nível; no setor antigo sai de todas; nos outros setores continua
+// só se já estava nesse mesmo nível.
+function ajustesNosSetores({ setores, id, setorAntigo, setorAtual, lideranca }) {
+  const nivel = NIVEIS_DE_LIDERANCA.find((n) => n.valor === lideranca)
+  const atual = acharSetor(setores, setorAtual)
+  const antigo = acharSetor(setores, setorAntigo)
   const ajustes = []
-  const setorNovo = acharSetor(setores, depois.setor)
-  const setorAntigo = antes ? acharSetor(setores, antes.setor) : null
   for (const setor of setores) {
-    const gerente = (setor.gerentes ?? []).includes(id)
-    const supervisor = (setor.supervisores ?? []).includes(id)
-    const proprio = setorNovo?.id === setor.id
-    let querGerente = gerente
-    let querSupervisor = supervisor
-    if (setorAntigo?.id === setor.id && !proprio) {
-      querGerente = false
-      querSupervisor = false
+    const proprio = atual?.id === setor.id
+    const saiu = antigo?.id === setor.id && !proprio
+    for (const { campo } of NIVEIS_DE_LIDERANCA) {
+      const esta = (setor[campo] ?? []).includes(id)
+      const quer = nivel?.campo === campo && (proprio || (esta && !saiu))
+      if (quer !== esta) ajustes.push({ setorId: setor.id, campo, acao: quer ? 'incluir' : 'tirar' })
     }
-    if (depois.lideranca === 'Gerente') {
-      querSupervisor = false
-      if (proprio) querGerente = true
-    } else if (depois.lideranca === 'Supervisor') {
-      querGerente = false
-      if (proprio) querSupervisor = true
-    } else {
-      querGerente = false
-      querSupervisor = false
-    }
-    if (querGerente !== gerente) ajustes.push({ setorId: setor.id, campo: 'gerentes', acao: querGerente ? 'incluir' : 'tirar' })
-    if (querSupervisor !== supervisor) ajustes.push({ setorId: setor.id, campo: 'supervisores', acao: querSupervisor ? 'incluir' : 'tirar' })
   }
   return ajustes
 }
 
+// Quando o cadastro de um colaborador muda de setor ou de liderança.
+// Devolve [{ setorId, campo: 'gerentes' | 'coordenadores' | 'supervisores', acao: 'incluir' | 'tirar' }].
+export function ajustesDeLideranca({ setores, id, antes, depois }) {
+  if (antes && normalizar(antes.setor) === normalizar(depois.setor) && (antes.lideranca ?? '') === (depois.lideranca ?? '')) return []
+  return ajustesNosSetores({ setores, id, setorAntigo: antes?.setor, setorAtual: depois.setor, lideranca: depois.lideranca })
+}
+
 // Quando o admin define os responsáveis de um setor, a liderança de cada pessoa envolvida acompanha
-// o que ela é em todos os setores: gerente de algum vira "Gerente"; só supervisor vira "Supervisor";
-// quem não responde por nenhum setor fica sem liderança. Devolve [{ id, lideranca }] só de quem muda.
-export function liderancasAoDefinirResponsaveis({ setores, colaboradores, setorId, gerentes, supervisores }) {
-  const depois = setores.map((s) => (s.id === setorId ? { ...s, gerentes, supervisores } : s))
+// o nível mais alto que ela ocupa em todos os setores; quem não responde por nenhum fica sem liderança.
+// responsaveis: { gerentes, coordenadores, supervisores }. Devolve [{ id, lideranca }] só de quem muda.
+export function liderancasAoDefinirResponsaveis({ setores, colaboradores, setorId, responsaveis }) {
+  const depois = setores.map((s) => (s.id === setorId ? { ...s, ...responsaveis } : s))
   const atual = setores.find((s) => s.id === setorId) ?? {}
-  const envolvidos = new Set([...gerentes, ...supervisores, ...(atual.gerentes ?? []), ...(atual.supervisores ?? [])])
+  const envolvidos = new Set(NIVEIS_DE_LIDERANCA.flatMap(({ campo }) => [...(responsaveis[campo] ?? []), ...(atual[campo] ?? [])]))
   const mudancas = []
   for (const id of envolvidos) {
     const colaborador = colaboradores.find((c) => c.id === id)
     if (!colaborador) continue
-    const nova = depois.some((s) => (s.gerentes ?? []).includes(id))
-      ? 'Gerente'
-      : depois.some((s) => (s.supervisores ?? []).includes(id))
-        ? 'Supervisor'
-        : ''
+    const nova = NIVEIS_DE_LIDERANCA.find(({ campo }) => depois.some((s) => (s[campo] ?? []).includes(id)))?.valor ?? ''
     if (nova !== (colaborador.lideranca ?? '')) mudancas.push({ id, lideranca: nova })
   }
   return mudancas
@@ -268,7 +265,15 @@ export function prepararImportacao({ registros, colaboradores, setores }) {
     }
 
     const atual = existentes.get(chave)
-    return { linha, nome, situacao: atual ? 'existente' : 'novo', id: atual?.id ?? null, dados, avisos }
+    return {
+      linha,
+      nome,
+      situacao: atual ? 'existente' : 'novo',
+      id: atual?.id ?? null,
+      antes: atual ? { setor: atual.setor ?? '', lideranca: atual.lideranca ?? '' } : null,
+      dados,
+      avisos,
+    }
   })
 
   const conta = (s) => itens.filter((i) => i.situacao === s).length
@@ -280,10 +285,12 @@ export function prepararImportacao({ registros, colaboradores, setores }) {
 }
 
 // Gravações da importação. Quem já existe só recebe os campos preenchidos na planilha.
-// Setores que faltam são criados; gerentes e supervisores entram nas listas do setor.
+// Setores que faltam são criados; quem tem liderança entra na lista do nível, e quem trocou ou perdeu
+// a liderança (ou mudou de setor) sai da lista antiga.
 export function operacoesDaImportacao(previa, { setores, atualizarExistentes = true, novoId, agora, incluirNaLista, tirarDaLista }) {
   const operacoes = []
-  const novosSetores = new Map(previa.setoresNovos.map((nome) => [normalizar(nome), { id: idParaSetor(nome) || novoId('setores'), nome, gerentes: [], supervisores: [] }]))
+  const novosSetores = new Map(previa.setoresNovos.map((nome) => [normalizar(nome), { id: idParaSetor(nome) || novoId('setores'), nome, gerentes: [], coordenadores: [], supervisores: [] }]))
+  const conhecidos = [...setores, ...novosSetores.values()]
   const incluirEmSetor = new Map()
   const tirarDeSetor = new Map()
   const juntar = (mapa, chave, id) => {
@@ -316,24 +323,29 @@ export function operacoesDaImportacao(previa, { setores, atualizarExistentes = t
       const { nome: _nome, ...campos } = item.dados
       if (Object.keys(campos).length === 0) continue
       operacoes.push({ tipo: 'atualizar', caminho: `colaboradores/${item.id}`, dados: { ...campos, atualizadoEm: agora() } })
-      marcarLideranca(item.id, item.dados)
+      ajustarExistente(item)
     }
   }
 
   function marcarLideranca(id, dados) {
     if (!dados.setor || !dados.lideranca) return
-    const campo = dados.lideranca === 'Gerente' ? 'gerentes' : 'supervisores'
+    const { campo } = NIVEIS_DE_LIDERANCA.find((n) => n.valor === dados.lideranca)
     const novo = novosSetores.get(normalizar(dados.setor))
-    if (novo) {
-      novo[campo].push(id)
-      return
+    if (novo) novo[campo].push(id)
+    else {
+      const setor = acharSetor(setores, dados.setor)
+      if (setor) juntar(incluirEmSetor, `${setor.id}|${campo}`, id)
     }
-    const setor = acharSetor(setores, dados.setor)
-    if (!setor) return
-    const outro = campo === 'gerentes' ? 'supervisores' : 'gerentes'
-    if (!(setor[campo] ?? []).includes(id)) juntar(incluirEmSetor, `${setor.id}|${campo}`, id)
-    // Quem era supervisor e agora é gerente (ou o contrário) troca de lista no setor.
-    if ((setor[outro] ?? []).includes(id)) juntar(tirarDeSetor, `${setor.id}|${outro}`, id)
+  }
+
+  // Só mexe nas listas se a planilha informou a liderança ou mudou o setor; célula vazia não muda nada.
+  function ajustarExistente({ id, antes, dados }) {
+    const setorAtual = dados.setor ?? antes.setor
+    if (dados.lideranca === undefined && normalizar(setorAtual) === normalizar(antes.setor)) return
+    const lideranca = dados.lideranca ?? antes.lideranca
+    for (const { setorId, campo, acao } of ajustesNosSetores({ setores: conhecidos, id, setorAntigo: antes.setor, setorAtual, lideranca })) {
+      juntar(acao === 'incluir' ? incluirEmSetor : tirarDeSetor, `${setorId}|${campo}`, id)
+    }
   }
 
   const operacoesDeSetor = [...novosSetores.values()].map(({ id, ...dados }) => ({ tipo: 'definir', caminho: `setores/${id}`, dados, mesclar: true }))

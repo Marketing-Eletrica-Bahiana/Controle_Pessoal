@@ -4,7 +4,7 @@ import { LOJAS } from '../config.js'
 import { definirAtivoColaborador } from '../dados/colaboradores.js'
 import { ouvirFontes } from '../dados/fontes.js'
 import {
-  CABECALHO_DA_LISTA, SEM_SETOR, aniversarioDe, contarPorLoja, filtrarColaboradores, linhaDaLista,
+  CABECALHO_DA_LISTA, NIVEIS_DE_LIDERANCA, SEM_SETOR, aniversarioDe, contarPorLoja, filtrarColaboradores, linhaDaLista,
   resumoDosSetores,
 } from '../lib/colaboradores.js'
 import { formatarData, hojeISO, partesDeHoje } from '../lib/datas.js'
@@ -16,9 +16,10 @@ import {
   abas, aviso, avisar, avisarErro, blocoDeErro, bloco, botao, botaoIcone, cabecalhoPagina, campoBusca, carregando, comOcupado,
   confirmar, estadoVazio, etiqueta, ficha, filtroSelecao, indicadores, listaComLimite, tabela,
 } from '../ui/componentes.js'
-import { el, icone, trocar } from '../ui/dom.js'
+import { el, trocar } from '../ui/dom.js'
 import { baixarPlanilha } from '../ui/planilha.js'
 import { abrirFormularioColaborador, abrirImportacaoColaboradores, abrirResponsaveis } from './colaboradores/formularios.js'
+import { liderancaDoSetor } from './colaboradores/lideranca.js'
 import { historicoDaPessoa } from './listas/historico.js'
 
 // Filtros ficam guardados enquanto a pessoa navega (ex.: abre uma ficha e volta).
@@ -53,7 +54,7 @@ export function montar(raiz, { pessoa, params }) {
       cabecalhoPagina({
         titulo: 'Colaboradores',
         icone: 'users',
-        descricao: 'Quem trabalha em cada setor e loja, com gerentes e supervisores.',
+        descricao: 'Quem trabalha em cada setor e loja, com gerentes, coordenadores e supervisores.',
         acoes: admin
           ? [
               botao({ texto: 'Importar planilha', icone: 'file-spreadsheet', aoClicar: () => abrirImportacaoColaboradores({ dados: atuais }) }),
@@ -103,8 +104,7 @@ export function montar(raiz, { pessoa, params }) {
         rotulo: 'Liderança',
         opcoes: [
           { valor: '', rotulo: 'Todas' },
-          { valor: 'Gerente', rotulo: 'Gerentes' },
-          { valor: 'Supervisor', rotulo: 'Supervisores' },
+          ...NIVEIS_DE_LIDERANCA.map((n) => ({ valor: n.valor, rotulo: n.plural })),
           { valor: 'sem', rotulo: 'Sem liderança' },
         ],
         valor: filtros.lideranca,
@@ -233,18 +233,18 @@ export function montar(raiz, { pessoa, params }) {
             { class: 'grade-cartoes' },
             setores.map((s) => cartaoDoSetor(s)),
             semSetor.length > 0 &&
-              cartaoDoSetor({ setor: { id: SEM_SETOR, nome: 'Sem setor' }, gerentes: [], supervisores: [], ...contarPorLoja(semSetor) }),
+              cartaoDoSetor({ setor: { id: SEM_SETOR, nome: 'Sem setor' }, lideranca: [], ...contarPorLoja(semSetor) }),
           )
         : estadoVazio({ titulo: 'Nenhum setor ainda', texto: 'Os setores aparecem aqui conforme os colaboradores são cadastrados ou importados.' }),
     )
   }
 
-  function cartaoDoSetor({ setor, gerentes, supervisores, porLoja, total }) {
+  function cartaoDoSetor({ setor, lideranca, porLoja, total }) {
     return el(
       'a',
       { class: 'cartao cartao--clicavel cartao-setor', href: endereco('colaboradores', 'setores', setor.id) },
       el('div', { class: 'cartao-setor__topo' }, el('h2', {}, setor.nome), etiqueta(plural(total, 'pessoa', 'pessoas'), 'forte')),
-      responsaveis(gerentes, supervisores, setor.id !== SEM_SETOR),
+      liderancaDoSetor(lideranca),
       el(
         'ul',
         { class: 'cartao-setor__lojas' },
@@ -253,28 +253,11 @@ export function montar(raiz, { pessoa, params }) {
     )
   }
 
-  function responsaveis(gerentes, supervisores, mostrarVazio = true) {
-    const linha = (nomeDoIcone, um, varios, lista) =>
-      el(
-        'p',
-        { class: 'responsaveis' },
-        el('span', { class: 'responsaveis__rotulo' }, icone(nomeDoIcone), lista.length > 1 ? varios : um),
-        lista.length ? el('strong', {}, lista.map((c) => c.nome).join(', ')) : el('span', { class: 'texto-suave' }, 'não definido'),
-      )
-    if (!mostrarVazio && !gerentes.length && !supervisores.length) return null
-    return el(
-      'div',
-      { class: 'cartao-setor__responsaveis' },
-      linha('crown', 'Gerente', 'Gerentes', gerentes),
-      linha('star', 'Supervisor', 'Supervisores', supervisores),
-    )
-  }
-
   function desenharSetor() {
     const semSetor = id === SEM_SETOR
     const resumo = resumoDosSetores(dados.setores, dados.colaboradores)
     const item = semSetor
-      ? { setor: { id: SEM_SETOR, nome: 'Sem setor' }, gerentes: [], supervisores: [], pessoas: resumo.semSetor, ...contarPorLoja(resumo.semSetor) }
+      ? { setor: { id: SEM_SETOR, nome: 'Sem setor' }, lideranca: [], pessoas: resumo.semSetor, ...contarPorLoja(resumo.semSetor) }
       : resumo.setores.find((s) => s.setor.id === id)
     if (!item) {
       return trocar(area, cabecalhoPagina({ titulo: 'Setor não encontrado', icone: 'building-2', voltar: { href: '#/colaboradores/setores', texto: 'Todos os setores' } }))
@@ -295,7 +278,11 @@ export function montar(raiz, { pessoa, params }) {
         { rotulo: 'Pessoas no setor', valor: formatarNumero(item.total) },
         ...LOJAS.map((loja) => ({ rotulo: loja, valor: formatarNumero(item.porLoja[loja]) })),
       ]),
-      !semSetor && bloco({ titulo: 'Responsáveis', icone: 'crown', classe: 'bloco--destaque' }, responsaveis(item.gerentes, item.supervisores)),
+      !semSetor &&
+        bloco(
+          { titulo: 'Responsáveis', icone: 'crown', classe: 'bloco--destaque' },
+          liderancaDoSetor(item.lideranca) ?? el('p', { class: 'texto-suave' }, 'Ninguém definido como responsável por este setor.'),
+        ),
       pessoas.length ? tabelaDePessoas(pessoas, { comSetor: false }) : aviso('Nenhum colaborador ativo neste setor.'),
     )
   }

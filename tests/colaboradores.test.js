@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
-  CABECALHO_DA_LISTA, CAMPOS_DA_PLANILHA, SEM_SETOR, ajustesDeLideranca, contarPorLoja, ehSetorComercial, filtrarColaboradores,
+  CABECALHO_DA_LISTA, CAMPOS_DA_PLANILHA, LIDERANCAS, SEM_SETOR, ajustesDeLideranca, contarPorLoja, ehSetorComercial, filtrarColaboradores,
   liderancasAoDefinirResponsaveis, linhaDaLista, normalizarLideranca, normalizarLoja, operacoesDaImportacao, prepararImportacao,
   resumoDosSetores, validarColaborador,
 } from '../js/lib/colaboradores.js'
@@ -41,6 +41,14 @@ describe('colaboradores: cadastro', () => {
     assert.ok(validarColaborador({ ...base, nome: 'Vítor Vendedor' }, { colaboradores, setores, idAtual: 'v1' }).valido)
   })
 
+  it('aceita os três níveis de liderança, ou nenhum', () => {
+    assert.deepEqual(LIDERANCAS, ['Gerente', 'Coordenador', 'Supervisor'])
+    for (const lideranca of ['Gerente', 'Coordenador', 'Supervisor', '']) {
+      assert.equal(validarColaborador({ ...base, lideranca }, { colaboradores, setores }).dados.lideranca, lideranca)
+    }
+    assert.equal(validarColaborador({ ...base, lideranca: 'Diretor' }, { colaboradores, setores }).erros.lideranca, 'Escolha a liderança.')
+  })
+
   it('reconhece lojas e lideranças escritas de vários jeitos', () => {
     assert.equal(normalizarLoja('MATRIZ'), 'Salvador (Matriz)')
     assert.equal(normalizarLoja('Loja Lauro'), 'Lauro de Freitas')
@@ -50,7 +58,9 @@ describe('colaboradores: cadastro', () => {
     assert.equal(normalizarLideranca('gerente comercial'), 'Gerente')
     assert.equal(normalizarLideranca('Supervisora'), 'Supervisor')
     assert.equal(normalizarLideranca('não'), '')
-    assert.equal(normalizarLideranca('Coordenador'), null)
+    assert.equal(normalizarLideranca('Coordenador'), 'Coordenador')
+    assert.equal(normalizarLideranca('COORDENADORA de Vendas'), 'Coordenador')
+    assert.equal(normalizarLideranca('Diretor'), null)
     assert.ok(ehSetorComercial('Comercial Varejo'))
     assert.ok(ehSetorComercial('Vendas'))
     assert.ok(!ehSetorComercial('Logística'))
@@ -65,6 +75,7 @@ describe('colaboradores: lista e setores', () => {
     assert.deepEqual(filtrarColaboradores(colaboradores, { situacao: 'inativos' }).map((c) => c.id), ['l1'])
     assert.deepEqual(filtrarColaboradores(colaboradores, { setor: SEM_SETOR }).map((c) => c.id), ['x1'])
     assert.deepEqual(filtrarColaboradores(colaboradores, { busca: 'vitor' }).map((c) => c.id), ['v1'])
+    assert.deepEqual(filtrarColaboradores([...colaboradores, { id: 'c1', nome: 'Cora', lideranca: 'Coordenador' }], { lideranca: 'Coordenador' }).map((c) => c.id), ['c1'])
   })
 
   it('conta por loja e monta os cartões dos setores só com ativos', () => {
@@ -74,9 +85,27 @@ describe('colaboradores: lista e setores', () => {
     const resumo = resumoDosSetores(setores, colaboradores)
     const comercial = resumo.setores.find((s) => s.setor.id === 'comercial')
     assert.equal(comercial.total, 3)
-    assert.deepEqual(comercial.gerentes.map((c) => c.id), ['g1'])
+    assert.deepEqual(comercial.lideranca.map((n) => [n.valor, n.pessoas.map((c) => c.id)]), [['Gerente', ['g1']], ['Supervisor', ['s1']]])
     assert.equal(resumo.setores.find((s) => s.setor.id === 'logistica').total, 0)
     assert.deepEqual(resumo.semSetor.map((c) => c.id), ['x1'])
+  })
+
+  it('mostra a liderança em ordem hierárquica, sem os níveis vazios', () => {
+    const pessoas = [
+      { id: 'g', nome: 'G', setor: 'A', ativo: true },
+      { id: 'c', nome: 'C', setor: 'A', ativo: true },
+      { id: 's', nome: 'S', setor: 'A', ativo: true },
+      { id: 'd', nome: 'D', setor: 'A', ativo: false },
+    ]
+    const niveis = (setor) => resumoDosSetores([{ id: 'a', nome: 'A', ...setor }], pessoas).setores[0].lideranca.map((n) => [n.plural, n.pessoas.map((p) => p.id)])
+    // A ordem vem da hierarquia, não da ordem dos campos no documento.
+    assert.deepEqual(niveis({ supervisores: ['s'], coordenadores: ['c'], gerentes: ['g'] }), [['Gerentes', ['g']], ['Coordenadores', ['c']], ['Supervisores', ['s']]])
+    assert.deepEqual(niveis({ gerentes: [], coordenadores: ['c'], supervisores: ['s'] }), [['Coordenadores', ['c']], ['Supervisores', ['s']]])
+    assert.deepEqual(niveis({ gerentes: ['g'], coordenadores: [], supervisores: [] }), [['Gerentes', ['g']]])
+    // Setor antigo, sem o campo coordenadores, e desativado que sobrou na lista.
+    assert.deepEqual(niveis({ gerentes: ['g'], supervisores: ['s', 'd'] }), [['Gerentes', ['g']], ['Supervisores', ['s']]])
+    assert.deepEqual(niveis({}), [])
+    assert.deepEqual(niveis({ coordenadores: ['d'] }), [])
   })
 
   it('exporta a lista com aniversário sem ano', () => {
@@ -107,11 +136,63 @@ describe('colaboradores: lideranças', () => {
   })
 
   it('definir responsáveis do setor acerta a liderança das pessoas', () => {
-    const mudancas = liderancasAoDefinirResponsaveis({ setores, colaboradores, setorId: 'comercial', gerentes: ['v1'], supervisores: ['g1'] })
+    const responsaveis = { gerentes: ['v1'], coordenadores: [], supervisores: ['g1'] }
+    const mudancas = liderancasAoDefinirResponsaveis({ setores, colaboradores, setorId: 'comercial', responsaveis })
     assert.deepEqual(mudancas.sort((a, b) => a.id.localeCompare(b.id)), [
       { id: 'g1', lideranca: 'Supervisor' },
       { id: 's1', lideranca: '' },
       { id: 'v1', lideranca: 'Gerente' },
+    ])
+  })
+
+  it('marcar coordenador entra na lista do setor, mesmo em setor antigo sem o campo', () => {
+    assert.deepEqual(ajustesDeLideranca({ setores, id: 'v1', antes: { setor: 'Comercial', lideranca: '' }, depois: { setor: 'Comercial', lideranca: 'Coordenador' } }), [
+      { setorId: 'comercial', campo: 'coordenadores', acao: 'incluir' },
+    ])
+    assert.deepEqual(ajustesDeLideranca({ setores, id: 'n1', antes: null, depois: { setor: 'Logística', lideranca: 'Coordenador' } }), [
+      { setorId: 'logistica', campo: 'coordenadores', acao: 'incluir' },
+    ])
+  })
+
+  it('trocar ou remover a liderança tira a pessoa da lista antiga', () => {
+    const comCoordenador = [{ id: 'a', nome: 'A', gerentes: ['g'], coordenadores: ['c'], supervisores: ['s'] }]
+    const ajustar = (id, antes, depois) => ajustesDeLideranca({ setores: comCoordenador, id, antes: { setor: 'A', lideranca: antes }, depois: { setor: 'A', lideranca: depois } })
+    assert.deepEqual(ajustar('s', 'Supervisor', 'Coordenador'), [
+      { setorId: 'a', campo: 'coordenadores', acao: 'incluir' },
+      { setorId: 'a', campo: 'supervisores', acao: 'tirar' },
+    ])
+    assert.deepEqual(ajustar('c', 'Coordenador', 'Gerente'), [
+      { setorId: 'a', campo: 'gerentes', acao: 'incluir' },
+      { setorId: 'a', campo: 'coordenadores', acao: 'tirar' },
+    ])
+    assert.deepEqual(ajustar('c', 'Coordenador', ''), [{ setorId: 'a', campo: 'coordenadores', acao: 'tirar' }])
+    assert.deepEqual(ajustar('c', 'Coordenador', 'Coordenador'), [])
+  })
+
+  it('trocar de setor leva o coordenador junto', () => {
+    const lista = [
+      { id: 'a', nome: 'A', coordenadores: ['c'] },
+      { id: 'b', nome: 'B', gerentes: [], supervisores: [] },
+    ]
+    assert.deepEqual(ajustesDeLideranca({ setores: lista, id: 'c', antes: { setor: 'A', lideranca: 'Coordenador' }, depois: { setor: 'B', lideranca: 'Coordenador' } }), [
+      { setorId: 'a', campo: 'coordenadores', acao: 'tirar' },
+      { setorId: 'b', campo: 'coordenadores', acao: 'incluir' },
+    ])
+  })
+
+  it('a liderança acompanha o nível mais alto em todos os setores', () => {
+    const lista = [
+      { id: 'a', nome: 'A', gerentes: [], coordenadores: ['x'], supervisores: [] },
+      { id: 'b', nome: 'B', gerentes: [], supervisores: ['y'] },
+    ]
+    const pessoas = [{ id: 'x', lideranca: 'Coordenador' }, { id: 'y', lideranca: 'Supervisor' }, { id: 'z', lideranca: '' }]
+    const definir = (setorId, responsaveis) => liderancasAoDefinirResponsaveis({ setores: lista, colaboradores: pessoas, setorId, responsaveis })
+    // y vira coordenador em b; x continua coordenador em a e também responde como supervisor em b.
+    assert.deepEqual(definir('b', { gerentes: [], coordenadores: ['y'], supervisores: ['x'] }), [{ id: 'y', lideranca: 'Coordenador' }])
+    // x sai de a, mas y (setor b) nem é envolvido; z entra como coordenador.
+    assert.deepEqual(definir('a', { gerentes: [], coordenadores: ['z'], supervisores: [] }), [
+      { id: 'z', lideranca: 'Coordenador' },
+      { id: 'x', lideranca: '' },
     ])
   })
 })
@@ -126,7 +207,7 @@ describe('importação de planilha', () => {
     ['', '', '', '', '', '', ''],
     ['nova pessoa', 'Financeiro', '', '', '', '', ''],
     ['', 'Sem nome', '', '', '', '', ''],
-    ['Pessoa Estranha', 'financeiro', 'Feira', '', 'Coordenador', 'xx', '2020'],
+    ['Pessoa Estranha', 'financeiro', 'Feira', '', 'Diretor', 'xx', '2020'],
   ]
 
   it('acha o cabeçalho e sugere as colunas', () => {
@@ -170,7 +251,7 @@ describe('importação de planilha', () => {
       incluirNaLista: (...ids) => ({ incluir: ids }),
     })
     const setorFinanceiro = ops.find((o) => o.caminho === 'setores/financeiro')
-    assert.deepEqual(setorFinanceiro.dados, { nome: 'Financeiro', gerentes: ['novo1'], supervisores: [] })
+    assert.deepEqual(setorFinanceiro.dados, { nome: 'Financeiro', gerentes: ['novo1'], coordenadores: [], supervisores: [] })
     const criada = ops.find((o) => o.caminho === 'colaboradores/novo1')
     assert.equal(criada.dados.nome, 'Nova Pessoa')
     assert.equal(criada.dados.ativo, true)
@@ -195,6 +276,60 @@ describe('importação de planilha', () => {
     })
     const doSetor = ops.filter((o) => o.caminho === 'setores/comercial').map((o) => o.dados)
     assert.deepEqual(doSetor, [{ gerentes: { incluir: ['s1'] } }, { supervisores: { tirar: ['s1'] } }])
+  })
+
+  describe('liderança na planilha', () => {
+    const importar = (valores, listaDeSetores = setores) => {
+      const previa = prepararImportacao({ registros: [{ linha: 2, valores }], colaboradores, setores: listaDeSetores })
+      const ops = operacoesDaImportacao(previa, {
+        setores: listaDeSetores,
+        novoId: () => 'novo',
+        agora: () => 'AGORA',
+        incluirNaLista: (...ids) => ({ incluir: ids }),
+        tirarDaLista: (...ids) => ({ tirar: ids }),
+      })
+      return { previa, ops, doSetor: (id) => ops.filter((o) => o.caminho === `setores/${id}`).map((o) => o.dados) }
+    }
+
+    it('coordenadora nova entra na lista do setor, sem mexer no resto do setor antigo', () => {
+      const { previa, ops, doSetor } = importar({ nome: 'Cora Nova', setor: 'Logística', lideranca: 'Coordenadora' })
+      assert.equal(previa.itens[0].dados.lideranca, 'Coordenador')
+      assert.deepEqual(previa.itens[0].avisos, [])
+      assert.equal(ops.find((o) => o.caminho === 'colaboradores/novo').dados.lideranca, 'Coordenador')
+      assert.deepEqual(doSetor('logistica'), [{ coordenadores: { incluir: ['novo'] } }])
+    })
+
+    it('coordenador em setor novo já nasce na lista', () => {
+      const { doSetor } = importar({ nome: 'Cora Nova', setor: 'Jurídico', lideranca: 'coordenador' })
+      assert.deepEqual(doSetor('juridico'), [{ nome: 'Jurídico', gerentes: [], coordenadores: ['novo'], supervisores: [] }])
+    })
+
+    it('supervisor que vira coordenador troca de lista', () => {
+      const { doSetor } = importar({ nome: 'Sara Supervisora', lideranca: 'Coordenadora' })
+      assert.deepEqual(doSetor('comercial'), [{ coordenadores: { incluir: ['s1'] } }, { supervisores: { tirar: ['s1'] } }])
+    })
+
+    it('"não" na planilha tira a liderança e a pessoa sai da lista', () => {
+      const { ops, doSetor } = importar({ nome: 'Gabriel Gerente', lideranca: 'não' })
+      assert.equal(ops.find((o) => o.caminho === 'colaboradores/g1').dados.lideranca, '')
+      assert.deepEqual(doSetor('comercial'), [{ gerentes: { tirar: ['g1'] } }])
+    })
+
+    it('mudar de setor pela planilha leva a liderança para o setor novo', () => {
+      const { doSetor } = importar({ nome: 'Sara Supervisora', setor: 'Logística' })
+      assert.deepEqual(doSetor('logistica'), [{ supervisores: { incluir: ['s1'] } }])
+      assert.deepEqual(doSetor('comercial'), [{ supervisores: { tirar: ['s1'] } }])
+    })
+
+    it('célula de liderança vazia não muda as listas', () => {
+      const { doSetor } = importar({ nome: 'Gabriel Gerente', cargo: 'Gerente Geral', lideranca: '' })
+      assert.deepEqual(doSetor('comercial'), [])
+    })
+
+    it('quem já é gerente mas faltava na lista do setor volta para ela', () => {
+      const { doSetor } = importar({ nome: 'Gabriel Gerente', lideranca: 'Gerente' }, [{ id: 'comercial', nome: 'Comercial', gerentes: [], supervisores: [] }])
+      assert.deepEqual(doSetor('comercial'), [{ gerentes: { incluir: ['g1'] } }])
+    })
   })
 
   it('mostra datas do Excel legíveis nos exemplos da coluna', () => {

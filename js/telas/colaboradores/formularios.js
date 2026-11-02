@@ -1,7 +1,7 @@
 // Janelas da aba Colaboradores: cadastro e edição, responsáveis do setor e importação de planilha.
 import { LOJAS } from '../../config.js'
 import { definirResponsaveis, importarColaboradores, salvarColaborador } from '../../dados/colaboradores.js'
-import { CAMPOS_DA_PLANILHA, LIDERANCAS, aniversarioDe, prepararImportacao, validarColaborador } from '../../lib/colaboradores.js'
+import { CAMPOS_DA_PLANILHA, LIDERANCAS, NIVEIS_DE_LIDERANCA, aniversarioDe, prepararImportacao, validarColaborador } from '../../lib/colaboradores.js'
 import { formatarData, formatarDiaMes, mascararData, mascararDiaMes } from '../../lib/datas.js'
 import { mensagemDeErro } from '../../lib/erros.js'
 import { combinaBusca, compararTexto, normalizar } from '../../lib/texto.js'
@@ -31,7 +31,7 @@ export function abrirFormularioColaborador({ colaborador = null, dados, aoSalvar
     lideranca: campo({
       rotulo: 'Liderança',
       entrada: selecao([{ valor: '', rotulo: 'Sem liderança' }, ...LIDERANCAS], colaborador?.lideranca ?? ''),
-      ajuda: 'Gerentes e supervisores aparecem em destaque no cartão do setor.',
+      ajuda: 'Gerentes, coordenadores e supervisores aparecem em destaque no cartão do setor.',
     }),
     aniversario: campo({
       rotulo: 'Aniversário (dia e mês)',
@@ -88,11 +88,11 @@ export function abrirFormularioColaborador({ colaborador = null, dados, aoSalvar
   janela.focar()
 }
 
-// Gerentes e supervisores do setor, escolhidos entre os colaboradores ativos (de qualquer setor).
+// Gerentes, coordenadores e supervisores do setor, escolhidos entre os colaboradores ativos (de qualquer setor).
 export function abrirResponsaveis({ setor, dados }) {
   const janela = abrirJanela({ titulo: `Responsáveis: ${setor.nome}`, largura: 720 })
-  const gerentes = new Set(setor.gerentes ?? [])
-  const supervisores = new Set(setor.supervisores ?? [])
+  // Um conjunto por nível. Setor antigo sem "coordenadores" começa com a lista vazia.
+  const escolhidos = Object.fromEntries(NIVEIS_DE_LIDERANCA.map(({ campo }) => [campo, new Set(setor[campo] ?? [])]))
   let busca = ''
 
   const resumo = el('div', { class: 'responsaveis__resumo' })
@@ -107,12 +107,10 @@ export function abrirResponsaveis({ setor, dados }) {
   })
   buscaCampo.entrada.setAttribute('data-foco', '')
 
-  const papelDe = (id) => (gerentes.has(id) ? 'gerente' : supervisores.has(id) ? 'supervisor' : '')
-  function definirPapel(id, papel) {
-    gerentes.delete(id)
-    supervisores.delete(id)
-    if (papel === 'gerente') gerentes.add(id)
-    if (papel === 'supervisor') supervisores.add(id)
+  const papelDe = (id) => NIVEIS_DE_LIDERANCA.find(({ campo }) => escolhidos[campo].has(id))?.campo ?? ''
+  function definirPapel(id, campo) {
+    for (const conjunto of Object.values(escolhidos)) conjunto.delete(id)
+    if (campo) escolhidos[campo].add(id)
     desenhar()
   }
 
@@ -129,8 +127,14 @@ export function abrirResponsaveis({ setor, dados }) {
       )
     trocar(
       resumo,
-      el('div', {}, el('strong', {}, 'Gerentes: '), gerentes.size ? [...gerentes].map((id) => chip(id, 'gerente')) : el('span', { class: 'texto-suave' }, 'nenhum')),
-      el('div', {}, el('strong', {}, 'Supervisores: '), supervisores.size ? [...supervisores].map((id) => chip(id, 'supervisor')) : el('span', { class: 'texto-suave' }, 'nenhum')),
+      NIVEIS_DE_LIDERANCA.map(({ valor, plural, campo }) =>
+        el(
+          'div',
+          {},
+          el('strong', {}, `${plural}: `),
+          escolhidos[campo].size ? [...escolhidos[campo]].map((id) => chip(id, valor.toLowerCase())) : el('span', { class: 'texto-suave' }, 'nenhum'),
+        ),
+      ),
     )
 
     const doSetor = (c) => normalizar(c.setor) === normalizar(setor.nome)
@@ -148,11 +152,7 @@ export function abrirResponsaveis({ setor, dados }) {
               { class: 'responsaveis__linha' },
               el('div', {}, el('strong', {}, c.nome), el('span', { class: 'tabela__detalhe' }, [c.setor || 'Sem setor', c.cargo].filter(Boolean).join(' · '))),
               selecao(
-                [
-                  { valor: '', rotulo: 'Não responde' },
-                  { valor: 'gerente', rotulo: 'Gerente' },
-                  { valor: 'supervisor', rotulo: 'Supervisor' },
-                ],
+                [{ valor: '', rotulo: 'Não responde' }, ...NIVEIS_DE_LIDERANCA.map((n) => ({ valor: n.campo, rotulo: n.valor }))],
                 papelDe(c.id),
                 { 'aria-label': `Papel de ${c.nome} no setor`, class: 'responsaveis__papel', onChange: (e) => definirPapel(c.id, e.target.value) },
               ),
@@ -171,7 +171,8 @@ export function abrirResponsaveis({ setor, dados }) {
         caixaDeErro.replaceChildren()
         try {
           const { colaboradores, setores } = dados()
-          await definirResponsaveis({ setorId: setor.id, gerentes: [...gerentes], supervisores: [...supervisores], setores, colaboradores })
+          const responsaveis = Object.fromEntries(Object.entries(escolhidos).map(([campo, conjunto]) => [campo, [...conjunto]]))
+          await definirResponsaveis({ setorId: setor.id, responsaveis, setores, colaboradores })
           avisar('Responsáveis do setor salvos.')
           janela.fechar()
         } catch (e) {

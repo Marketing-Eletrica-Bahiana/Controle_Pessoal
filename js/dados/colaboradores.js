@@ -1,21 +1,22 @@
 // Gravação de colaboradores/{id} e setores/{id}.
 // colaboradores: nome, setor (nome do setor), loja, cargo, lideranca, nascimentoDia, nascimentoMes,
 //   admissao ("AAAA-MM-DD"), ativo, criadoEm, atualizadoEm. Nascimento sem ano (LGPD).
-// setores: nome, gerentes (ids de colaboradores), supervisores (ids de colaboradores).
+// setores: nome, gerentes, coordenadores e supervisores (listas de ids de colaboradores).
+//   Setor antigo pode não ter "coordenadores"; o campo aparece quando alguém entra nele.
 import {
   acharSetor, ajustesDeLideranca, idParaSetor, liderancasAoDefinirResponsaveis, operacoesDaImportacao,
 } from '../lib/colaboradores.js'
 import { agora, atualizar, gravarLote, incluirNaLista, novoId, tirarDaLista } from './banco.js'
 
 // Cria ou edita um colaborador. Setor novo é criado na hora; mudar a liderança ou o setor
-// atualiza também as listas de gerentes e supervisores dos setores. Tudo num lote só.
+// atualiza também as listas de liderança dos setores. Tudo num lote só.
 export async function salvarColaborador({ id = null, antes = null, dados, setores }) {
   const operacoes = []
   let setoresConhecidos = setores
   if (!acharSetor(setores, dados.setor)) {
     const setorId = idParaSetor(dados.setor) || novoId('setores')
-    operacoes.push({ tipo: 'definir', caminho: `setores/${setorId}`, dados: { nome: dados.setor, gerentes: [], supervisores: [] }, mesclar: true })
-    setoresConhecidos = [...setores, { id: setorId, nome: dados.setor, gerentes: [], supervisores: [] }]
+    operacoes.push({ tipo: 'definir', caminho: `setores/${setorId}`, dados: { nome: dados.setor, gerentes: [], coordenadores: [], supervisores: [] }, mesclar: true })
+    setoresConhecidos = [...setores, { id: setorId, nome: dados.setor, gerentes: [], coordenadores: [], supervisores: [] }]
   }
 
   const colaboradorId = id ?? novoId('colaboradores')
@@ -37,9 +38,10 @@ export async function salvarColaborador({ id = null, antes = null, dados, setore
 export const definirAtivoColaborador = (id, ativo) => atualizar(`colaboradores/${id}`, { ativo, atualizadoEm: agora() })
 
 // Responsáveis do setor, com a liderança de cada pessoa acompanhando.
-export async function definirResponsaveis({ setorId, gerentes, supervisores, setores, colaboradores }) {
-  const operacoes = [{ tipo: 'atualizar', caminho: `setores/${setorId}`, dados: { gerentes, supervisores } }]
-  for (const { id, lideranca } of liderancasAoDefinirResponsaveis({ setores, colaboradores, setorId, gerentes, supervisores })) {
+// responsaveis: { gerentes, coordenadores, supervisores }. Grava só esses campos do setor.
+export async function definirResponsaveis({ setorId, responsaveis, setores, colaboradores }) {
+  const operacoes = [{ tipo: 'atualizar', caminho: `setores/${setorId}`, dados: responsaveis }]
+  for (const { id, lideranca } of liderancasAoDefinirResponsaveis({ setores, colaboradores, setorId, responsaveis })) {
     operacoes.push({ tipo: 'atualizar', caminho: `colaboradores/${id}`, dados: { lideranca, atualizadoEm: agora() } })
   }
   await gravarLote(operacoes)
