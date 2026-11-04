@@ -1757,6 +1757,12 @@ a.tabela__nome:hover {
   margin-left: 28px;
 }
 
+.importador__avisos {
+  display: block;
+  min-width: 240px;
+  margin-top: 4px;
+}
+
 .indicadores--compactos .indicador {
   padding: 16px 16px 24px;
 }

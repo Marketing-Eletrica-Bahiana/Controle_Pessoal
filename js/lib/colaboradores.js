@@ -30,6 +30,9 @@ export const CAMPOS_DA_PLANILHA = [
   { chave: 'admissao', rotulo: 'Data de admissão', tipo: 'data', sinonimos: ['data de admissao', 'admissao', 'data admissao', 'dt admissao', 'contratacao'] },
   // Sem "pai" ou "mae" soltos: colunas como "Nome da mãe" não podem ser confundidas com esta.
   { chave: 'paiOuMae', rotulo: 'Pai ou mãe', sinonimos: ['pai ou mae', 'mae ou pai', 'pai mae', 'mae pai'] },
+  // Lista oficial: "Tem Filhos" (Sim ou Não) com "Gênero" dizem se é pai ou mãe. Sem "filhos" solto: "Nome dos filhos" não serve.
+  { chave: 'temFilhos', rotulo: 'Tem filhos (Sim ou Não)', sinonimos: ['tem filhos', 'tem filho', 'possui filhos', 'possui filho'] },
+  { chave: 'genero', rotulo: 'Gênero (só para saber se é pai ou mãe)', sinonimos: ['genero', 'sexo'] },
   { chave: 'telefone', rotulo: 'Telefone', sinonimos: ['telefone', 'celular', 'whatsapp', 'whats', 'fone'] },
   { chave: 'email', rotulo: 'E-mail', sinonimos: ['email', 'e mail'] },
 ]
@@ -57,6 +60,22 @@ export function normalizarPaiOuMae(texto) {
   const t = normalizar(texto)
   if (!t || ['nao', 'nenhum', 'nenhuma', 'sem', 'n'].includes(t)) return ''
   return PAI_OU_MAE.find((p) => normalizar(p.valor) === t)?.valor ?? null
+}
+
+// "Tem Filhos" da planilha: true, false ou null quando não dá para entender.
+export function normalizarTemFilhos(texto) {
+  const t = normalizar(texto)
+  if (['sim', 's', 'x', 'true', 'verdadeiro'].includes(t)) return true
+  if (['nao', 'n', 'false', 'falso'].includes(t)) return false
+  return null
+}
+
+// Pai ou Mãe a partir do gênero da planilha, ou null se ele não disser. O gênero em si não é guardado.
+export function paiOuMaeDoGenero(texto) {
+  const t = normalizar(texto)
+  if (['masculino', 'masc', 'm', 'homem'].includes(t)) return 'Pai'
+  if (['feminino', 'fem', 'f', 'mulher'].includes(t)) return 'Mãe'
+  return null
 }
 
 export const acharSetor = (setores, nome) => {
@@ -300,6 +319,15 @@ export function prepararImportacao({ registros, colaboradores, setores }) {
       const paiOuMae = normalizarPaiOuMae(paiOuMaeTexto)
       if (paiOuMae === null) avisos.push(`Pai ou mãe "${paiOuMaeTexto}" não reconhecido; use Pai, Mãe ou Não.`)
       else dados.paiOuMae = paiOuMae
+    } else if (limparEspacos(valores.temFilhos)) {
+      const temFilhos = normalizarTemFilhos(valores.temFilhos)
+      if (temFilhos === null) avisos.push(`Tem filhos "${limparEspacos(valores.temFilhos)}" não reconhecido; use Sim ou Não.`)
+      else if (!temFilhos) dados.paiOuMae = ''
+      else {
+        const paiOuMae = paiOuMaeDoGenero(valores.genero)
+        if (paiOuMae) dados.paiOuMae = paiOuMae
+        else avisos.push('Tem filhos, mas o gênero não diz se é pai ou mãe; marque no cadastro da pessoa.')
+      }
     }
 
     const telefoneTexto = limparEspacos(valores.telefone)

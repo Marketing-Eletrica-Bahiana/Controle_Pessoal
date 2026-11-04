@@ -2,8 +2,8 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
   CABECALHO_DA_LISTA, CAMPOS_DA_PLANILHA, LIDERANCAS, SEM_SETOR, ajustesDeLideranca, contarPorLoja, ehSetorComercial, filtrarColaboradores,
-  filtrarPaisEMaes, liderancasAoDefinirResponsaveis, linhaDaLista, normalizarLideranca, normalizarLoja, normalizarPaiOuMae, operacoesDaImportacao,
-  prepararImportacao, resumoDosSetores, validarColaborador,
+  filtrarPaisEMaes, liderancasAoDefinirResponsaveis, linhaDaLista, normalizarLideranca, normalizarLoja, normalizarPaiOuMae, normalizarTemFilhos,
+  operacoesDaImportacao, paiOuMaeDoGenero, prepararImportacao, resumoDosSetores, validarColaborador,
 } from '../js/lib/colaboradores.js'
 import { acharCabecalho, exemplosDaColuna, extrairRegistros, lerTextoDoCsv, nomeDaColuna, sugerirMapeamento } from '../js/lib/importacao.js'
 
@@ -301,7 +301,7 @@ describe('importação de planilha', () => {
     const indice = acharCabecalho(linhas, CAMPOS_DA_PLANILHA)
     assert.equal(indice, 2)
     const mapa = sugerirMapeamento(linhas[indice], CAMPOS_DA_PLANILHA)
-    assert.deepEqual(mapa, { nome: 0, setor: 1, loja: 2, cargo: 3, lideranca: 4, nascimento: 5, admissao: 6, paiOuMae: -1, telefone: -1, email: -1 })
+    assert.deepEqual(mapa, { nome: 0, setor: 1, loja: 2, cargo: 3, lideranca: 4, nascimento: 5, admissao: 6, paiOuMae: -1, temFilhos: -1, genero: -1, telefone: -1, email: -1 })
     assert.equal(nomeDaColuna(0), 'A')
     assert.equal(nomeDaColuna(27), 'AB')
     assert.deepEqual(exemplosDaColuna(linhas, indice, 1, 2), ['Comercial', 'Financeiro'])
@@ -314,6 +314,44 @@ describe('importação de planilha', () => {
     assert.equal(mapa.paiOuMae, -1)
     assert.equal(mapa.telefone, 3)
     assert.equal(mapa.email, 4)
+  })
+
+  it('acha as colunas da lista oficial de colaboradores', () => {
+    const cabecalho = ['Nome', 'Data de Nascimento', 'Gênero', 'Data de admissão', 'Cargo', 'Departamento', 'Unidade', 'Celular', 'Telefone de Emergência', 'Outros Contatos', 'Email Pessoal', 'Email Corporativo', 'Tem Filhos']
+    const mapa = sugerirMapeamento(cabecalho, CAMPOS_DA_PLANILHA)
+    assert.equal(cabecalho[mapa.temFilhos], 'Tem Filhos')
+    assert.equal(cabecalho[mapa.genero], 'Gênero')
+    assert.equal(cabecalho[mapa.telefone], 'Celular')
+    assert.equal(mapa.paiOuMae, -1)
+    // "Nome dos filhos" e "Quantidade de filhos" não dizem se a pessoa tem filhos em Sim ou Não.
+    assert.equal(sugerirMapeamento(['Nome', 'Nome dos filhos', 'Quantidade de filhos'], CAMPOS_DA_PLANILHA).temFilhos, -1)
+  })
+
+  it('"Tem Filhos" com "Gênero" dizem se é pai ou mãe, e o gênero não é guardado', () => {
+    const importar = (temFilhos, genero, extra = {}) => prepararImportacao({ registros: [{ linha: 2, valores: { nome: 'Pessoa Nova', temFilhos, genero, ...extra } }], colaboradores, setores }).itens[0]
+    assert.equal(importar('Sim', 'Masculino').dados.paiOuMae, 'Pai')
+    assert.equal(importar('Sim', 'Feminino').dados.paiOuMae, 'Mãe')
+    assert.equal(importar('SIM', 'f').dados.paiOuMae, 'Mãe')
+    // "Não" tira a marcação de quem já existe; vazio não muda nada.
+    assert.equal(importar('Não', 'Feminino').dados.paiOuMae, '')
+    assert.ok(!('paiOuMae' in importar('', 'Feminino').dados))
+    assert.ok(!('genero' in importar('Sim', 'Feminino').dados))
+    assert.ok(!('temFilhos' in importar('Sim', 'Feminino').dados))
+    // A coluna "Pai ou mãe" vale primeiro.
+    assert.equal(importar('Sim', 'Feminino', { paiOuMae: 'Pai' }).dados.paiOuMae, 'Pai')
+  })
+
+  it('avisa quando não dá para saber se é pai ou mãe', () => {
+    const importar = (temFilhos, genero) => prepararImportacao({ registros: [{ linha: 2, valores: { nome: 'Pessoa Nova', temFilhos, genero } }], colaboradores, setores }).itens[0]
+    for (const genero of ['', 'Não informado', 'Outro']) {
+      const item = importar('Sim', genero)
+      assert.ok(!('paiOuMae' in item.dados))
+      assert.match(item.avisos[0], /gênero não diz/)
+    }
+    assert.match(importar('Talvez', 'Feminino').avisos[0], /Tem filhos "Talvez"/)
+    assert.equal(normalizarTemFilhos('Não'), false)
+    assert.equal(normalizarTemFilhos('Sim'), true)
+    assert.equal(paiOuMaeDoGenero('Outro'), null)
   })
 
   it('importa pai ou mãe e contatos, com aviso no que não entende', () => {

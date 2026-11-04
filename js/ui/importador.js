@@ -164,7 +164,7 @@ export function abrirImportador(config) {
     const previa = config.preparar(registros, opcoes)
     const { contagem } = previa
     const comAvisos = previa.itens.filter((i) => i.avisos?.length && i.situacao !== 'ignorado' && i.situacao !== 'repetido').length
-    // Colunas que a planilha não trouxe ficam de fora da prévia, para sobrar espaço para os avisos.
+    // Colunas que a planilha não trouxe ficam de fora da prévia, para sobrar espaço na tabela.
     const colunasComDados = config.colunas.filter((c) => previa.itens.some((i) => c.celula(i)))
 
     const caixas = (config.opcoes ?? []).map((o) =>
@@ -235,13 +235,17 @@ export function abrirImportador(config) {
             classe: 'tabela--compacta',
             colunas: [
               { rotulo: 'Linha', classe: 'numero', celula: (i) => i.linha },
-              { rotulo: 'Nome', principal: true, celula: (i) => el('span', { class: 'tabela__nome' }, i.nome || 'Sem nome') },
+              {
+                rotulo: 'Nome',
+                principal: true,
+                // Os avisos ficam junto do nome: numa coluna no fim da tabela, sairiam da tela nas planilhas com muitas colunas.
+                celula: (i) => [
+                  el('span', { class: 'tabela__nome' }, i.nome || 'Sem nome'),
+                  i.avisos?.length > 0 && el('span', { class: 'importador__avisos texto-alerta texto-pequeno' }, i.avisos.join(' ')),
+                ],
+              },
               { rotulo: 'Situação', celula: (i) => etiqueta(...SITUACOES[i.situacao]) },
               ...colunasComDados,
-              {
-                rotulo: 'Avisos',
-                celula: (i) => (i.avisos?.length ? el('span', { class: 'texto-alerta texto-pequeno' }, i.avisos.join(' ')) : ''),
-              },
             ],
           }),
         { passo: 100 }),

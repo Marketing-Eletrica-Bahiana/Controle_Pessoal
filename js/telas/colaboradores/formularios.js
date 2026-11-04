@@ -218,7 +218,7 @@ export function abrirResponsaveis({ setor, dados }) {
 export function abrirImportacaoColaboradores({ dados }) {
   abrirImportador({
     titulo: 'Importar colaboradores',
-    ajuda: 'Precisa ter pelo menos a coluna com o nome. Da data de nascimento, só o dia e o mês são guardados. Setores que ainda não existem são criados.',
+    ajuda: 'Precisa ter pelo menos a coluna com o nome. Da data de nascimento, só o dia e o mês são guardados. Setores que ainda não existem são criados. Com as colunas "Tem Filhos" e "Gênero", quem tem filhos entra em Pais e mães; o gênero não fica guardado.',
     campos: CAMPOS_DA_PLANILHA,
     opcoes: [
       {
@@ -235,13 +235,13 @@ export function abrirImportacaoColaboradores({ dados }) {
       return previa
     },
     colunas: [
+      { rotulo: 'Pai ou mãe', celula: (i) => i.dados?.paiOuMae ?? '' },
       { rotulo: 'Setor', celula: (i) => i.dados?.setor ?? '' },
       { rotulo: 'Loja', celula: (i) => i.dados?.loja ?? '' },
       { rotulo: 'Cargo', celula: (i) => i.dados?.cargo ?? '' },
       { rotulo: 'Liderança', celula: (i) => (i.dados?.lideranca ? etiqueta(i.dados.lideranca) : '') },
       { rotulo: 'Aniversário', celula: (i) => formatarDiaMes(i.dados?.nascimentoDia, i.dados?.nascimentoMes) },
       { rotulo: 'Admissão', celula: (i) => formatarData(i.dados?.admissao) },
-      { rotulo: 'Pai ou mãe', celula: (i) => i.dados?.paiOuMae ?? '' },
       { rotulo: 'Telefone', celula: (i) => formatarWhatsapp(i.dados?.telefone) },
       { rotulo: 'E-mail', celula: (i) => i.dados?.email ?? '' },
     ],

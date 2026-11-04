@@ -240,8 +240,16 @@ Telas em `js/telas/aniversariantes.js` (mês) e `js/telas/aniversariantes/` (`co
 - Telefone, WhatsApp e e-mail ficam em `js/lib/contato.js`; `js/lib/eletricistas.js` e `js/lib/usuarios.js`
   reexportam o que outros arquivos já importavam deles.
 - Planilha: colunas `Pai ou mãe` (Pai, Mãe ou Não), `Telefone` e `E-mail`. Sinônimos sem "pai" ou "mae" soltos,
-  para "Nome da mãe" não ser confundida. "Sim" gera aviso: não diz se é pai ou mãe. Célula vazia não muda nada.
-- Prévia da importação (`js/ui/importador.js`): colunas sem nenhum dado ficam de fora, para os avisos caberem.
+  para "Nome da mãe" não ser confundida. Célula vazia não muda nada.
+- Lista oficial da empresa (aba "Lista Geral"): não tem `Pai ou mãe`, tem `Tem Filhos` (Sim ou Não) e `Gênero`.
+  Sim + Masculino = Pai; Sim + Feminino = Mãe; Não tira a marcação; Sim sem gênero reconhecido gera aviso e a
+  pessoa é marcada no cadastro. A coluna `Pai ou mãe` vale primeiro, se existir. `Gênero` e `Tem Filhos` só servem
+  para esse cálculo e não são guardados. Conferido em 04/11/2026 com a lista real, sem gravar: o cálculo bate com
+  as abas "Pais" e "Mães" da própria lista (`normalizarTemFilhos`, `paiOuMaeDoGenero`).
+- Na lista oficial, `Telefone` cai em "Celular" e `E-mail` em "Email Pessoal", a primeira coluna de e-mail; a
+  pessoa pode trocar por "Email Corporativo" na tela das colunas. "Telefone de Emergência" não é importado.
+- Prévia da importação (`js/ui/importador.js`): colunas sem nenhum dado ficam de fora, e os avisos ficam junto do
+  nome, para continuarem à vista nas planilhas com muitas colunas.
 - Ramal: `#/ramal` (`js/telas/ramal.js`), aba do menu para todos os papéis, por enquanto só com a tela vazia.
   Quando a lista chegar, definir os campos pelas colunas dela e criar a coleção e a regra no Firestore.
 

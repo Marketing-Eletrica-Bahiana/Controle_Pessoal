@@ -49,9 +49,10 @@ Quem tem acesso ao app vê os contatos; só a administração edita. Há dois je
 
 1. **Uma pessoa de cada vez:** edite o cadastro, escolha **Pai** ou **Mãe** em "É pai ou mãe?" e
    preencha o telefone e o e-mail.
-2. **Muitas de uma vez:** em **Importar planilha**, use as colunas `Nome`, `Pai ou mãe`, `Telefone`
-   e `E-mail`. Na coluna `Pai ou mãe`, escreva `Pai`, `Mãe` ou `Não`. Quem já está cadastrado com o
-   mesmo nome só recebe o que estiver preenchido na planilha.
+2. **Muitas de uma vez:** em **Importar planilha**, use a lista oficial de colaboradores: as colunas
+   `Tem Filhos` (Sim ou Não) e `Gênero` dizem se a pessoa é pai ou mãe, e o gênero não fica guardado.
+   Outra planilha também serve, com as colunas `Nome`, `Pai ou mãe` (`Pai`, `Mãe` ou `Não`), `Telefone` e
+   `E-mail`. Quem já está cadastrado com o mesmo nome só recebe o que estiver preenchido na planilha.
 
 Celular abre a conversa no WhatsApp; telefone fixo abre a ligação. **Baixar lista** gera a planilha
 do que está filtrado na tela.
