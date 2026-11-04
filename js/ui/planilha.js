@@ -1,5 +1,6 @@
 // Leitura e geração de planilhas com SheetJS, carregado do CDN só quando alguém precisa.
 import { erroDoApp } from '../lib/erros.js'
+import { lerTextoDoCsv } from '../lib/importacao.js'
 
 let xlsx = null
 async function carregarSheetJS() {
@@ -20,7 +21,10 @@ export async function lerPlanilha(arquivo) {
   const XLSX = await carregarSheetJS()
   let livro
   try {
-    livro = XLSX.read(await arquivo.arrayBuffer(), { type: 'array', raw: nome.endsWith('.csv') })
+    const conteudo = await arquivo.arrayBuffer()
+    livro = nome.endsWith('.csv')
+      ? XLSX.read(lerTextoDoCsv(new Uint8Array(conteudo)), { type: 'string', raw: true })
+      : XLSX.read(conteudo, { type: 'array' })
   } catch {
     throw erroDoApp('Não deu para abrir esse arquivo. Confira se é uma planilha e se não está protegida por senha.')
   }

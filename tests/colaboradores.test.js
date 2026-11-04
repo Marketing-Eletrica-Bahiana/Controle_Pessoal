@@ -5,7 +5,7 @@ import {
   filtrarPaisEMaes, liderancasAoDefinirResponsaveis, linhaDaLista, normalizarLideranca, normalizarLoja, normalizarPaiOuMae, operacoesDaImportacao,
   prepararImportacao, resumoDosSetores, validarColaborador,
 } from '../js/lib/colaboradores.js'
-import { acharCabecalho, exemplosDaColuna, extrairRegistros, nomeDaColuna, sugerirMapeamento } from '../js/lib/importacao.js'
+import { acharCabecalho, exemplosDaColuna, extrairRegistros, lerTextoDoCsv, nomeDaColuna, sugerirMapeamento } from '../js/lib/importacao.js'
 
 const setores = [
   { id: 'comercial', nome: 'Comercial', gerentes: ['g1'], supervisores: ['s1'] },
@@ -94,6 +94,30 @@ describe('colaboradores: cadastro', () => {
     assert.equal(normalizarPaiOuMae(''), '')
     assert.equal(normalizarPaiOuMae('Sim'), null)
     assert.equal(normalizarPaiOuMae('Pai e mãe'), null)
+  })
+})
+
+describe('importação: acentos do CSV', () => {
+  const texto = 'Nome;Pai ou mãe\nJoão Conceição;Mãe'
+
+  it('lê UTF-8 sem BOM, como o CSV do Google Planilhas', () => {
+    assert.equal(lerTextoDoCsv(new TextEncoder().encode(texto)), texto)
+  })
+
+  it('lê UTF-8 com BOM, como o "CSV UTF-8" do Excel, sem deixar o BOM no primeiro título', () => {
+    assert.equal(lerTextoDoCsv(new TextEncoder().encode(`﻿${texto}`)), texto)
+  })
+
+  it('lê o ANSI do Windows, como o CSV comum do Excel', () => {
+    const bytes = Uint8Array.from(texto, (letra) => letra.charCodeAt(0))
+    assert.ok(bytes.includes(0xe3), 'o "ã" precisa estar em um byte só')
+    assert.equal(lerTextoDoCsv(bytes), texto)
+  })
+
+  it('lê UTF-16 com BOM', () => {
+    const letras = [...texto].flatMap((letra) => [letra.charCodeAt(0) & 0xff, letra.charCodeAt(0) >> 8])
+    assert.equal(lerTextoDoCsv(Uint8Array.from([0xff, 0xfe, ...letras])), texto)
+    assert.equal(lerTextoDoCsv(Uint8Array.from([0xfe, 0xff, ...letras.map((_, i) => letras[i % 2 ? i - 1 : i + 1])])), texto)
   })
 })
 

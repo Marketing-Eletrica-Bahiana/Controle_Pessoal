@@ -135,6 +135,8 @@ Tela em `js/telas/colaboradores.js` (janelas em `js/telas/colaboradores/formular
   liderança e a pessoa sai da lista do setor; célula vazia não muda nada. Mudar de nível ou de setor
   pela planilha também tira a pessoa da lista antiga.
   Datas do Excel chegam como número de série. Grava em lotes de 450.
+  CSV: `lerTextoDoCsv` (`js/lib/importacao.js`) acerta os acentos do UTF-8, com ou sem BOM (Google Planilhas
+  e "CSV UTF-8" do Excel), do ANSI do Windows (CSV comum do Excel) e do UTF-16 com BOM.
 - "Baixar lista" exporta o que está filtrado na tela (`Colaboradores [setor] [loja] DD-MM-AAAA.xlsx`),
   com colunas que voltam certinho na importação.
 - SheetJS só grava a planilha (sem cor no cabeçalho: a versão gratuita não pinta células).
@@ -333,6 +335,4 @@ grava no Firestore real. Como a pasta é ignorada, ela não vem junto ao clonar 
   das regras antigas; falta ela confirmar que publicou.
 - Índice de `pessoaId` para grupos de coleção (README); sem ele, o histórico lê lista por lista.
 - Lista de ramais: a aba está vazia até a lista chegar (ver "Pais e mães e Ramal").
-- CSV em UTF-8 sem BOM (o que o Google Planilhas exporta) perde os acentos na importação
-  (`lerPlanilha` em `js/ui/planilha.js`). `.xlsx` e o "CSV UTF-8" do Excel funcionam.
 - Arquivos da Klavika em `fontes/` quando chegarem.

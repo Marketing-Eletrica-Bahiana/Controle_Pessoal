@@ -3,6 +3,18 @@
 import { lerDataDaPlanilha } from './datas.js'
 import { normalizar } from './texto.js'
 
+// Texto de um arquivo .csv. O Google Planilhas e o "CSV UTF-8" do Excel gravam em UTF-8; o "CSV" comum do
+// Excel grava no ANSI do Windows. Bytes que não são UTF-8 válido só podem ser ANSI.
+export function lerTextoDoCsv(bytes) {
+  if (bytes[0] === 0xff && bytes[1] === 0xfe) return new TextDecoder('utf-16le').decode(bytes)
+  if (bytes[0] === 0xfe && bytes[1] === 0xff) return new TextDecoder('utf-16be').decode(bytes)
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes)
+  } catch {
+    return new TextDecoder('windows-1252').decode(bytes)
+  }
+}
+
 // "A", "B", ..., "Z", "AA"...
 export function nomeDaColuna(indice) {
   let n = indice + 1
