@@ -1,6 +1,7 @@
 // Gravação de colaboradores/{id} e setores/{id}.
 // colaboradores: nome, setor (nome do setor), loja, cargo, lideranca, nascimentoDia, nascimentoMes,
-//   admissao ("AAAA-MM-DD"), ativo, criadoEm, atualizadoEm. Nascimento sem ano (LGPD).
+//   admissao ("AAAA-MM-DD"), paiOuMae ("Pai", "Mãe" ou ""), telefone (só números com DDD), email, ativo,
+//   criadoEm, atualizadoEm. Nascimento sem ano (LGPD). Cadastro antigo pode não ter paiOuMae, telefone e email.
 // setores: nome, gerentes, coordenadores e supervisores (listas de ids de colaboradores).
 //   Setor antigo pode não ter "coordenadores"; o campo aparece quando alguém entra nele.
 import {

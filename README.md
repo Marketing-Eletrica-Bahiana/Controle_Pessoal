@@ -5,11 +5,13 @@ App interno da Elétrica Bahiana para organizar, num lugar só:
 - **Dashboard** (tela inicial): números gerais, listas abertas, aniversariantes do mês, setores,
   participação das marcas, presença nos treinamentos do CAE e do Comercial.
 - **Colaboradores**: quem trabalha em cada setor e loja, com gerentes, coordenadores e supervisores.
+  A parte **Pais e mães** mostra quem é pai ou mãe na empresa, com os contatos.
 - **Aniversariantes**: do mês (nascimento) e de empresa (tempo de casa).
 - **Fornecedores**: as marcas parceiras (Soprano, Legrand, Ledvance...).
 - **Eletricistas do CAE**: cadastro dos eletricistas, com o vendedor de cada um.
 - **Listas**: listas de presença com check-in pelo celular nos treinamentos, eventos e ações
   internas, com planilha para usar no sorteador.
+- **Ramal**: lugar reservado para a lista de ramais, que será preenchida no futuro.
 - **Usuários** (só administração): quem pode entrar e com qual papel.
 
 Endereço: https://marketing-eletrica-bahiana.github.io/Controle_Pessoal/
@@ -39,6 +41,20 @@ no banco de dados.
    os check-ins ficam guardados no aparelho e sobem sozinhos quando a conexão voltar (não saia do
    app antes disso).
 5. No fim, **Baixar presentes** gera a planilha para o sorteador (a primeira coluna é "Nome").
+
+## Pais e mães
+
+A lista fica em **Colaboradores > Pais e mães** e só mostra quem está ativo e marcado no cadastro.
+Quem tem acesso ao app vê os contatos; só a administração edita. Há dois jeitos de preencher:
+
+1. **Uma pessoa de cada vez:** edite o cadastro, escolha **Pai** ou **Mãe** em "É pai ou mãe?" e
+   preencha o telefone e o e-mail.
+2. **Muitas de uma vez:** em **Importar planilha**, use as colunas `Nome`, `Pai ou mãe`, `Telefone`
+   e `E-mail`. Na coluna `Pai ou mãe`, escreva `Pai`, `Mãe` ou `Não`. Quem já está cadastrado com o
+   mesmo nome só recebe o que estiver preenchido na planilha.
+
+Celular abre a conversa no WhatsApp; telefone fixo abre a ligação. **Baixar lista** gera a planilha
+do que está filtrado na tela.
 
 ## Como cadastrar um novo usuário
 

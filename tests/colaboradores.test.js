@@ -2,8 +2,8 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
   CABECALHO_DA_LISTA, CAMPOS_DA_PLANILHA, LIDERANCAS, SEM_SETOR, ajustesDeLideranca, contarPorLoja, ehSetorComercial, filtrarColaboradores,
-  liderancasAoDefinirResponsaveis, linhaDaLista, normalizarLideranca, normalizarLoja, operacoesDaImportacao, prepararImportacao,
-  resumoDosSetores, validarColaborador,
+  filtrarPaisEMaes, liderancasAoDefinirResponsaveis, linhaDaLista, normalizarLideranca, normalizarLoja, normalizarPaiOuMae, operacoesDaImportacao,
+  prepararImportacao, resumoDosSetores, validarColaborador,
 } from '../js/lib/colaboradores.js'
 import { acharCabecalho, exemplosDaColuna, extrairRegistros, nomeDaColuna, sugerirMapeamento } from '../js/lib/importacao.js'
 
@@ -65,6 +65,58 @@ describe('colaboradores: cadastro', () => {
     assert.ok(ehSetorComercial('Vendas'))
     assert.ok(!ehSetorComercial('Logística'))
   })
+
+  it('guarda pai ou mãe, telefone só com números e e-mail em minúsculas', () => {
+    const r = validarColaborador({ ...base, paiOuMae: 'Mãe', telefone: '(71) 99999-8888', email: ' Nova.Pessoa@Exemplo.com ' }, { colaboradores, setores })
+    assert.ok(r.valido)
+    assert.equal(r.dados.paiOuMae, 'Mãe')
+    assert.equal(r.dados.telefone, '71999998888')
+    assert.equal(r.dados.email, 'nova.pessoa@exemplo.com')
+  })
+
+  it('cadastro sem contato continua valendo, e contato errado é recusado', () => {
+    const vazio = validarColaborador(base, { colaboradores, setores })
+    assert.ok(vazio.valido)
+    assert.equal(vazio.dados.paiOuMae, '')
+    assert.equal(vazio.dados.telefone, '')
+    assert.equal(vazio.dados.email, '')
+    const r = validarColaborador({ ...base, paiOuMae: 'Avó', telefone: '9999', email: 'sem-arroba' }, { colaboradores, setores })
+    assert.match(r.erros.paiOuMae, /Pai, Mãe/)
+    assert.match(r.erros.telefone, /DDD/)
+    assert.match(r.erros.email, /não parece válido/)
+  })
+
+  it('reconhece pai ou mãe escrito de vários jeitos', () => {
+    assert.equal(normalizarPaiOuMae('MAE'), 'Mãe')
+    assert.equal(normalizarPaiOuMae(' mãe '), 'Mãe')
+    assert.equal(normalizarPaiOuMae('Pai'), 'Pai')
+    assert.equal(normalizarPaiOuMae('não'), '')
+    assert.equal(normalizarPaiOuMae(''), '')
+    assert.equal(normalizarPaiOuMae('Sim'), null)
+    assert.equal(normalizarPaiOuMae('Pai e mãe'), null)
+  })
+})
+
+describe('colaboradores: pais e mães', () => {
+  const pessoas = [
+    { id: 'a', nome: 'Ana', setor: 'Comercial', loja: 'Aracaju', paiOuMae: 'Mãe', ativo: true },
+    { id: 'b', nome: 'Bruno', setor: 'Logística', loja: 'Aracaju', paiOuMae: 'Pai', ativo: true },
+    { id: 'c', nome: 'Carla', setor: 'Comercial', loja: 'Lauro de Freitas', paiOuMae: 'Mãe', ativo: false },
+    { id: 'd', nome: 'Davi', setor: 'Comercial', loja: 'Aracaju', paiOuMae: '', ativo: true },
+    { id: 'e', nome: 'Elis', setor: 'Comercial', loja: 'Aracaju', ativo: true },
+  ]
+
+  it('mostra só quem está ativo e marcado (cadastro antigo fica de fora)', () => {
+    assert.deepEqual(filtrarPaisEMaes(pessoas).map((c) => c.id), ['a', 'b'])
+  })
+
+  it('filtra por pai ou mãe, setor, loja e busca', () => {
+    assert.deepEqual(filtrarPaisEMaes(pessoas, { tipo: 'Mãe' }).map((c) => c.id), ['a'])
+    assert.deepEqual(filtrarPaisEMaes(pessoas, { tipo: 'Pai' }).map((c) => c.id), ['b'])
+    assert.deepEqual(filtrarPaisEMaes(pessoas, { setor: 'logistica' }).map((c) => c.id), ['b'])
+    assert.deepEqual(filtrarPaisEMaes(pessoas, { loja: 'Lauro de Freitas' }), [])
+    assert.deepEqual(filtrarPaisEMaes(pessoas, { busca: 'ana' }).map((c) => c.id), ['a'])
+  })
 })
 
 describe('colaboradores: lista e setores', () => {
@@ -110,7 +162,18 @@ describe('colaboradores: lista e setores', () => {
 
   it('exporta a lista com aniversário sem ano', () => {
     assert.equal(CABECALHO_DA_LISTA[0], 'Nome')
-    assert.deepEqual(linhaDaLista({ nome: 'A', setor: 'B', loja: 'Aracaju', cargo: '', lideranca: '', nascimentoDia: 5, nascimentoMes: 3, admissao: '2020-03-01', ativo: true }), ['A', 'B', 'Aracaju', '', '', '05/03', '01/03/2020', 'Ativo'])
+    assert.deepEqual(linhaDaLista({ nome: 'A', setor: 'B', loja: 'Aracaju', cargo: '', lideranca: '', nascimentoDia: 5, nascimentoMes: 3, admissao: '2020-03-01', ativo: true }), ['A', 'B', 'Aracaju', '', '', '05/03', '01/03/2020', '', '', '', 'Ativo'])
+  })
+
+  it('a planilha baixada volta na importação com pai ou mãe e contatos', () => {
+    const c = { id: 'v1', nome: 'Vítor Vendedor', setor: 'Comercial', loja: 'Aracaju', paiOuMae: 'Pai', telefone: '71999998888', email: 'vitor@exemplo.com', ativo: true }
+    assert.equal(CABECALHO_DA_LISTA.length, linhaDaLista(c).length)
+    const linhas = [CABECALHO_DA_LISTA, linhaDaLista(c)]
+    const mapa = sugerirMapeamento(linhas[0], CAMPOS_DA_PLANILHA)
+    const previa = prepararImportacao({ registros: extrairRegistros(linhas, 0, mapa), colaboradores, setores })
+    const { paiOuMae, telefone, email } = previa.itens[0].dados
+    assert.deepEqual({ paiOuMae, telefone, email }, { paiOuMae: 'Pai', telefone: '71999998888', email: 'vitor@exemplo.com' })
+    assert.deepEqual(previa.itens[0].avisos, [])
   })
 })
 
@@ -214,10 +277,43 @@ describe('importação de planilha', () => {
     const indice = acharCabecalho(linhas, CAMPOS_DA_PLANILHA)
     assert.equal(indice, 2)
     const mapa = sugerirMapeamento(linhas[indice], CAMPOS_DA_PLANILHA)
-    assert.deepEqual(mapa, { nome: 0, setor: 1, loja: 2, cargo: 3, lideranca: 4, nascimento: 5, admissao: 6 })
+    assert.deepEqual(mapa, { nome: 0, setor: 1, loja: 2, cargo: 3, lideranca: 4, nascimento: 5, admissao: 6, paiOuMae: -1, telefone: -1, email: -1 })
     assert.equal(nomeDaColuna(0), 'A')
     assert.equal(nomeDaColuna(27), 'AB')
     assert.deepEqual(exemplosDaColuna(linhas, indice, 1, 2), ['Comercial', 'Financeiro'])
+  })
+
+  it('não confunde "Nome da mãe" com a coluna "Pai ou mãe"', () => {
+    const cabecalho = ['Nome', 'Nome da mãe', 'Nome do pai', 'Celular', 'E-mail corporativo']
+    const mapa = sugerirMapeamento(cabecalho, CAMPOS_DA_PLANILHA)
+    assert.equal(mapa.nome, 0)
+    assert.equal(mapa.paiOuMae, -1)
+    assert.equal(mapa.telefone, 3)
+    assert.equal(mapa.email, 4)
+  })
+
+  it('importa pai ou mãe e contatos, com aviso no que não entende', () => {
+    const registros = [
+      { linha: 2, valores: { nome: 'Nova Mãe', paiOuMae: 'mãe', telefone: 71999998888, email: 'NOVA@exemplo.com' } },
+      { linha: 3, valores: { nome: 'Pessoa Duvidosa', paiOuMae: 'Sim', telefone: '123', email: 'sem-arroba' } },
+      { linha: 4, valores: { nome: 'Vítor Vendedor', paiOuMae: '', telefone: '', email: '' } },
+    ]
+    const previa = prepararImportacao({ registros, colaboradores, setores })
+    const [nova, duvidosa, vitor] = previa.itens
+    assert.equal(nova.dados.paiOuMae, 'Mãe')
+    assert.equal(nova.dados.telefone, '71999998888')
+    assert.equal(nova.dados.email, 'nova@exemplo.com')
+    assert.equal(duvidosa.avisos.length, 3)
+    assert.ok(!('paiOuMae' in duvidosa.dados) && !('telefone' in duvidosa.dados) && !('email' in duvidosa.dados))
+    // Célula vazia não muda nada em quem já existe.
+    assert.deepEqual(vitor.dados, { nome: 'Vítor Vendedor' })
+
+    let n = 0
+    const ops = operacoesDaImportacao(previa, { setores, novoId: () => `novo${++n}`, agora: () => 'AGORA', incluirNaLista: () => 0, tirarDaLista: () => 0 })
+    const criada = ops.find((o) => o.dados.nome === 'Nova Mãe')
+    assert.equal(criada.dados.paiOuMae, 'Mãe')
+    assert.equal(ops.find((o) => o.dados.nome === 'Pessoa Duvidosa').dados.paiOuMae, '')
+    assert.ok(!ops.some((o) => o.caminho === 'colaboradores/v1'))
   })
 
   it('monta a prévia com novos, existentes, repetidos e avisos', () => {

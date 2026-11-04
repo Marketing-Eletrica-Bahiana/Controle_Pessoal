@@ -1,7 +1,8 @@
 // Janelas da aba Colaboradores: cadastro e edição, responsáveis do setor e importação de planilha.
 import { LOJAS } from '../../config.js'
 import { definirResponsaveis, importarColaboradores, salvarColaborador } from '../../dados/colaboradores.js'
-import { CAMPOS_DA_PLANILHA, LIDERANCAS, NIVEIS_DE_LIDERANCA, aniversarioDe, prepararImportacao, validarColaborador } from '../../lib/colaboradores.js'
+import { CAMPOS_DA_PLANILHA, LIDERANCAS, NIVEIS_DE_LIDERANCA, PAI_OU_MAE, aniversarioDe, prepararImportacao, validarColaborador } from '../../lib/colaboradores.js'
+import { formatarWhatsapp, mascararTelefone } from '../../lib/contato.js'
 import { formatarData, formatarDiaMes, mascararData, mascararDiaMes } from '../../lib/datas.js'
 import { mensagemDeErro } from '../../lib/erros.js'
 import { combinaBusca, compararTexto, normalizar } from '../../lib/texto.js'
@@ -44,6 +45,21 @@ export function abrirFormularioColaborador({ colaborador = null, dados, aoSalvar
       opcional: true,
       entrada: entradaComMascara(mascararData, { value: formatarData(colaborador?.admissao), placeholder: 'DD/MM/AAAA', maxlength: 10 }),
     }),
+    telefone: campo({
+      rotulo: 'Telefone ou WhatsApp',
+      opcional: true,
+      entrada: entradaComMascara(mascararTelefone, { value: formatarWhatsapp(colaborador?.telefone), placeholder: '(71) 99999-9999', inputmode: 'tel', maxlength: 16 }),
+    }),
+    email: campo({
+      rotulo: 'E-mail',
+      opcional: true,
+      entrada: entradaTexto({ type: 'email', value: colaborador?.email ?? '', inputmode: 'email', autocapitalize: 'none', spellcheck: 'false', maxlength: 120 }),
+    }),
+    paiOuMae: campo({
+      rotulo: 'É pai ou mãe?',
+      entrada: selecao([{ valor: '', rotulo: 'Não' }, ...PAI_OU_MAE.map((p) => p.valor)], colaborador?.paiOuMae ?? ''),
+      ajuda: 'Quem for pai ou mãe aparece em Colaboradores > Pais e mães, com os contatos.',
+    }),
   }
 
   const caixaDeErro = el('div')
@@ -55,6 +71,8 @@ export function abrirFormularioColaborador({ colaborador = null, dados, aoSalvar
     el('div', { class: 'formulario__linha' }, campos.setor.no, campos.loja.no),
     el('div', { class: 'formulario__linha' }, campos.cargo.no, campos.lideranca.no),
     el('div', { class: 'formulario__linha' }, campos.aniversario.no, campos.admissao.no),
+    el('div', { class: 'formulario__linha' }, campos.telefone.no, campos.email.no),
+    campos.paiOuMae.no,
     listaDeSetores,
     caixaDeErro,
     el('div', { class: 'janela-modal__acoes' }, botao({ texto: 'Cancelar', aoClicar: () => janela.fechar() }), salvar),
@@ -223,6 +241,9 @@ export function abrirImportacaoColaboradores({ dados }) {
       { rotulo: 'Liderança', celula: (i) => (i.dados?.lideranca ? etiqueta(i.dados.lideranca) : '') },
       { rotulo: 'Aniversário', celula: (i) => formatarDiaMes(i.dados?.nascimentoDia, i.dados?.nascimentoMes) },
       { rotulo: 'Admissão', celula: (i) => formatarData(i.dados?.admissao) },
+      { rotulo: 'Pai ou mãe', celula: (i) => i.dados?.paiOuMae ?? '' },
+      { rotulo: 'Telefone', celula: (i) => formatarWhatsapp(i.dados?.telefone) },
+      { rotulo: 'E-mail', celula: (i) => i.dados?.email ?? '' },
     ],
     contarGravacoes: (previa, opcoes) => previa.contagem.novos + (opcoes.atualizar ? previa.contagem.existentes : 0),
     gravar: (previa, opcoes, aoAvancar) => importarColaboradores(previa, { setores: dados().setores, atualizarExistentes: opcoes.atualizar }, aoAvancar),

@@ -80,7 +80,12 @@ describe('papéis e permissões', () => {
   it('Usuários só aparece para admin', () => {
     assert.ok(abasDoPapel('admin').some((a) => a.id === 'usuarios'))
     assert.ok(!abasDoPapel('organizador').some((a) => a.id === 'usuarios'))
-    assert.equal(abasDoPapel('organizador').length, 6)
+    assert.equal(abasDoPapel('organizador').length, 7)
+  })
+
+  it('Ramal aparece para todos os papéis', () => {
+    assert.ok(abasDoPapel('admin').some((a) => a.id === 'ramal'))
+    assert.ok(abasDoPapel('organizador').some((a) => a.id === 'ramal'))
   })
 
   it('organizador faz check-in, cadastra eletricista e baixa listas, mas não edita cadastros', () => {

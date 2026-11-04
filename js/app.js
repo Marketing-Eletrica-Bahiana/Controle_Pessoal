@@ -19,6 +19,7 @@ const TELAS = {
   fornecedores: () => import('./telas/fornecedores.js'),
   eletricistas: () => import('./telas/eletricistas.js'),
   listas: () => import('./telas/listas.js'),
+  ramal: () => import('./telas/ramal.js'),
   usuarios: () => import('./telas/usuarios.js'),
 }
 

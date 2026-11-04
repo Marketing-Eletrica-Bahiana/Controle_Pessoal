@@ -1,7 +1,7 @@
 # Controle Pessoal | Elétrica Bahiana (EB)
 
-App interno com colaboradores, setores, aniversariantes, fornecedores, eletricistas do CAE e
-listas de presença com check-in pelo celular. Explicação para quem usa no `README.md`.
+App interno com colaboradores (inclusive pais e mães, com contatos), setores, aniversariantes,
+fornecedores, eletricistas do CAE, listas de presença com check-in pelo celular e ramais. Explicação para quem usa no `README.md`.
 
 - Repositório (público): https://github.com/Marketing-Eletrica-Bahiana/Controle_Pessoal
 - Endereço publicado: https://marketing-eletrica-bahiana.github.io/Controle_Pessoal/
@@ -28,6 +28,7 @@ listas de presença com check-in pelo celular. Explicação para quem usa no `RE
 4. (Feita) Listas de presença e check-in (ver "Listas").
 5. (Feita) Aniversariantes (ver "Aniversariantes").
 6. (Feita) Dashboard e revisão geral (ver "Dashboard" e "Revisão").
+7. (Feita) Pais e mães, contatos dos colaboradores e aba Ramal (ver "Pais e mães e Ramal").
 
 A pessoa autorizou fazer as etapas 2 a 6 em sequência, sem pedir aprovação entre elas, depois de
 conferida a integração da Etapa 1.
@@ -81,8 +82,10 @@ Nomes exatos (as regras dependem deles):
 - `colaboradores/{id}`: `nome`, `setor` (nome do setor), `loja` (`"Salvador (Matriz)"`,
   `"Lauro de Freitas"` ou `"Aracaju"`; `LOJAS` em `js/config.js`), `cargo`, `lideranca`
   (`"Gerente"`, `"Coordenador"`, `"Supervisor"` ou `""`), `nascimentoDia` e `nascimentoMes` (números ou null; o
-  ano nunca é guardado, LGPD), `admissao` (`"AAAA-MM-DD"` ou null), `ativo`, `criadoEm`,
-  `atualizadoEm`. IDs automáticos.
+  ano nunca é guardado, LGPD), `admissao` (`"AAAA-MM-DD"` ou null), `paiOuMae` (`"Pai"`, `"Mãe"` ou `""`),
+  `telefone` (só números com DDD, 10 ou 11), `email` (minúsculas), `ativo`, `criadoEm`,
+  `atualizadoEm`. IDs automáticos. Cadastro antigo pode não ter `paiOuMae`, `telefone` e `email`: o
+  código trata como vazio e os campos aparecem quando a pessoa é salva.
 - `setores/{id}`: `nome`, `gerentes`, `coordenadores` e `supervisores` (listas de IDs de
   colaboradores). Setor antigo pode não ter `coordenadores`: o código trata como lista vazia e o
   campo aparece quando alguém entra nele. ID tirado do nome sem acentos (`"recursos-humanos"`),
@@ -222,6 +225,24 @@ Telas em `js/telas/aniversariantes.js` (mês) e `js/telas/aniversariantes/` (`co
   empresa" com o status do controle ("Controle não gerado" quando não existe). O controle também
   tem "Baixar planilha" própria.
 
+## Pais e mães e Ramal (Etapa 7)
+
+- Pais e mães: `#/colaboradores/pais-e-maes`, terceira parte da aba Colaboradores (`desenharPaisEMaes` em
+  `js/telas/colaboradores.js`; regras em `filtrarPaisEMaes` e `PAI_OU_MAE`, `js/lib/colaboradores.js`). Só
+  ativos com `paiOuMae` preenchido. Indicadores (total, pais, mães), busca e filtros de pai ou mãe, setor e
+  loja, guardados ao navegar. "Baixar lista" exporta o que está filtrado na tela.
+- Contatos (`js/telas/colaboradores/contatos.js`): celular abre o WhatsApp, fixo abre a ligação, e-mail abre
+  o `mailto:`. Aparecem em Pais e mães e na ficha. Quem tem acesso ao app vê; só o admin edita (as regras de
+  `colaboradores` já cobrem, sem mudança no `firestore.rules`). Não há caixa de autorização LGPD para
+  colaboradores, ao contrário dos eletricistas.
+- Telefone, WhatsApp e e-mail ficam em `js/lib/contato.js`; `js/lib/eletricistas.js` e `js/lib/usuarios.js`
+  reexportam o que outros arquivos já importavam deles.
+- Planilha: colunas `Pai ou mãe` (Pai, Mãe ou Não), `Telefone` e `E-mail`. Sinônimos sem "pai" ou "mae" soltos,
+  para "Nome da mãe" não ser confundida. "Sim" gera aviso: não diz se é pai ou mãe. Célula vazia não muda nada.
+- Prévia da importação (`js/ui/importador.js`): colunas sem nenhum dado ficam de fora, para os avisos caberem.
+- Ramal: `#/ramal` (`js/telas/ramal.js`), aba do menu para todos os papéis, por enquanto só com a tela vazia.
+  Quando a lista chegar, definir os campos pelas colunas dela e criar a coleção e a regra no Firestore.
+
 ## Papéis
 
 - `admin`: cadastra, edita e apaga tudo e gerencia usuários.
@@ -276,7 +297,7 @@ carregado só aqui, só cores da paleta, sem animação com `prefers-reduced-mot
   check-in, adicionar não convocado e marcar status de aniversariantes.
 - Erros: tudo passa por `mensagemDeErro` (`js/lib/erros.js`), em português.
 - Cores e textos: só as 7 cores da paleta (conferido por busca de `#...` e `rgba(...)`), sem
-  travessão. Ícones: só os usados (59).
+  travessão. Ícones: só os usados (60).
 - Desempenho das consultas:
   - Coleções pequenas (`colaboradores`, `setores`, `fornecedores`, `listas`) têm um ouvinte só,
     compartilhado entre as telas (`js/dados/fontes.js`); `eletricistas` só nas telas que precisam.
@@ -289,11 +310,11 @@ carregado só aqui, só cores da paleta, sem animação com `prefers-reduced-mot
 
 ## Demonstração local (fora do repositório)
 
-`.claude/demo/` (ignorada pelo git): `servidor.mjs` serve a pasta em `http://localhost:5180/` e
+`.claude/demo/` (ignorada pelo git): `servidor.mjs` serve a pasta em `http://localhost:5181/` e
 `/demo.html`, que é o `index.html` com `js/dados/banco.js` trocado (pelo import map) por
 `banco-demo.js`, um banco de mentira no `localStorage` com dados de `semente.js`. Papel pela URL:
-`/demo.html?papel=admin|organizador|semacesso|fora`; `?zerar` volta à semente. Nunca grava no
-Firestore real.
+`/demo.html?papel=admin|organizador`; `?vazio` começa sem pais e mães; `?zerar` volta à semente. Nunca
+grava no Firestore real. Como a pasta é ignorada, ela não vem junto ao clonar o repositório.
 
 ## Notas técnicas
 
@@ -311,4 +332,7 @@ Firestore real.
   grupo de `presencas`). Em 31/10/2026 a pessoa decidiu publicar este arquivo no console no lugar
   das regras antigas; falta ela confirmar que publicou.
 - Índice de `pessoaId` para grupos de coleção (README); sem ele, o histórico lê lista por lista.
+- Lista de ramais: a aba está vazia até a lista chegar (ver "Pais e mães e Ramal").
+- CSV em UTF-8 sem BOM (o que o Google Planilhas exporta) perde os acentos na importação
+  (`lerPlanilha` em `js/ui/planilha.js`). `.xlsx` e o "CSV UTF-8" do Excel funcionam.
 - Arquivos da Klavika em `fontes/` quando chegarem.

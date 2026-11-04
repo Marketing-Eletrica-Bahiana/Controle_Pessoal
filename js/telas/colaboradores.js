@@ -1,11 +1,12 @@
-// Aba Colaboradores: lista geral, visão por setor, setor aberto e ficha de cada pessoa.
-// Endereços: #/colaboradores, #/colaboradores/setores, #/colaboradores/setores/{id}, #/colaboradores/ficha/{id}
+// Aba Colaboradores: lista geral, visão por setor, setor aberto, pais e mães e ficha de cada pessoa.
+// Endereços: #/colaboradores, #/colaboradores/setores, #/colaboradores/setores/{id},
+// #/colaboradores/pais-e-maes, #/colaboradores/ficha/{id}
 import { LOJAS } from '../config.js'
 import { definirAtivoColaborador } from '../dados/colaboradores.js'
 import { ouvirFontes } from '../dados/fontes.js'
 import {
-  CABECALHO_DA_LISTA, NIVEIS_DE_LIDERANCA, SEM_SETOR, aniversarioDe, contarPorLoja, filtrarColaboradores, linhaDaLista,
-  resumoDosSetores,
+  CABECALHO_DA_LISTA, NIVEIS_DE_LIDERANCA, PAI_OU_MAE, SEM_SETOR, aniversarioDe, contarPorLoja, filtrarColaboradores, filtrarPaisEMaes,
+  linhaDaLista, resumoDosSetores,
 } from '../lib/colaboradores.js'
 import { formatarData, hojeISO, partesDeHoje } from '../lib/datas.js'
 import { mensagemDeErro } from '../lib/erros.js'
@@ -18,12 +19,14 @@ import {
 } from '../ui/componentes.js'
 import { el, trocar } from '../ui/dom.js'
 import { baixarPlanilha } from '../ui/planilha.js'
+import { contatosDoColaborador, emailDoColaborador, telefoneDoColaborador } from './colaboradores/contatos.js'
 import { abrirFormularioColaborador, abrirImportacaoColaboradores, abrirResponsaveis } from './colaboradores/formularios.js'
 import { liderancaDoSetor } from './colaboradores/lideranca.js'
 import { historicoDaPessoa } from './listas/historico.js'
 
 // Filtros ficam guardados enquanto a pessoa navega (ex.: abre uma ficha e volta).
 const filtros = { busca: '', setor: '', loja: '', lideranca: '', situacao: 'ativos' }
+const filtrosDePais = { busca: '', tipo: '', setor: '', loja: '' }
 
 export function montar(raiz, { pessoa, params }) {
   const [parte, id] = params
@@ -32,7 +35,7 @@ export function montar(raiz, { pessoa, params }) {
   let erro = null
   const atuais = () => dados ?? { colaboradores: [], setores: [] }
 
-  const vista = parte === 'setores' && id ? 'setor' : parte === 'setores' ? 'setores' : parte === 'ficha' && id ? 'ficha' : 'lista'
+  const vista = parte === 'setores' && id ? 'setor' : parte === 'setores' ? 'setores' : parte === 'ficha' && id ? 'ficha' : parte === 'pais-e-maes' ? 'pais' : 'lista'
   const area = el('div', { class: 'pagina' })
   raiz.replaceChildren(area)
 
@@ -46,6 +49,7 @@ export function montar(raiz, { pessoa, params }) {
     if (vista === 'lista') desenharLista()
     else if (vista === 'setores') desenharSetores()
     else if (vista === 'setor') desenharSetor()
+    else if (vista === 'pais') desenharPaisEMaes()
     else desenharFicha()
   }
 
@@ -64,10 +68,17 @@ export function montar(raiz, { pessoa, params }) {
       }),
       abas([
         { rotulo: 'Todos', icone: 'users', href: '#/colaboradores', ativo: vista === 'lista' },
-        { rotulo: 'Por setor', icone: 'building-2', href: '#/colaboradores/setores', ativo: vista !== 'lista' },
+        { rotulo: 'Por setor', icone: 'building-2', href: '#/colaboradores/setores', ativo: vista === 'setores' },
+        { rotulo: 'Pais e mães', icone: 'baby', href: '#/colaboradores/pais-e-maes', ativo: vista === 'pais' },
       ]),
     ]
   }
+
+  const opcoesDeSetor = () => [
+    { valor: '', rotulo: 'Todos os setores' },
+    ...[...dados.setores].sort((a, b) => compararTexto(a.nome, b.nome)).map((s) => ({ valor: s.nome, rotulo: s.nome })),
+    { valor: SEM_SETOR, rotulo: 'Sem setor' },
+  ]
 
   // Lista geral
 
@@ -85,12 +96,7 @@ export function montar(raiz, { pessoa, params }) {
       fixos.lista = { resultado, filtrosCaixa, busca }
       trocar(area, ...cabecalhoDaAba(), filtrosCaixa, resultado)
     }
-    const { colaboradores, setores } = dados
-    const opcoesDeSetor = [
-      { valor: '', rotulo: 'Todos os setores' },
-      ...[...setores].sort((a, b) => compararTexto(a.nome, b.nome)).map((s) => ({ valor: s.nome, rotulo: s.nome })),
-      { valor: SEM_SETOR, rotulo: 'Sem setor' },
-    ]
+    const { colaboradores } = dados
     const mudar = (chave) => (valor) => {
       filtros[chave] = valor
       desenharResultado()
@@ -98,7 +104,7 @@ export function montar(raiz, { pessoa, params }) {
     trocar(
       fixos.lista.filtrosCaixa,
       fixos.lista.busca.no,
-      filtroSelecao({ rotulo: 'Setor', opcoes: opcoesDeSetor, valor: filtros.setor, aoMudar: mudar('setor') }),
+      filtroSelecao({ rotulo: 'Setor', opcoes: opcoesDeSetor(), valor: filtros.setor, aoMudar: mudar('setor') }),
       filtroSelecao({ rotulo: 'Loja', opcoes: [{ valor: '', rotulo: 'Todas as lojas' }, ...LOJAS], valor: filtros.loja, aoMudar: mudar('loja') }),
       filtroSelecao({
         rotulo: 'Liderança',
@@ -220,6 +226,103 @@ export function montar(raiz, { pessoa, params }) {
     }
   }
 
+  // Pais e mães: só quem está ativo e marcado no cadastro, com os contatos.
+
+  function desenharPaisEMaes() {
+    const todos = filtrarPaisEMaes(dados.colaboradores)
+    if (!todos.length) {
+      fixos.pais = null
+      return trocar(
+        area,
+        ...cabecalhoDaAba(),
+        estadoVazio({
+          titulo: 'Nenhum pai ou mãe marcado ainda',
+          texto: admin
+            ? 'Edite o cadastro da pessoa e escolha Pai ou Mãe, com o telefone e o e-mail. Para muitas pessoas de uma vez, importe uma planilha com as colunas "Pai ou mãe", "Telefone" e "E-mail".'
+            : 'Assim que a administração marcar quem é pai ou mãe, as pessoas aparecem aqui com os contatos.',
+          acoes: admin ? [botao({ texto: 'Importar planilha', icone: 'file-spreadsheet', variante: 'principal', aoClicar: () => abrirImportacaoColaboradores({ dados: atuais }) })] : [],
+        }),
+      )
+    }
+    if (!fixos.pais || !area.contains(fixos.pais.resultado)) {
+      const resumo = el('div')
+      const filtrosCaixa = el('div', { class: 'filtros' })
+      const resultado = el('div', { class: 'pagina__resultado' })
+      const busca = campoBusca({
+        valor: filtrosDePais.busca,
+        aoDigitar: (v) => {
+          filtrosDePais.busca = v
+          desenharResultadoDePais()
+        },
+      })
+      fixos.pais = { resumo, filtrosCaixa, resultado, busca }
+      trocar(area, ...cabecalhoDaAba(), resumo, filtrosCaixa, resultado)
+    }
+    const mudar = (chave) => (valor) => {
+      filtrosDePais[chave] = valor
+      desenharResultadoDePais()
+    }
+    trocar(
+      fixos.pais.resumo,
+      indicadores([
+        { rotulo: 'Pais e mães', valor: formatarNumero(todos.length) },
+        ...PAI_OU_MAE.map((p) => ({ rotulo: p.plural, valor: formatarNumero(todos.filter((c) => c.paiOuMae === p.valor).length) })),
+      ]),
+    )
+    trocar(
+      fixos.pais.filtrosCaixa,
+      fixos.pais.busca.no,
+      filtroSelecao({
+        rotulo: 'Pai ou mãe',
+        opcoes: [{ valor: '', rotulo: 'Todos' }, ...PAI_OU_MAE.map((p) => ({ valor: p.valor, rotulo: p.plural }))],
+        valor: filtrosDePais.tipo,
+        aoMudar: mudar('tipo'),
+      }),
+      filtroSelecao({ rotulo: 'Setor', opcoes: opcoesDeSetor(), valor: filtrosDePais.setor, aoMudar: mudar('setor') }),
+      filtroSelecao({ rotulo: 'Loja', opcoes: [{ valor: '', rotulo: 'Todas as lojas' }, ...LOJAS], valor: filtrosDePais.loja, aoMudar: mudar('loja') }),
+    )
+    desenharResultadoDePais()
+  }
+
+  function desenharResultadoDePais() {
+    const lista = filtrarPaisEMaes(dados.colaboradores, filtrosDePais)
+    const titulo = PAI_OU_MAE.find((p) => p.valor === filtrosDePais.tipo)?.plural ?? 'Pais e mães'
+    const nomeDoSetor = filtrosDePais.setor === SEM_SETOR ? 'Sem setor' : filtrosDePais.setor
+    trocar(
+      fixos.pais.resultado,
+      el(
+        'div',
+        { class: 'pagina__barra' },
+        el('p', { class: 'texto-suave' }, plural(lista.length, 'pessoa', 'pessoas')),
+        botaoBaixar(lista, [titulo, nomeDoSetor, filtrosDePais.loja].filter(Boolean).join(' ')),
+      ),
+      lista.length ? tabelaDePaisEMaes(lista) : aviso('Ninguém encontrado com esses filtros.'),
+    )
+  }
+
+  function tabelaDePaisEMaes(lista) {
+    return listaComLimite(lista, (itens) =>
+      tabela({
+        itens,
+        colunas: [
+          {
+            rotulo: 'Nome',
+            principal: true,
+            celula: (c) => [el('a', { class: 'tabela__nome', href: endereco('colaboradores', 'ficha', c.id) }, c.nome), etiqueta(c.paiOuMae, 'marinho')],
+          },
+          { rotulo: 'Contatos', celula: (c) => contatosDoColaborador(c) },
+          { rotulo: 'Setor', celula: (c) => c.setor || 'Sem setor' },
+          { rotulo: 'Loja', celula: (c) => c.loja || 'Sem loja' },
+          admin && {
+            rotulo: 'Ações',
+            classe: 'tabela__acoes',
+            celula: (c) => botaoIcone({ icone: 'pencil', rotulo: `Editar ${c.nome}`, aoClicar: () => abrirFormularioColaborador({ colaborador: c, dados: atuais }) }),
+          },
+        ].filter(Boolean),
+      }),
+    )
+  }
+
   // Visão por setor
 
   function desenharSetores() {
@@ -322,6 +425,9 @@ export function montar(raiz, { pessoa, params }) {
           ['Liderança', c.lideranca || 'Sem liderança'],
           ['Aniversário', aniversarioDe(c)],
           ['Admissão', c.admissao ? `${formatarData(c.admissao)}${anos !== null && anos >= 1 ? ` (${plural(anos, 'ano', 'anos')} de casa)` : ''}` : ''],
+          ['Telefone', telefoneDoColaborador(c)],
+          ['E-mail', emailDoColaborador(c)],
+          ['Pai ou mãe', c.paiOuMae || 'Não'],
         ]),
       ),
       fixos.historico,

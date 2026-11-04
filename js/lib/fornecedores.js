@@ -1,8 +1,6 @@
 // Regras dos fornecedores (marcas parceiras).
 import { compararTexto, combinaBusca, limparEspacos, normalizar } from './texto.js'
-import { mascararTelefone } from './eletricistas.js'
-
-const FORMATO_EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
+import { FORMATO_EMAIL, mascararTelefone } from './contato.js'
 
 // entrada: { nome, contatoNome, contatoEmail, contatoTelefone }. Só o nome é obrigatório.
 export function validarFornecedor(entrada, { fornecedores = [], idAtual = null } = {}) {

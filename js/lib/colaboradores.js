@@ -1,5 +1,6 @@
 // Regras dos colaboradores e setores: validação, filtros, lideranças e importação de planilha.
 import { LOJAS } from '../config.js'
+import { FORMATO_EMAIL, formatarWhatsapp, normalizarEmail, normalizarWhatsapp } from './contato.js'
 import { formatarData, formatarDiaMes, hojeISO, lerData, lerDataDaPlanilha, lerDiaMes, montarISO } from './datas.js'
 import { compararTexto, combinaBusca, limparEspacos, normalizar, paraId } from './texto.js'
 
@@ -12,6 +13,12 @@ export const NIVEIS_DE_LIDERANCA = [
 export const LIDERANCAS = NIVEIS_DE_LIDERANCA.map((n) => n.valor)
 export const SEM_SETOR = '__sem-setor'
 
+// Pais e mães da empresa: marcação no cadastro de cada pessoa ("" = não marcada).
+export const PAI_OU_MAE = [
+  { valor: 'Pai', plural: 'Pais' },
+  { valor: 'Mãe', plural: 'Mães' },
+]
+
 // Campos da planilha de importação (a ordem é a da tela).
 export const CAMPOS_DA_PLANILHA = [
   { chave: 'nome', rotulo: 'Nome', obrigatorio: true, sinonimos: ['nome', 'nome completo', 'colaborador', 'colaboradora', 'funcionario', 'funcionaria'] },
@@ -21,6 +28,10 @@ export const CAMPOS_DA_PLANILHA = [
   { chave: 'lideranca', rotulo: 'Liderança', sinonimos: ['lideranca', 'lider', 'gestao'] },
   { chave: 'nascimento', rotulo: 'Data de nascimento', tipo: 'data', sinonimos: ['data de nascimento', 'nascimento', 'aniversario', 'data nascimento', 'dt nascimento'] },
   { chave: 'admissao', rotulo: 'Data de admissão', tipo: 'data', sinonimos: ['data de admissao', 'admissao', 'data admissao', 'dt admissao', 'contratacao'] },
+  // Sem "pai" ou "mae" soltos: colunas como "Nome da mãe" não podem ser confundidas com esta.
+  { chave: 'paiOuMae', rotulo: 'Pai ou mãe', sinonimos: ['pai ou mae', 'mae ou pai', 'pai mae', 'mae pai'] },
+  { chave: 'telefone', rotulo: 'Telefone', sinonimos: ['telefone', 'celular', 'whatsapp', 'whats', 'fone'] },
+  { chave: 'email', rotulo: 'E-mail', sinonimos: ['email', 'e mail'] },
 ]
 
 // Loja escrita de qualquer jeito vira uma das três lojas fixas (ou null).
@@ -40,6 +51,12 @@ export function normalizarLideranca(texto) {
   if (t.includes('coorden')) return 'Coordenador'
   if (t.includes('supervis')) return 'Supervisor'
   return null
+}
+
+export function normalizarPaiOuMae(texto) {
+  const t = normalizar(texto)
+  if (!t || ['nao', 'nenhum', 'nenhuma', 'sem', 'n'].includes(t)) return ''
+  return PAI_OU_MAE.find((p) => normalizar(p.valor) === t)?.valor ?? null
 }
 
 export const acharSetor = (setores, nome) => {
@@ -65,6 +82,9 @@ export function validarColaborador(entrada, { colaboradores = [], setores = [], 
   const setor = acharSetor(setores, setorDigitado)?.nome ?? setorDigitado
   const cargo = limparEspacos(entrada.cargo)
   const lideranca = entrada.lideranca ?? ''
+  const paiOuMae = entrada.paiOuMae ?? ''
+  const telefone = normalizarWhatsapp(entrada.telefone)
+  const email = normalizarEmail(entrada.email)
 
   if (!nome) erros.nome = 'Informe o nome.'
   else if (nome.length > 120) erros.nome = 'Use até 120 letras.'
@@ -76,6 +96,9 @@ export function validarColaborador(entrada, { colaboradores = [], setores = [], 
   if (!LOJAS.includes(entrada.loja)) erros.loja = 'Escolha a loja.'
   if (cargo.length > 80) erros.cargo = 'Use até 80 letras.'
   if (!['', ...LIDERANCAS].includes(lideranca)) erros.lideranca = 'Escolha a liderança.'
+  if (paiOuMae && !PAI_OU_MAE.some((p) => p.valor === paiOuMae)) erros.paiOuMae = 'Escolha Pai, Mãe ou Não.'
+  if (telefone === null) erros.telefone = 'Use o número com DDD, por exemplo (71) 99999-9999.'
+  if (email && !FORMATO_EMAIL.test(email)) erros.email = 'Esse e-mail não parece válido.'
 
   let nascimento = null
   if (limparEspacos(entrada.aniversario)) {
@@ -101,6 +124,9 @@ export function validarColaborador(entrada, { colaboradores = [], setores = [], 
       nascimentoDia: nascimento?.dia ?? null,
       nascimentoMes: nascimento?.mes ?? null,
       admissao,
+      paiOuMae,
+      telefone: telefone ?? '',
+      email,
     },
   }
 }
@@ -114,6 +140,11 @@ export function filtrarColaboradores(lista, { busca = '', setor = '', loja = '',
     .filter((c) => !lideranca || (lideranca === 'sem' ? !c.lideranca : c.lideranca === lideranca))
     .filter((c) => combinaBusca(c.nome, busca))
     .sort((a, b) => compararTexto(a.nome, b.nome))
+}
+
+// Parte "Pais e mães": só quem está ativo e marcado. filtros: { busca, tipo, setor, loja }, tipo = "Pai" ou "Mãe".
+export function filtrarPaisEMaes(lista, { tipo = '', ...filtros } = {}) {
+  return filtrarColaboradores(lista, { ...filtros, situacao: 'ativos' }).filter((c) => (tipo ? c.paiOuMae === tipo : Boolean(c.paiOuMae)))
 }
 
 export function contarPorLoja(lista) {
@@ -264,6 +295,26 @@ export function prepararImportacao({ registros, colaboradores, setores }) {
       else avisos.push('Data de admissão não entendida (precisa ter dia, mês e ano); fica em branco.')
     }
 
+    const paiOuMaeTexto = limparEspacos(valores.paiOuMae)
+    if (paiOuMaeTexto) {
+      const paiOuMae = normalizarPaiOuMae(paiOuMaeTexto)
+      if (paiOuMae === null) avisos.push(`Pai ou mãe "${paiOuMaeTexto}" não reconhecido; use Pai, Mãe ou Não.`)
+      else dados.paiOuMae = paiOuMae
+    }
+
+    const telefoneTexto = limparEspacos(valores.telefone)
+    if (telefoneTexto) {
+      const telefone = normalizarWhatsapp(telefoneTexto)
+      if (telefone) dados.telefone = telefone
+      else avisos.push(`Telefone "${telefoneTexto}" não entendido; fica em branco.`)
+    }
+
+    const email = normalizarEmail(valores.email)
+    if (email) {
+      if (FORMATO_EMAIL.test(email)) dados.email = email
+      else avisos.push(`E-mail "${email}" não parece válido; fica em branco.`)
+    }
+
     const atual = existentes.get(chave)
     return {
       linha,
@@ -313,6 +364,9 @@ export function operacoesDaImportacao(previa, { setores, atualizarExistentes = t
           nascimentoDia: item.dados.nascimentoDia ?? null,
           nascimentoMes: item.dados.nascimentoMes ?? null,
           admissao: item.dados.admissao ?? null,
+          paiOuMae: item.dados.paiOuMae ?? '',
+          telefone: item.dados.telefone ?? '',
+          email: item.dados.email ?? '',
           ativo: true,
           criadoEm: agora(),
           atualizadoEm: agora(),
@@ -361,7 +415,7 @@ export function operacoesDaImportacao(previa, { setores, atualizarExistentes = t
 }
 
 // Planilha "Baixar lista" (as colunas voltam certinho na importação).
-export const CABECALHO_DA_LISTA = ['Nome', 'Setor', 'Loja', 'Cargo', 'Liderança', 'Aniversário', 'Data de admissão', 'Situação']
+export const CABECALHO_DA_LISTA = ['Nome', 'Setor', 'Loja', 'Cargo', 'Liderança', 'Aniversário', 'Data de admissão', 'Pai ou mãe', 'Telefone', 'E-mail', 'Situação']
 
 export const linhaDaLista = (c) => [
   c.nome ?? '',
@@ -371,5 +425,8 @@ export const linhaDaLista = (c) => [
   c.lideranca ?? '',
   aniversarioDe(c),
   formatarData(c.admissao),
+  c.paiOuMae ?? '',
+  formatarWhatsapp(c.telefone),
+  c.email ?? '',
   c.ativo === false ? 'Desativado' : 'Ativo',
 ]

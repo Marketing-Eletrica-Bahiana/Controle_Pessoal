@@ -1,12 +1,11 @@
 // Validação do cadastro de usuários (quem pode entrar no app).
 import { DOMINIO_EMPRESA, ehEmailDaEmpresa } from '../config.js'
+import { FORMATO_EMAIL, normalizarEmail } from './contato.js'
 import { papelValido } from './papeis.js'
 import { limparEspacos } from './texto.js'
 
 // O e-mail é o ID do documento: sempre em minúsculas e sem espaços.
-export const normalizarEmail = (email) => String(email ?? '').replace(/\s+/g, '').toLowerCase()
-
-const FORMATO_EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
+export { normalizarEmail }
 
 export function validarUsuario({ email, nome, cargo, papel }, { novo = true } = {}) {
   const erros = {}

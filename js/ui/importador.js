@@ -164,6 +164,8 @@ export function abrirImportador(config) {
     const previa = config.preparar(registros, opcoes)
     const { contagem } = previa
     const comAvisos = previa.itens.filter((i) => i.avisos?.length && i.situacao !== 'ignorado' && i.situacao !== 'repetido').length
+    // Colunas que a planilha não trouxe ficam de fora da prévia, para sobrar espaço para os avisos.
+    const colunasComDados = config.colunas.filter((c) => previa.itens.some((i) => c.celula(i)))
 
     const caixas = (config.opcoes ?? []).map((o) =>
       el(
@@ -235,7 +237,7 @@ export function abrirImportador(config) {
               { rotulo: 'Linha', classe: 'numero', celula: (i) => i.linha },
               { rotulo: 'Nome', principal: true, celula: (i) => el('span', { class: 'tabela__nome' }, i.nome || 'Sem nome') },
               { rotulo: 'Situação', celula: (i) => etiqueta(...SITUACOES[i.situacao]) },
-              ...config.colunas,
+              ...colunasComDados,
               {
                 rotulo: 'Avisos',
                 celula: (i) => (i.avisos?.length ? el('span', { class: 'texto-alerta texto-pequeno' }, i.avisos.join(' ')) : ''),
