@@ -13,7 +13,7 @@ import { endereco } from '../lib/rotas.js'
 import { nomeDeArquivo, plural } from '../lib/texto.js'
 import {
   aviso, avisar, avisarErro, blocoDeErro, bloco, botao, botaoIcone, cabecalhoPagina, campoBusca, carregando, comOcupado, confirmar,
-  estadoVazio, etiqueta, ficha, filtroSelecao, listaComLimite, tabela,
+  estadoVazio, etiqueta, ficha, filtroSelecao, tabela,
 } from '../ui/componentes.js'
 import { el, icone, trocar } from '../ui/dom.js'
 import { baixarPlanilha } from '../ui/planilha.js'
@@ -143,9 +143,9 @@ export function montar(raiz, { pessoa, params }) {
       fixos.resultado,
       el('div', { class: 'pagina__barra' }, el('p', { class: 'texto-suave' }, plural(lista.length, 'eletricista', 'eletricistas')), baixar),
       lista.length
-        ? listaComLimite(lista, (itens) =>
-            tabela({
-              itens,
+        ? tabela({
+              itens: lista,
+              limite: 200,
               classeDaLinha: (e) => (e.ativo === false ? 'linha--inativa' : null),
               colunas: [
                 {
@@ -159,8 +159,7 @@ export function montar(raiz, { pessoa, params }) {
                 { rotulo: 'Cadastro', classe: 'numero', celula: (e) => dataDoCadastro(e.dataCadastro) },
                 admin && { rotulo: 'Ações', classe: 'tabela__acoes', celula: (e) => acoes(e) },
               ].filter(Boolean),
-            }),
-          )
+            })
         : aviso('Ninguém encontrado com esses filtros.'),
     )
   }

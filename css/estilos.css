@@ -1047,6 +1047,41 @@ a {
   white-space: nowrap;
 }
 
+/* Setinhas para mudar a ordem: o título da coluna vira um botão. */
+.tabela__ordenar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.tabela__ordenar .icone {
+  width: 14px;
+  height: 14px;
+  opacity: 0.6;
+  transition: opacity var(--transicao);
+}
+
+.tabela__ordenar:hover .icone,
+.tabela__ordenar.ativo .icone {
+  opacity: 1;
+}
+
+.tabela__ordenar:focus-visible {
+  outline: 2px solid var(--branco);
+  outline-offset: 2px;
+}
+
+.tabela__ordem-celular {
+  display: none;
+}
+
 .tabela td {
   padding: 8px 16px;
   vertical-align: middle;
@@ -1522,6 +1557,21 @@ a.tabela__nome:hover {
 
   .tabela--responsiva .tabela__acoes::before {
     content: none;
+  }
+
+  .tabela__ordem-celular {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--marinho);
+  }
+
+  .tabela__ordem-celular select {
+    max-width: 65%;
   }
 }
 

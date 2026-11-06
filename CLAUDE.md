@@ -29,6 +29,8 @@ fornecedores, eletricistas do CAE, listas de presença com check-in pelo celular
 5. (Feita) Aniversariantes (ver "Aniversariantes").
 6. (Feita) Dashboard e revisão geral (ver "Dashboard" e "Revisão").
 7. (Feita) Pais e mães, contatos dos colaboradores e aba Ramal (ver "Pais e mães e Ramal").
+8. (Feita) Desligados, excluir de vez, setinhas de ordem nas tabelas e contato nos aniversariantes (ver
+   "Desligados, exclusão e ordem das tabelas").
 
 A pessoa autorizou fazer as etapas 2 a 6 em sequência, sem pedir aprovação entre elas, depois de
 conferida a integração da Etapa 1.
@@ -83,7 +85,7 @@ Nomes exatos (as regras dependem deles):
   `"Lauro de Freitas"` ou `"Aracaju"`; `LOJAS` em `js/config.js`), `cargo`, `lideranca`
   (`"Gerente"`, `"Coordenador"`, `"Supervisor"` ou `""`), `nascimentoDia` e `nascimentoMes` (números ou null; o
   ano nunca é guardado, LGPD), `admissao` (`"AAAA-MM-DD"` ou null), `paiOuMae` (`"Pai"`, `"Mãe"` ou `""`),
-  `telefone` (só números com DDD, 10 ou 11), `email` (minúsculas), `ativo`, `criadoEm`,
+  `telefone` (só números com DDD, 10 ou 11), `email` (minúsculas), `desligamento` (`"AAAA-MM-DD"` ou null), `ativo`, `criadoEm`,
   `atualizadoEm`. IDs automáticos. Cadastro antigo pode não ter `paiOuMae`, `telefone` e `email`: o
   código trata como vazio e os campos aparecem quando a pessoa é salva.
 - `setores/{id}`: `nome`, `gerentes`, `coordenadores` e `supervisores` (listas de IDs de
@@ -112,7 +114,8 @@ Tela em `js/telas/colaboradores.js` (janelas em `js/telas/colaboradores/formular
 
 - Endereços: `#/colaboradores` (lista geral), `#/colaboradores/setores` (cartões),
   `#/colaboradores/setores/{id}` (setor aberto; `__sem-setor` para quem não tem setor) e
-  `#/colaboradores/ficha/{id}`. Os filtros ficam guardados enquanto a pessoa navega.
+  `#/colaboradores/pais-e-maes`, `#/colaboradores/desligados` e `#/colaboradores/ficha/{id}`. Os filtros ficam
+  guardados enquanto a pessoa navega.
 - Lista: busca por nome; filtros setor, loja, liderança e situação (ativos por padrão).
 - Setor do colaborador é texto; casa com `setores` pelo nome sem diferenciar maiúsculas e
   acentos. Setor novo é criado ao salvar ou importar.
@@ -126,7 +129,8 @@ Tela em `js/telas/colaboradores.js` (janelas em `js/telas/colaboradores/formular
 - Exibição da liderança (`js/telas/colaboradores/lideranca.js`): cartões do setor, setor aberto e
   Dashboard, sempre na ordem hierárquica e sem o título de nível vazio. Setor sem ninguém não mostra
   o quadro nos cartões; o setor aberto avisa "Ninguém definido como responsável".
-- Desativar em vez de apagar (confirmação). Nome repetido não é aceito no cadastro.
+- Desativar em vez de apagar (confirmação). Só quem já está desativado pode ser excluído de vez (ver "Desligados,
+  exclusão e ordem das tabelas"). Nome repetido não é aceito no cadastro.
 - Importação (`js/ui/importador.js`, a mesma janela serve para eletricistas): arquivo, aba e
   linha dos títulos achados sozinhos; a pessoa confere a coluna de cada campo (com exemplos);
   prévia com novos, já existentes (mesmo nome sem acentos), repetidos, sem nome e avisos por linha.
@@ -146,7 +150,7 @@ Tela em `js/telas/colaboradores.js` (janelas em `js/telas/colaboradores/formular
   nenhum nome não desativa ninguém. Não há "excluir todos": um nome corrigido vira cadastro novo e o antigo fica
   desativado com o histórico dele.
 - "Baixar lista" exporta o que está filtrado na tela (`Colaboradores [setor] [loja] DD-MM-AAAA.xlsx`),
-  com colunas que voltam certinho na importação.
+  com colunas que voltam certinho na importação (menos "Pai ou mãe", que só vem da lista oficial).
 - SheetJS só grava a planilha (sem cor no cabeçalho: a versão gratuita não pinta células).
 
 ## Fornecedores e eletricistas (Etapa 3)
@@ -247,11 +251,11 @@ Telas em `js/telas/aniversariantes.js` (mês) e `js/telas/aniversariantes/` (`co
   colaboradores, ao contrário dos eletricistas.
 - Telefone, WhatsApp e e-mail ficam em `js/lib/contato.js`; `js/lib/eletricistas.js` e `js/lib/usuarios.js`
   reexportam o que outros arquivos já importavam deles.
-- Planilha: colunas `Pai ou mãe` (Pai, Mãe ou Não), `Telefone` e `E-mail`. Sinônimos sem "pai" ou "mae" soltos,
-  para "Nome da mãe" não ser confundida. Célula vazia não muda nada.
+- Planilha: colunas `Telefone` e `E-mail`; célula vazia não muda nada. A importação não tem mais a linha
+  "Pai ou mãe" (tirada em 06/11/2026 a pedido): pai ou mãe vem só da lista oficial ou do cadastro.
 - Lista oficial da empresa (aba "Lista Geral"): não tem `Pai ou mãe`, tem `Tem Filhos` (Sim ou Não) e `Gênero`.
   Sim + Masculino = Pai; Sim + Feminino = Mãe; Não tira a marcação; Sim sem gênero reconhecido gera aviso e a
-  pessoa é marcada no cadastro. A coluna `Pai ou mãe` vale primeiro, se existir. `Gênero` e `Tem Filhos` só servem
+  pessoa é marcada no cadastro. `Gênero` e `Tem Filhos` só servem
   para esse cálculo e não são guardados. Conferido em 04/11/2026 com a lista real, sem gravar: o cálculo bate com
   as abas "Pais" e "Mães" da própria lista (`normalizarTemFilhos`, `paiOuMaeDoGenero`).
 - Na lista oficial, `Telefone` cai em "Celular" e `E-mail` em "Email Pessoal", a primeira coluna de e-mail; a
@@ -260,6 +264,30 @@ Telas em `js/telas/aniversariantes.js` (mês) e `js/telas/aniversariantes/` (`co
   nome, para continuarem à vista nas planilhas com muitas colunas.
 - Ramal: `#/ramal` (`js/telas/ramal.js`), aba do menu para todos os papéis, por enquanto só com a tela vazia.
   Quando a lista chegar, definir os campos pelas colunas dela e criar a coleção e a regra no Firestore.
+
+## Desligados, exclusão e ordem das tabelas (Etapa 8)
+
+- Desligados: `#/colaboradores/desligados`, quarta parte da aba Colaboradores (`desenharDesligados`). Mostra quem
+  está desativado (`filtrarDesligados`), com a data de desligamento, os mais recentes primeiro e sem data no fim.
+  Busca por nome e "Baixar lista" (`CABECALHO_DOS_DESLIGADOS`, volta na importação dos desligados).
+- "Importar desligados" (`abrirImportacaoDesligados`): aba "Desligados" da lista oficial (Nome e Data de
+  Desligamento), já escolhida sozinha (`aba` na config do importador). Quem está no cadastro é desativado e recebe a
+  data (data vazia não apaga a que existe); quem não está entra só com nome e data, já desativado, para a lista
+  ficar completa (`prepararDesligados`, `operacoesDosDesligados`). Quem está ativo e aparece lá ganha um aviso.
+- Reativar (manual ou pela substituição da lista) apaga `desligamento`. A ficha de quem está desativado mostra o
+  desligamento e volta para Desligados.
+- Excluir de vez (`excluirColaborador`, `operacoesDaExclusao`): só para desativados (lixeira na tabela e botão na
+  ficha), com confirmação. Apaga o documento, tira o ID das lideranças dos setores e limpa `vendedorId` dos
+  eletricistas (o `vendedorNome` fica como texto). Presenças e controles de aniversário guardam o nome e não mudam;
+  a ficha e o histórico da pessoa somem. As regras de `colaboradores` (admin grava) já permitem.
+- Setinhas de ordem em todas as tabelas (`tabela` em `js/ui/componentes.js`): o título de cada coluna vira um
+  botão (crescente, depois decrescente); no celular, onde o cabeçalho some, aparece "Ordenar por". A lista inteira
+  é ordenada antes de mostrar os primeiros (`limite` no lugar de `listaComLimite` em volta da tabela). O valor é o
+  texto da célula (datas DD/MM/AAAA viram AAAA-MM-DD; números em ordem numérica; vazios no fim) ou `ordem(item)`;
+  `ordenavel: false` e a coluna de Ações ficam sem setas. A escolha fica guardada por tela e colunas enquanto a
+  pessoa navega. Telas em cartões (Fornecedores, Listas) mantêm a ordem própria.
+- Aniversariantes: coluna Contato (`contatosDoColaborador`) nas tabelas do mês; a planilha do mês ganhou Telefone e
+  E-mail.
 
 ## Papéis
 
@@ -315,7 +343,7 @@ carregado só aqui, só cores da paleta, sem animação com `prefers-reduced-mot
   check-in, adicionar não convocado e marcar status de aniversariantes.
 - Erros: tudo passa por `mensagemDeErro` (`js/lib/erros.js`), em português.
 - Cores e textos: só as 7 cores da paleta (conferido por busca de `#...` e `rgba(...)`), sem
-  travessão. Ícones: só os usados (60).
+  travessão. Ícones: só os usados (62).
 - Desempenho das consultas:
   - Coleções pequenas (`colaboradores`, `setores`, `fornecedores`, `listas`) têm um ouvinte só,
     compartilhado entre as telas (`js/dados/fontes.js`); `eletricistas` só nas telas que precisam.

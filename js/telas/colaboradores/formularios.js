@@ -1,8 +1,9 @@
-// Janelas da aba Colaboradores: cadastro e edição, responsáveis do setor e importação de planilha.
+// Janelas da aba Colaboradores: cadastro e edição, responsáveis do setor e importação de planilhas.
 import { LOJAS } from '../../config.js'
-import { definirResponsaveis, importarColaboradores, salvarColaborador } from '../../dados/colaboradores.js'
+import { definirResponsaveis, importarColaboradores, importarDesligados, salvarColaborador } from '../../dados/colaboradores.js'
 import {
-  CAMPOS_DA_PLANILHA, LIDERANCAS, NIVEIS_DE_LIDERANCA, PAI_OU_MAE, aniversarioDe, avisosDaSubstituicao, prepararImportacao, validarColaborador,
+  CAMPOS_DA_PLANILHA, CAMPOS_DOS_DESLIGADOS, LIDERANCAS, NIVEIS_DE_LIDERANCA, PAI_OU_MAE, aniversarioDe, avisosDaSubstituicao,
+  prepararDesligados, prepararImportacao, validarColaborador,
 } from '../../lib/colaboradores.js'
 import { formatarWhatsapp, mascararTelefone } from '../../lib/contato.js'
 import { formatarData, formatarDiaMes, mascararData, mascararDiaMes } from '../../lib/datas.js'
@@ -268,5 +269,25 @@ export function abrirImportacaoColaboradores({ dados }) {
       previa.contagem.novos + (opcoes.atualizar || opcoes.substituir ? previa.contagem.existentes : 0) + (opcoes.substituir ? previa.ausentes.length : 0),
     gravar: (previa, opcoes, aoAvancar) =>
       importarColaboradores(previa, { setores: dados().setores, atualizarExistentes: opcoes.atualizar || opcoes.substituir, substituir: opcoes.substituir }, aoAvancar),
+  })
+}
+
+// Aba "Desligados" da lista oficial (Nome e Data de Desligamento).
+export function abrirImportacaoDesligados({ dados }) {
+  abrirImportador({
+    titulo: 'Importar desligados',
+    ajuda: 'Use a aba "Desligados" da lista oficial, com o nome e a data de desligamento. Quem já está no cadastro é desativado e recebe a data. Quem não está entra só com o nome e a data.',
+    aba: 'desligados',
+    campos: CAMPOS_DOS_DESLIGADOS,
+    preparar: (registros) => {
+      const previa = prepararDesligados({ registros, colaboradores: dados().colaboradores })
+      previa.extras = previa.contagem.novos
+        ? [`${previa.contagem.novos === 1 ? '1 pessoa não está no cadastro e entra' : `${previa.contagem.novos} pessoas não estão no cadastro e entram`} só com o nome e a data, já como desligada${previa.contagem.novos === 1 ? '' : 's'}.`]
+        : []
+      return previa
+    },
+    colunas: [{ rotulo: 'Data de desligamento', celula: (i) => formatarData(i.dados?.desligamento) }],
+    contarGravacoes: (previa) => previa.contagem.novos + previa.contagem.existentes,
+    gravar: (previa, _opcoes, aoAvancar) => importarDesligados(previa, aoAvancar),
   })
 }

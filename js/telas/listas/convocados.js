@@ -49,9 +49,9 @@ export function montarConvocados(caixa, ctx) {
         naoConvocados > 0 && etiqueta(plural(naoConvocados, 'não convocado', 'não convocados'), 'alerta'),
       ),
       presencas.length
-        ? listaComLimite([...presencas].sort((a, b) => compararTexto(a.nome, b.nome)), (itens) =>
-            tabela({
-              itens,
+        ? tabela({
+              itens: [...presencas].sort((a, b) => compararTexto(a.nome, b.nome)),
+              limite: 200,
               colunas: [
                 { rotulo: 'Nome', principal: true, celula: (p) => [el('span', { class: 'tabela__nome' }, p.nome), el('span', { class: 'tabela__detalhe' }, p.detalhe)] },
                 { rotulo: 'Tipo', celula: (p) => TIPOS_DE_PESSOA[p.tipoPessoa] ?? '' },
@@ -63,8 +63,7 @@ export function montarConvocados(caixa, ctx) {
                   celula: (p) => botaoIcone({ icone: 'trash-2', rotulo: `Tirar ${p.nome} da lista`, perigo: true, aoClicar: () => tirar(p) }),
                 },
               ].filter(Boolean),
-            }),
-          )
+            })
         : aviso(admin ? 'Ninguém convocado ainda. Use os botões acima para montar a lista.' : 'Ninguém convocado ainda.'),
     )
   }

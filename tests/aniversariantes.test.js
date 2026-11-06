@@ -7,7 +7,7 @@ import {
 } from '../js/lib/aniversariantes.js'
 
 const colaboradores = [
-  { id: 'a', nome: 'Ana', setor: 'Comercial', loja: 'Aracaju', nascimentoDia: 20, nascimentoMes: 11, admissao: '2020-11-05', ativo: true },
+  { id: 'a', nome: 'Ana', setor: 'Comercial', loja: 'Aracaju', nascimentoDia: 20, nascimentoMes: 11, admissao: '2020-11-05', telefone: '71999998888', email: 'ana@exemplo.com', ativo: true },
   { id: 'b', nome: 'Bia', setor: 'RH', loja: 'Salvador (Matriz)', nascimentoDia: 3, nascimentoMes: 11, admissao: '2026-11-10', ativo: true },
   { id: 'c', nome: 'Caio', setor: 'Logística', loja: 'Aracaju', nascimentoDia: 3, nascimentoMes: 11, admissao: '2015-11-30', ativo: false },
   { id: 'd', nome: 'Davi', setor: 'Compras', loja: 'Aracaju', nascimentoDia: null, nascimentoMes: null, admissao: null, ativo: true },
@@ -63,10 +63,10 @@ describe('aniversariantes', () => {
     const deEmpresa = aniversariosDeEmpresa(colaboradores, 11, 2026)
     const abas = abasDoMes({ mes: 11, ano: 2026, doMes, deEmpresa, statusMes: new Map([['a', { status: 'participou', observacao: 'Postou foto' }]]), statusEmpresa: null })
     assert.deepEqual(abas[0].linhas, [
-      ['03/11', 'Bia', 'RH', 'Salvador (Matriz)', 'Fora do controle', ''],
-      ['20/11', 'Ana', 'Comercial', 'Aracaju', 'Participou', 'Postou foto'],
+      ['03/11', 'Bia', 'RH', 'Salvador (Matriz)', '', '', 'Fora do controle', ''],
+      ['20/11', 'Ana', 'Comercial', 'Aracaju', '(71) 99999-8888', 'ana@exemplo.com', 'Participou', 'Postou foto'],
     ])
-    assert.deepEqual(abas[1].linhas, [['05/11', 'Ana', 'Comercial', 'Aracaju', 6, 'Controle não gerado', '']])
+    assert.deepEqual(abas[1].linhas, [['05/11', 'Ana', 'Comercial', 'Aracaju', '(71) 99999-8888', 'ana@exemplo.com', 6, 'Controle não gerado', '']])
     assert.equal(nomeDoArquivoDoMes(11, 2026), 'Aniversariantes Novembro-2026')
   })
 })

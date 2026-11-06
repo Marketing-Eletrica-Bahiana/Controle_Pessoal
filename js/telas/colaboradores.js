@@ -1,12 +1,12 @@
-// Aba Colaboradores: lista geral, visão por setor, setor aberto, pais e mães e ficha de cada pessoa.
+// Aba Colaboradores: lista geral, visão por setor, setor aberto, pais e mães, desligados e ficha de cada pessoa.
 // Endereços: #/colaboradores, #/colaboradores/setores, #/colaboradores/setores/{id},
-// #/colaboradores/pais-e-maes, #/colaboradores/ficha/{id}
+// #/colaboradores/pais-e-maes, #/colaboradores/desligados, #/colaboradores/ficha/{id}
 import { LOJAS } from '../config.js'
-import { definirAtivoColaborador } from '../dados/colaboradores.js'
+import { definirAtivoColaborador, excluirColaborador } from '../dados/colaboradores.js'
 import { ouvirFontes } from '../dados/fontes.js'
 import {
-  CABECALHO_DA_LISTA, NIVEIS_DE_LIDERANCA, PAI_OU_MAE, SEM_SETOR, aniversarioDe, contarPorLoja, filtrarColaboradores, filtrarPaisEMaes,
-  linhaDaLista, resumoDosSetores,
+  CABECALHO_DA_LISTA, CABECALHO_DOS_DESLIGADOS, NIVEIS_DE_LIDERANCA, PAI_OU_MAE, SEM_SETOR, aniversarioDe, contarPorLoja, filtrarColaboradores,
+  filtrarDesligados, filtrarPaisEMaes, linhaDaLista, linhaDosDesligados, resumoDosSetores,
 } from '../lib/colaboradores.js'
 import { formatarData, hojeISO, partesDeHoje } from '../lib/datas.js'
 import { mensagemDeErro } from '../lib/erros.js'
@@ -15,18 +15,19 @@ import { endereco } from '../lib/rotas.js'
 import { compararTexto, formatarNumero, nomeDeArquivo, plural } from '../lib/texto.js'
 import {
   abas, aviso, avisar, avisarErro, blocoDeErro, bloco, botao, botaoIcone, cabecalhoPagina, campoBusca, carregando, comOcupado,
-  confirmar, estadoVazio, etiqueta, ficha, filtroSelecao, indicadores, listaComLimite, tabela,
+  confirmar, estadoVazio, etiqueta, ficha, filtroSelecao, indicadores, tabela,
 } from '../ui/componentes.js'
 import { el, trocar } from '../ui/dom.js'
 import { baixarPlanilha } from '../ui/planilha.js'
 import { contatosDoColaborador, emailDoColaborador, telefoneDoColaborador } from './colaboradores/contatos.js'
-import { abrirFormularioColaborador, abrirImportacaoColaboradores, abrirResponsaveis } from './colaboradores/formularios.js'
+import { abrirFormularioColaborador, abrirImportacaoColaboradores, abrirImportacaoDesligados, abrirResponsaveis } from './colaboradores/formularios.js'
 import { liderancaDoSetor } from './colaboradores/lideranca.js'
 import { historicoDaPessoa } from './listas/historico.js'
 
 // Filtros ficam guardados enquanto a pessoa navega (ex.: abre uma ficha e volta).
 const filtros = { busca: '', setor: '', loja: '', lideranca: '', situacao: 'ativos' }
 const filtrosDePais = { busca: '', tipo: '', setor: '', loja: '' }
+const filtrosDeDesligados = { busca: '' }
 
 export function montar(raiz, { pessoa, params }) {
   const [parte, id] = params
@@ -35,7 +36,13 @@ export function montar(raiz, { pessoa, params }) {
   let erro = null
   const atuais = () => dados ?? { colaboradores: [], setores: [] }
 
-  const vista = parte === 'setores' && id ? 'setor' : parte === 'setores' ? 'setores' : parte === 'ficha' && id ? 'ficha' : parte === 'pais-e-maes' ? 'pais' : 'lista'
+  const vista =
+    parte === 'setores' && id ? 'setor'
+    : parte === 'setores' ? 'setores'
+    : parte === 'ficha' && id ? 'ficha'
+    : parte === 'pais-e-maes' ? 'pais'
+    : parte === 'desligados' ? 'desligados'
+    : 'lista'
   const area = el('div', { class: 'pagina' })
   raiz.replaceChildren(area)
 
@@ -50,8 +57,12 @@ export function montar(raiz, { pessoa, params }) {
     else if (vista === 'setores') desenharSetores()
     else if (vista === 'setor') desenharSetor()
     else if (vista === 'pais') desenharPaisEMaes()
+    else if (vista === 'desligados') desenharDesligados()
     else desenharFicha()
   }
+
+  const botaoImportarDesligados = (variante) =>
+    botao({ texto: 'Importar desligados', icone: 'file-spreadsheet', variante, aoClicar: () => abrirImportacaoDesligados({ dados: atuais }) })
 
   function cabecalhoDaAba() {
     return [
@@ -59,17 +70,20 @@ export function montar(raiz, { pessoa, params }) {
         titulo: 'Colaboradores',
         icone: 'users',
         descricao: 'Quem trabalha em cada setor e loja, com gerentes, coordenadores e supervisores.',
-        acoes: admin
-          ? [
-              botao({ texto: 'Importar planilha', icone: 'file-spreadsheet', aoClicar: () => abrirImportacaoColaboradores({ dados: atuais }) }),
-              botao({ texto: 'Novo colaborador', icone: 'user-plus', variante: 'principal', aoClicar: () => abrirFormularioColaborador({ dados: atuais }) }),
-            ]
-          : [],
+        acoes: !admin
+          ? []
+          : vista === 'desligados'
+            ? [botaoImportarDesligados('principal')]
+            : [
+                botao({ texto: 'Importar planilha', icone: 'file-spreadsheet', aoClicar: () => abrirImportacaoColaboradores({ dados: atuais }) }),
+                botao({ texto: 'Novo colaborador', icone: 'user-plus', variante: 'principal', aoClicar: () => abrirFormularioColaborador({ dados: atuais }) }),
+              ],
       }),
       abas([
         { rotulo: 'Todos', icone: 'users', href: '#/colaboradores', ativo: vista === 'lista' },
         { rotulo: 'Por setor', icone: 'building-2', href: '#/colaboradores/setores', ativo: vista === 'setores' },
         { rotulo: 'Pais e mães', icone: 'baby', href: '#/colaboradores/pais-e-maes', ativo: vista === 'pais' },
+        { rotulo: 'Desligados', icone: 'user-x', href: '#/colaboradores/desligados', ativo: vista === 'desligados' },
       ]),
     ]
   }
@@ -155,7 +169,7 @@ export function montar(raiz, { pessoa, params }) {
     )
   }
 
-  function botaoBaixar(lista, titulo) {
+  function botaoBaixar(lista, titulo, { cabecalho = CABECALHO_DA_LISTA, linha = linhaDaLista, aba = 'Colaboradores' } = {}) {
     const b = botao({
       texto: 'Baixar lista',
       icone: 'download',
@@ -164,7 +178,7 @@ export function montar(raiz, { pessoa, params }) {
         comOcupado(b, async () => {
           try {
             const data = formatarData(hojeISO()).replaceAll('/', '-')
-            await baixarPlanilha(nomeDeArquivo(`${titulo} ${data}`), [{ nome: 'Colaboradores', cabecalho: CABECALHO_DA_LISTA, linhas: lista.map(linhaDaLista) }])
+            await baixarPlanilha(nomeDeArquivo(`${titulo} ${data}`), [{ nome: aba, cabecalho, linhas: lista.map(linha) }])
           } catch (e) {
             avisarErro(e)
           }
@@ -174,27 +188,26 @@ export function montar(raiz, { pessoa, params }) {
   }
 
   function tabelaDePessoas(lista, { comSetor = true } = {}) {
-    return listaComLimite(lista, (itens) =>
-      tabela({
-        itens,
-        classeDaLinha: (c) => (c.ativo === false ? 'linha--inativa' : null),
-        colunas: [
-          {
-            rotulo: 'Nome',
-            principal: true,
-            celula: (c) => [
-              el('a', { class: 'tabela__nome', href: endereco('colaboradores', 'ficha', c.id) }, c.nome),
-              c.lideranca && etiqueta(c.lideranca, 'marinho'),
-              c.ativo === false && etiqueta('Desativado', 'alerta'),
-            ],
-          },
-          comSetor && { rotulo: 'Setor', celula: (c) => c.setor || 'Sem setor' },
-          { rotulo: 'Loja', celula: (c) => c.loja || 'Sem loja' },
-          { rotulo: 'Cargo', celula: (c) => c.cargo || '' },
-          admin && { rotulo: 'Ações', classe: 'tabela__acoes', celula: (c) => acoesDoColaborador(c) },
-        ].filter(Boolean),
-      }),
-    )
+    return tabela({
+      itens: lista,
+      limite: 200,
+      classeDaLinha: (c) => (c.ativo === false ? 'linha--inativa' : null),
+      colunas: [
+        {
+          rotulo: 'Nome',
+          principal: true,
+          celula: (c) => [
+            el('a', { class: 'tabela__nome', href: endereco('colaboradores', 'ficha', c.id) }, c.nome),
+            c.lideranca && etiqueta(c.lideranca, 'marinho'),
+            c.ativo === false && etiqueta('Desativado', 'alerta'),
+          ],
+        },
+        comSetor && { rotulo: 'Setor', celula: (c) => c.setor || 'Sem setor' },
+        { rotulo: 'Loja', celula: (c) => c.loja || 'Sem loja' },
+        { rotulo: 'Cargo', celula: (c) => c.cargo || '' },
+        admin && { rotulo: 'Ações', classe: 'tabela__acoes', celula: (c) => acoesDoColaborador(c) },
+      ].filter(Boolean),
+    })
   }
 
   function acoesDoColaborador(c) {
@@ -203,9 +216,30 @@ export function montar(raiz, { pessoa, params }) {
       { class: 'acoes acoes--juntas' },
       botaoIcone({ icone: 'pencil', rotulo: `Editar ${c.nome}`, aoClicar: () => abrirFormularioColaborador({ colaborador: c, dados: atuais }) }),
       c.ativo === false
-        ? botaoIcone({ icone: 'user-check', rotulo: `Reativar ${c.nome}`, aoClicar: () => mudarAtivo(c, true) })
+        ? [
+            botaoIcone({ icone: 'user-check', rotulo: `Reativar ${c.nome}`, aoClicar: () => mudarAtivo(c, true) }),
+            botaoIcone({ icone: 'trash-2', rotulo: `Excluir ${c.nome} de vez`, perigo: true, aoClicar: () => excluirDeVez(c) }),
+          ]
         : botaoIcone({ icone: 'user-x', rotulo: `Desativar ${c.nome}`, perigo: true, aoClicar: () => mudarAtivo(c, false) }),
     )
+  }
+
+  // Só quem já está desativado pode ser excluído de vez: assim ninguém ativo some por um clique errado.
+  async function excluirDeVez(c) {
+    const ok = await confirmar({
+      titulo: 'Excluir de vez',
+      texto: `${c.nome} sai do cadastro para sempre, e não dá para desfazer. As listas de presença e os controles de aniversário continuam mostrando o nome, mas a ficha e o histórico da pessoa somem.`,
+      botaoSim: 'Excluir de vez',
+      perigo: true,
+    })
+    if (!ok) return
+    try {
+      await excluirColaborador({ id: c.id, setores: dados.setores })
+      avisar(`Cadastro de ${c.nome} excluído.`)
+      if (vista === 'ficha') window.location.hash = '#/colaboradores/desligados'
+    } catch (e) {
+      avisar(mensagemDeErro(e), { erro: true })
+    }
   }
 
   async function mudarAtivo(c, ativo) {
@@ -238,7 +272,7 @@ export function montar(raiz, { pessoa, params }) {
         estadoVazio({
           titulo: 'Nenhum pai ou mãe marcado ainda',
           texto: admin
-            ? 'Edite o cadastro da pessoa e escolha Pai ou Mãe, com o telefone e o e-mail. Para muitas pessoas de uma vez, importe uma planilha com as colunas "Pai ou mãe", "Telefone" e "E-mail".'
+            ? 'Edite o cadastro da pessoa e escolha Pai ou Mãe, com o telefone e o e-mail. Para todo mundo de uma vez, importe a lista oficial: as colunas "Tem Filhos" e "Gênero" dizem quem é pai ou mãe.'
             : 'Assim que a administração marcar quem é pai ou mãe, as pessoas aparecem aqui com os contatos.',
           acoes: admin ? [botao({ texto: 'Importar planilha', icone: 'file-spreadsheet', variante: 'principal', aoClicar: () => abrirImportacaoColaboradores({ dados: atuais }) })] : [],
         }),
@@ -301,25 +335,85 @@ export function montar(raiz, { pessoa, params }) {
   }
 
   function tabelaDePaisEMaes(lista) {
-    return listaComLimite(lista, (itens) =>
-      tabela({
-        itens,
-        colunas: [
-          {
-            rotulo: 'Nome',
-            principal: true,
-            celula: (c) => [el('a', { class: 'tabela__nome', href: endereco('colaboradores', 'ficha', c.id) }, c.nome), etiqueta(c.paiOuMae, 'marinho')],
-          },
-          { rotulo: 'Contatos', celula: (c) => contatosDoColaborador(c) },
-          { rotulo: 'Setor', celula: (c) => c.setor || 'Sem setor' },
-          { rotulo: 'Loja', celula: (c) => c.loja || 'Sem loja' },
-          admin && {
-            rotulo: 'Ações',
-            classe: 'tabela__acoes',
-            celula: (c) => botaoIcone({ icone: 'pencil', rotulo: `Editar ${c.nome}`, aoClicar: () => abrirFormularioColaborador({ colaborador: c, dados: atuais }) }),
-          },
-        ].filter(Boolean),
-      }),
+    return tabela({
+      itens: lista,
+      limite: 200,
+      colunas: [
+        {
+          rotulo: 'Nome',
+          principal: true,
+          celula: (c) => [el('a', { class: 'tabela__nome', href: endereco('colaboradores', 'ficha', c.id) }, c.nome), etiqueta(c.paiOuMae, 'marinho')],
+        },
+        { rotulo: 'Contatos', ordenavel: false, celula: (c) => contatosDoColaborador(c) },
+        { rotulo: 'Setor', celula: (c) => c.setor || 'Sem setor' },
+        { rotulo: 'Loja', celula: (c) => c.loja || 'Sem loja' },
+        admin && {
+          rotulo: 'Ações',
+          classe: 'tabela__acoes',
+          celula: (c) => botaoIcone({ icone: 'pencil', rotulo: `Editar ${c.nome}`, aoClicar: () => abrirFormularioColaborador({ colaborador: c, dados: atuais }) }),
+        },
+      ].filter(Boolean),
+    })
+  }
+
+  // Desligados: quem está desativado, com a data de desligamento (aba "Desligados" da lista oficial).
+
+  function desenharDesligados() {
+    const todos = filtrarDesligados(dados.colaboradores)
+    if (!todos.length) {
+      fixos.desligados = null
+      return trocar(
+        area,
+        ...cabecalhoDaAba(),
+        estadoVazio({
+          titulo: 'Nenhum desligado ainda',
+          texto: admin
+            ? 'Importe a aba "Desligados" da lista oficial, com o nome e a data de desligamento. Quem for desativado no cadastro também aparece aqui.'
+            : 'Quem sair da empresa aparece aqui, com a data de desligamento.',
+          acoes: admin ? [botaoImportarDesligados('principal')] : [],
+        }),
+      )
+    }
+    if (!fixos.desligados || !area.contains(fixos.desligados.resultado)) {
+      const resultado = el('div', { class: 'pagina__resultado' })
+      const busca = campoBusca({
+        valor: filtrosDeDesligados.busca,
+        aoDigitar: (v) => {
+          filtrosDeDesligados.busca = v
+          desenharResultadoDosDesligados()
+        },
+      })
+      fixos.desligados = { resultado, busca }
+      trocar(area, ...cabecalhoDaAba(), el('div', { class: 'filtros' }, busca.no), resultado)
+    }
+    desenharResultadoDosDesligados()
+  }
+
+  function desenharResultadoDosDesligados() {
+    const lista = filtrarDesligados(dados.colaboradores, filtrosDeDesligados)
+    trocar(
+      fixos.desligados.resultado,
+      el(
+        'div',
+        { class: 'pagina__barra' },
+        el('p', { class: 'texto-suave' }, plural(lista.length, 'pessoa desligada', 'pessoas desligadas')),
+        botaoBaixar(lista, 'Desligados', { cabecalho: CABECALHO_DOS_DESLIGADOS, linha: linhaDosDesligados, aba: 'Desligados' }),
+      ),
+      lista.length
+        ? tabela({
+            itens: lista,
+            limite: 200,
+            classeDaLinha: () => 'linha--inativa',
+            colunas: [
+              { rotulo: 'Nome', principal: true, celula: (c) => el('a', { class: 'tabela__nome', href: endereco('colaboradores', 'ficha', c.id) }, c.nome) },
+              { rotulo: 'Desligamento', classe: 'numero', ordem: (c) => c.desligamento ?? '', celula: (c) => (c.desligamento ? formatarData(c.desligamento) : 'Não informada') },
+              { rotulo: 'Setor', celula: (c) => c.setor || '' },
+              { rotulo: 'Loja', celula: (c) => c.loja || '' },
+              { rotulo: 'Cargo', celula: (c) => c.cargo || '' },
+              admin && { rotulo: 'Ações', classe: 'tabela__acoes', celula: (c) => acoesDoColaborador(c) },
+            ].filter(Boolean),
+          })
+        : aviso('Ninguém encontrado com essa busca.'),
     )
   }
 
@@ -405,14 +499,17 @@ export function montar(raiz, { pessoa, params }) {
       cabecalhoPagina({
         titulo: c.nome,
         icone: 'user-round',
-        voltar: { href: '#/colaboradores', texto: 'Colaboradores' },
+        voltar: c.ativo === false ? { href: '#/colaboradores/desligados', texto: 'Desligados' } : { href: '#/colaboradores', texto: 'Colaboradores' },
         acoes: admin
           ? [
               botao({ texto: 'Editar', icone: 'pencil', aoClicar: () => abrirFormularioColaborador({ colaborador: c, dados: atuais }) }),
               c.ativo === false
-                ? botao({ texto: 'Reativar', icone: 'user-check', aoClicar: () => mudarAtivo(c, true) })
+                ? [
+                    botao({ texto: 'Reativar', icone: 'user-check', aoClicar: () => mudarAtivo(c, true) }),
+                    botao({ texto: 'Excluir de vez', icone: 'trash-2', variante: 'perigo-claro', aoClicar: () => excluirDeVez(c) }),
+                  ]
                 : botao({ texto: 'Desativar', icone: 'user-x', variante: 'perigo-claro', aoClicar: () => mudarAtivo(c, false) }),
-            ]
+            ].flat()
           : [],
       }),
       el('div', { class: 'acoes acoes--esquerda' }, c.lideranca && etiqueta(c.lideranca, 'marinho'), c.ativo === false ? etiqueta('Desativado', 'alerta') : etiqueta('Ativo', 'forte')),
@@ -428,6 +525,7 @@ export function montar(raiz, { pessoa, params }) {
           ['Telefone', telefoneDoColaborador(c)],
           ['E-mail', emailDoColaborador(c)],
           ['Pai ou mãe', c.paiOuMae || 'Não'],
+          c.ativo === false && ['Desligamento', formatarData(c.desligamento)],
         ]),
       ),
       fixos.historico,

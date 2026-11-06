@@ -1,8 +1,10 @@
-// Janela de importação de planilha, igual para colaboradores e eletricistas:
+// Janela de importação de planilha, igual para colaboradores, desligados e eletricistas:
 // 1. escolher o arquivo; 2. dizer qual coluna é cada campo; 3. conferir a prévia; 4. gravar.
 //
 // config: {
 //   titulo, ajuda, campos (chave, rotulo, obrigatorio, sinonimos),
+//   aba                                                  opcional: parte do nome da aba que já vem escolhida
+//                                                        (sem diferenciar acentos); sem ela, a primeira
 //   opcoes: [{ chave, rotulo, ajuda, padrao }]          caixas de marcar da prévia
 //   preparar(registros, opcoes) => { itens, contagem, extras }   extras: textos ou { texto, erro }
 //   colunas: [{ rotulo, celula(item) }]                 colunas da tabela da prévia
@@ -10,9 +12,9 @@
 //   gravar(previa, opcoes, aoAvancar) => Promise
 // }
 import { acharCabecalho, exemplosDaColuna, extrairRegistros, nomeDaColuna, sugerirMapeamento } from '../lib/importacao.js'
-import { formatarNumero, plural } from '../lib/texto.js'
+import { formatarNumero, normalizar, plural } from '../lib/texto.js'
 import {
-  abrirJanela, aviso, blocoDeErro, botao, caixaDeMarcar, campo, carregando, comOcupado, etiqueta, indicadores, listaComLimite,
+  abrirJanela, aviso, blocoDeErro, botao, caixaDeMarcar, campo, carregando, comOcupado, etiqueta, indicadores,
   selecao, tabela,
 } from './componentes.js'
 import { el, icone, trocar } from './dom.js'
@@ -48,7 +50,7 @@ export function abrirImportador(config) {
       try {
         abas = await lerPlanilha(arquivo)
         nomeDoArquivo = arquivo.name
-        escolherAba(0)
+        escolherAba(Math.max(0, config.aba ? abas.findIndex((a) => normalizar(a.nome).includes(normalizar(config.aba))) : 0))
       } catch (e) {
         passoArquivo(e)
       }
@@ -230,9 +232,9 @@ export function abrirImportador(config) {
         (previa.extras ?? []).map((extra) => (typeof extra === 'string' ? aviso(extra) : aviso(extra.texto, { erro: extra.erro }))),
         comAvisos > 0 && aviso(`${plural(comAvisos, 'linha tem', 'linhas têm')} algum aviso. Confira na tabela abaixo; o resto da linha é importado normalmente.`, { icone: 'triangle-alert' }),
         caixas.length > 0 && el('div', { class: 'opcoes opcoes--coluna' }, caixas),
-        listaComLimite(previa.itens, (itens) =>
-          tabela({
-            itens,
+        tabela({
+            itens: previa.itens,
+            limite: 100,
             chave: (i) => i.linha,
             classe: 'tabela--compacta',
             colunas: [
@@ -250,7 +252,6 @@ export function abrirImportador(config) {
               ...colunasComDados,
             ],
           }),
-        { passo: 100 }),
         erro && blocoDeErro(erro),
         rodape,
       ),

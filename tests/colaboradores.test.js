@@ -2,8 +2,9 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
   CABECALHO_DA_LISTA, CAMPOS_DA_PLANILHA, LIDERANCAS, SEM_SETOR, ajustesDeLideranca, contarPorLoja, ehSetorComercial, filtrarColaboradores,
-  avisosDaSubstituicao, filtrarPaisEMaes, liderancasAoDefinirResponsaveis, linhaDaLista, normalizarLideranca, normalizarLoja, normalizarPaiOuMae, normalizarTemFilhos,
-  operacoesDaImportacao, paiOuMaeDoGenero, prepararImportacao, resumoDosSetores, validarColaborador,
+  avisosDaSubstituicao, filtrarDesligados, filtrarPaisEMaes, liderancasAoDefinirResponsaveis, linhaDaLista, linhaDosDesligados, normalizarLideranca,
+  normalizarLoja, normalizarTemFilhos, operacoesDaExclusao, operacoesDaImportacao, operacoesDosDesligados, paiOuMaeDoGenero, prepararDesligados,
+  prepararImportacao, resumoDosSetores, validarColaborador, CABECALHO_DOS_DESLIGADOS, CAMPOS_DOS_DESLIGADOS,
 } from '../js/lib/colaboradores.js'
 import { acharCabecalho, exemplosDaColuna, extrairRegistros, lerTextoDoCsv, nomeDaColuna, sugerirMapeamento } from '../js/lib/importacao.js'
 
@@ -86,15 +87,6 @@ describe('colaboradores: cadastro', () => {
     assert.match(r.erros.email, /não parece válido/)
   })
 
-  it('reconhece pai ou mãe escrito de vários jeitos', () => {
-    assert.equal(normalizarPaiOuMae('MAE'), 'Mãe')
-    assert.equal(normalizarPaiOuMae(' mãe '), 'Mãe')
-    assert.equal(normalizarPaiOuMae('Pai'), 'Pai')
-    assert.equal(normalizarPaiOuMae('não'), '')
-    assert.equal(normalizarPaiOuMae(''), '')
-    assert.equal(normalizarPaiOuMae('Sim'), null)
-    assert.equal(normalizarPaiOuMae('Pai e mãe'), null)
-  })
 })
 
 describe('importação: substituir a lista atual', () => {
@@ -243,14 +235,14 @@ describe('colaboradores: lista e setores', () => {
     assert.deepEqual(linhaDaLista({ nome: 'A', setor: 'B', loja: 'Aracaju', cargo: '', lideranca: '', nascimentoDia: 5, nascimentoMes: 3, admissao: '2020-03-01', ativo: true }), ['A', 'B', 'Aracaju', '', '', '05/03', '01/03/2020', '', '', '', 'Ativo'])
   })
 
-  it('a planilha baixada volta na importação com pai ou mãe e contatos', () => {
+  it('a planilha baixada volta na importação com os contatos (pai ou mãe só pela lista oficial)', () => {
     const c = { id: 'v1', nome: 'Vítor Vendedor', setor: 'Comercial', loja: 'Aracaju', paiOuMae: 'Pai', telefone: '71999998888', email: 'vitor@exemplo.com', ativo: true }
     assert.equal(CABECALHO_DA_LISTA.length, linhaDaLista(c).length)
     const linhas = [CABECALHO_DA_LISTA, linhaDaLista(c)]
     const mapa = sugerirMapeamento(linhas[0], CAMPOS_DA_PLANILHA)
     const previa = prepararImportacao({ registros: extrairRegistros(linhas, 0, mapa), colaboradores, setores })
     const { paiOuMae, telefone, email } = previa.itens[0].dados
-    assert.deepEqual({ paiOuMae, telefone, email }, { paiOuMae: 'Pai', telefone: '71999998888', email: 'vitor@exemplo.com' })
+    assert.deepEqual({ paiOuMae, telefone, email }, { paiOuMae: undefined, telefone: '71999998888', email: 'vitor@exemplo.com' })
     assert.deepEqual(previa.itens[0].avisos, [])
   })
 })
@@ -355,17 +347,18 @@ describe('importação de planilha', () => {
     const indice = acharCabecalho(linhas, CAMPOS_DA_PLANILHA)
     assert.equal(indice, 2)
     const mapa = sugerirMapeamento(linhas[indice], CAMPOS_DA_PLANILHA)
-    assert.deepEqual(mapa, { nome: 0, setor: 1, loja: 2, cargo: 3, lideranca: 4, nascimento: 5, admissao: 6, paiOuMae: -1, temFilhos: -1, genero: -1, telefone: -1, email: -1 })
+    assert.deepEqual(mapa, { nome: 0, setor: 1, loja: 2, cargo: 3, lideranca: 4, nascimento: 5, admissao: 6, temFilhos: -1, genero: -1, telefone: -1, email: -1 })
     assert.equal(nomeDaColuna(0), 'A')
     assert.equal(nomeDaColuna(27), 'AB')
     assert.deepEqual(exemplosDaColuna(linhas, indice, 1, 2), ['Comercial', 'Financeiro'])
   })
 
-  it('não confunde "Nome da mãe" com a coluna "Pai ou mãe"', () => {
+  it('não confunde "Nome da mãe" ou "Nome do pai" com as colunas de filhos', () => {
     const cabecalho = ['Nome', 'Nome da mãe', 'Nome do pai', 'Celular', 'E-mail corporativo']
     const mapa = sugerirMapeamento(cabecalho, CAMPOS_DA_PLANILHA)
     assert.equal(mapa.nome, 0)
-    assert.equal(mapa.paiOuMae, -1)
+    assert.equal(mapa.temFilhos, -1)
+    assert.equal(mapa.genero, -1)
     assert.equal(mapa.telefone, 3)
     assert.equal(mapa.email, 4)
   })
@@ -376,13 +369,13 @@ describe('importação de planilha', () => {
     assert.equal(cabecalho[mapa.temFilhos], 'Tem Filhos')
     assert.equal(cabecalho[mapa.genero], 'Gênero')
     assert.equal(cabecalho[mapa.telefone], 'Celular')
-    assert.equal(mapa.paiOuMae, -1)
+    assert.ok(!CAMPOS_DA_PLANILHA.some((c) => c.chave === 'paiOuMae'), 'a linha "Pai ou mãe" saiu da tela das colunas')
     // "Nome dos filhos" e "Quantidade de filhos" não dizem se a pessoa tem filhos em Sim ou Não.
     assert.equal(sugerirMapeamento(['Nome', 'Nome dos filhos', 'Quantidade de filhos'], CAMPOS_DA_PLANILHA).temFilhos, -1)
   })
 
   it('"Tem Filhos" com "Gênero" dizem se é pai ou mãe, e o gênero não é guardado', () => {
-    const importar = (temFilhos, genero, extra = {}) => prepararImportacao({ registros: [{ linha: 2, valores: { nome: 'Pessoa Nova', temFilhos, genero, ...extra } }], colaboradores, setores }).itens[0]
+    const importar = (temFilhos, genero) => prepararImportacao({ registros: [{ linha: 2, valores: { nome: 'Pessoa Nova', temFilhos, genero } }], colaboradores, setores }).itens[0]
     assert.equal(importar('Sim', 'Masculino').dados.paiOuMae, 'Pai')
     assert.equal(importar('Sim', 'Feminino').dados.paiOuMae, 'Mãe')
     assert.equal(importar('SIM', 'f').dados.paiOuMae, 'Mãe')
@@ -391,8 +384,6 @@ describe('importação de planilha', () => {
     assert.ok(!('paiOuMae' in importar('', 'Feminino').dados))
     assert.ok(!('genero' in importar('Sim', 'Feminino').dados))
     assert.ok(!('temFilhos' in importar('Sim', 'Feminino').dados))
-    // A coluna "Pai ou mãe" vale primeiro.
-    assert.equal(importar('Sim', 'Feminino', { paiOuMae: 'Pai' }).dados.paiOuMae, 'Pai')
   })
 
   it('avisa quando não dá para saber se é pai ou mãe', () => {
@@ -410,9 +401,9 @@ describe('importação de planilha', () => {
 
   it('importa pai ou mãe e contatos, com aviso no que não entende', () => {
     const registros = [
-      { linha: 2, valores: { nome: 'Nova Mãe', paiOuMae: 'mãe', telefone: 71999998888, email: 'NOVA@exemplo.com' } },
-      { linha: 3, valores: { nome: 'Pessoa Duvidosa', paiOuMae: 'Sim', telefone: '123', email: 'sem-arroba' } },
-      { linha: 4, valores: { nome: 'Vítor Vendedor', paiOuMae: '', telefone: '', email: '' } },
+      { linha: 2, valores: { nome: 'Nova Mãe', temFilhos: 'Sim', genero: 'Feminino', telefone: 71999998888, email: 'NOVA@exemplo.com' } },
+      { linha: 3, valores: { nome: 'Pessoa Duvidosa', temFilhos: 'Talvez', genero: 'Feminino', telefone: '123', email: 'sem-arroba' } },
+      { linha: 4, valores: { nome: 'Vítor Vendedor', temFilhos: '', genero: '', telefone: '', email: '' } },
     ]
     const previa = prepararImportacao({ registros, colaboradores, setores })
     const [nova, duvidosa, vitor] = previa.itens
@@ -546,5 +537,73 @@ describe('importação de planilha', () => {
 
   it('mostra datas do Excel legíveis nos exemplos da coluna', () => {
     assert.deepEqual(exemplosDaColuna([['Admissão'], [45000], ['15/03/2020']], 0, 0, 3, 'data'), ['15/03/2023', '15/03/2020'])
+  })
+})
+
+describe('colaboradores: desligados', () => {
+  it('lista só quem está desativado, os desligados mais recentes primeiro e sem data no fim', () => {
+    const pessoas = [
+      { id: 'a', nome: 'Ana', ativo: false, desligamento: '2026-03-10' },
+      { id: 'b', nome: 'Bia', ativo: false },
+      { id: 'c', nome: 'Caio', ativo: false, desligamento: '2026-10-01' },
+      { id: 'd', nome: 'Davi', ativo: true },
+    ]
+    assert.deepEqual(filtrarDesligados(pessoas).map((c) => c.id), ['c', 'a', 'b'])
+    assert.deepEqual(filtrarDesligados(pessoas, { busca: 'bia' }).map((c) => c.id), ['b'])
+  })
+
+  it('a aba "Desligados" da lista oficial acha as colunas e desativa quem já existe', () => {
+    const linhas = [['Nome', 'Data de Desligamento'], ['Vítor Vendedor', '15/09/2026'], ['Pessoa Que Saiu', 46300], ['Lia Logística', ''], ['', '01/01/2026'], ['vitor vendedor', '']]
+    const mapa = sugerirMapeamento(linhas[0], CAMPOS_DOS_DESLIGADOS)
+    assert.deepEqual(mapa, { nome: 0, desligamento: 1 })
+    const previa = prepararDesligados({ registros: extrairRegistros(linhas, 0, mapa), colaboradores })
+    assert.deepEqual(previa.contagem, { novos: 1, existentes: 2, repetidos: 1, ignorados: 1 })
+    const [vitor, nova, lia] = previa.itens
+    assert.equal(vitor.dados.desligamento, '2026-09-15')
+    assert.match(vitor.avisos[0], /ativo no cadastro/)
+    assert.match(nova.dados.desligamento, /^2026-/)
+    assert.deepEqual(lia.avisos, [])
+
+    let n = 0
+    const ops = operacoesDosDesligados(previa, { novoId: () => 'novo' + ++n, agora: () => 'AGORA' })
+    assert.deepEqual(ops.find((o) => o.caminho === 'colaboradores/v1').dados, { ativo: false, desligamento: '2026-09-15', atualizadoEm: 'AGORA' })
+    // Sem data na planilha, não apaga a data que já existe.
+    assert.deepEqual(ops.find((o) => o.caminho === 'colaboradores/l1').dados, { ativo: false, atualizadoEm: 'AGORA' })
+    const criada = ops.find((o) => o.caminho === 'colaboradores/novo1')
+    assert.equal(criada.tipo, 'definir')
+    assert.equal(criada.dados.nome, 'Pessoa Que Saiu')
+    assert.equal(criada.dados.ativo, false)
+    assert.ok(!ops.some((o) => o.tipo === 'apagar'))
+  })
+
+  it('a planilha dos desligados volta na importação', () => {
+    const c = { nome: 'Ana', desligamento: '2026-03-10', setor: 'RH', loja: 'Aracaju', cargo: 'Analista' }
+    const linhas = [CABECALHO_DOS_DESLIGADOS, linhaDosDesligados(c)]
+    const mapa = sugerirMapeamento(linhas[0], CAMPOS_DOS_DESLIGADOS)
+    const previa = prepararDesligados({ registros: extrairRegistros(linhas, 0, mapa), colaboradores: [] })
+    assert.equal(previa.itens[0].dados.desligamento, '2026-03-10')
+  })
+
+  it('reativar pela substituição tira a data de desligamento', () => {
+    const previa = prepararImportacao({ registros: [{ linha: 2, valores: { nome: 'Lia Logística' } }], colaboradores, setores })
+    const ops = operacoesDaImportacao(previa, { setores, substituir: true, novoId: () => 'n', agora: () => 'AGORA', incluirNaLista: () => 0, tirarDaLista: () => 0 })
+    assert.deepEqual(ops.find((o) => o.caminho === 'colaboradores/l1').dados, { ativo: true, desligamento: null, atualizadoEm: 'AGORA' })
+  })
+})
+
+describe('colaboradores: excluir de vez', () => {
+  it('apaga o cadastro e tira a pessoa das lideranças e do vendedor dos eletricistas', () => {
+    const ops = operacoesDaExclusao({
+      id: 'g1',
+      setores: [...setores, { id: 'rh', nome: 'RH', gerentes: [], coordenadores: ['g1'], supervisores: ['g1'] }],
+      eletricistas: [{ id: 'e1', vendedorId: 'g1', vendedorNome: 'Gabriel Gerente' }, { id: 'e2', vendedorId: 'v1' }],
+      tirarDaLista: (...ids) => ({ tirar: ids }),
+    })
+    assert.deepEqual(ops, [
+      { tipo: 'apagar', caminho: 'colaboradores/g1' },
+      { tipo: 'atualizar', caminho: 'setores/comercial', dados: { gerentes: { tirar: ['g1'] } } },
+      { tipo: 'atualizar', caminho: 'setores/rh', dados: { coordenadores: { tirar: ['g1'] }, supervisores: { tirar: ['g1'] } } },
+      { tipo: 'atualizar', caminho: 'eletricistas/e1', dados: { vendedorId: '' } },
+    ])
   })
 })

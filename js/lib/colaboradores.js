@@ -28,8 +28,6 @@ export const CAMPOS_DA_PLANILHA = [
   { chave: 'lideranca', rotulo: 'Liderança', sinonimos: ['lideranca', 'lider', 'gestao'] },
   { chave: 'nascimento', rotulo: 'Data de nascimento', tipo: 'data', sinonimos: ['data de nascimento', 'nascimento', 'aniversario', 'data nascimento', 'dt nascimento'] },
   { chave: 'admissao', rotulo: 'Data de admissão', tipo: 'data', sinonimos: ['data de admissao', 'admissao', 'data admissao', 'dt admissao', 'contratacao'] },
-  // Sem "pai" ou "mae" soltos: colunas como "Nome da mãe" não podem ser confundidas com esta.
-  { chave: 'paiOuMae', rotulo: 'Pai ou mãe', sinonimos: ['pai ou mae', 'mae ou pai', 'pai mae', 'mae pai'] },
   // Lista oficial: "Tem Filhos" (Sim ou Não) com "Gênero" dizem se é pai ou mãe. Sem "filhos" solto: "Nome dos filhos" não serve.
   { chave: 'temFilhos', rotulo: 'Tem filhos (Sim ou Não)', sinonimos: ['tem filhos', 'tem filho', 'possui filhos', 'possui filho'] },
   { chave: 'genero', rotulo: 'Gênero (só para saber se é pai ou mãe)', sinonimos: ['genero', 'sexo'] },
@@ -54,12 +52,6 @@ export function normalizarLideranca(texto) {
   if (t.includes('coorden')) return 'Coordenador'
   if (t.includes('supervis')) return 'Supervisor'
   return null
-}
-
-export function normalizarPaiOuMae(texto) {
-  const t = normalizar(texto)
-  if (!t || ['nao', 'nenhum', 'nenhuma', 'sem', 'n'].includes(t)) return ''
-  return PAI_OU_MAE.find((p) => normalizar(p.valor) === t)?.valor ?? null
 }
 
 // "Tem Filhos" da planilha: true, false ou null quando não dá para entender.
@@ -314,12 +306,8 @@ export function prepararImportacao({ registros, colaboradores, setores }) {
       else avisos.push('Data de admissão não entendida (precisa ter dia, mês e ano); fica em branco.')
     }
 
-    const paiOuMaeTexto = limparEspacos(valores.paiOuMae)
-    if (paiOuMaeTexto) {
-      const paiOuMae = normalizarPaiOuMae(paiOuMaeTexto)
-      if (paiOuMae === null) avisos.push(`Pai ou mãe "${paiOuMaeTexto}" não reconhecido; use Pai, Mãe ou Não.`)
-      else dados.paiOuMae = paiOuMae
-    } else if (limparEspacos(valores.temFilhos)) {
+    // Pai ou mãe só pela planilha oficial: "Tem Filhos" com "Gênero". No cadastro, a pessoa escolhe à mão.
+    if (limparEspacos(valores.temFilhos)) {
       const temFilhos = normalizarTemFilhos(valores.temFilhos)
       if (temFilhos === null) avisos.push(`Tem filhos "${limparEspacos(valores.temFilhos)}" não reconhecido; use Sim ou Não.`)
       else if (!temFilhos) dados.paiOuMae = ''
@@ -424,6 +412,7 @@ export function operacoesDaImportacao(previa, { setores, atualizarExistentes = t
           paiOuMae: item.dados.paiOuMae ?? '',
           telefone: item.dados.telefone ?? '',
           email: item.dados.email ?? '',
+          desligamento: null,
           ativo: true,
           criadoEm: agora(),
           atualizadoEm: agora(),
@@ -432,7 +421,7 @@ export function operacoesDaImportacao(previa, { setores, atualizarExistentes = t
       marcarLideranca(id, item.dados)
     } else if (item.situacao === 'existente' && (atualizarExistentes || substituir)) {
       const { nome: _nome, ...campos } = item.dados
-      if (substituir && item.inativo) campos.ativo = true
+      if (substituir && item.inativo) Object.assign(campos, { ativo: true, desligamento: null })
       if (Object.keys(campos).length === 0) continue
       operacoes.push({ tipo: 'atualizar', caminho: `colaboradores/${item.id}`, dados: { ...campos, atualizadoEm: agora() } })
       ajustarExistente(item)
@@ -491,3 +480,98 @@ export const linhaDaLista = (c) => [
   c.email ?? '',
   c.ativo === false ? 'Desativado' : 'Ativo',
 ]
+
+// Desligados: colaboradores desativados, com a data de desligamento quando se sabe ("AAAA-MM-DD" ou null).
+// Os mais recentes primeiro; sem data, no fim.
+export function filtrarDesligados(lista, { busca = '' } = {}) {
+  return lista
+    .filter((c) => c.ativo === false && combinaBusca(c.nome, busca))
+    .sort((a, b) => compararTexto(b.desligamento ?? '', a.desligamento ?? '') || compararTexto(a.nome, b.nome))
+}
+
+// Aba "Desligados" da lista oficial: Nome e Data de Desligamento.
+export const CAMPOS_DOS_DESLIGADOS = [
+  CAMPOS_DA_PLANILHA[0],
+  {
+    chave: 'desligamento',
+    rotulo: 'Data de desligamento',
+    tipo: 'data',
+    sinonimos: ['data de desligamento', 'desligamento', 'data desligamento', 'data de saida', 'saida', 'data de demissao', 'demissao'],
+  },
+]
+
+// Quem já está no cadastro é desativado e recebe a data; quem não está entra só com o nome e a data, já
+// desativado, para a lista de desligados ficar completa.
+export function prepararDesligados({ registros, colaboradores }) {
+  const existentes = new Map(colaboradores.map((c) => [normalizar(c.nome), c]))
+  const vistos = new Set()
+  const itens = registros.map(({ linha, valores }) => {
+    const nome = limparEspacos(valores.nome).slice(0, 120)
+    if (!nome) return { linha, nome: '', situacao: 'ignorado', dados: null, avisos: ['Linha sem nome.'] }
+    const chave = normalizar(nome)
+    if (vistos.has(chave)) return { linha, nome, situacao: 'repetido', dados: null, avisos: ['Nome repetido na planilha; vale a primeira linha.'] }
+    vistos.add(chave)
+    const dados = {}
+    const avisos = []
+    if (String(valores.desligamento ?? '').trim() !== '') {
+      const data = lerDataDaPlanilha(valores.desligamento)
+      const iso = data?.ano ? montarISO(data.ano, data.mes, data.dia) : null
+      if (iso) dados.desligamento = iso
+      else avisos.push('Data de desligamento não entendida (precisa ter dia, mês e ano); fica em branco.')
+    }
+    const atual = existentes.get(chave)
+    if (atual && atual.ativo !== false) avisos.push('Está ativo no cadastro e será desativado.')
+    return { linha, nome, situacao: atual ? 'existente' : 'novo', id: atual?.id ?? null, dados, avisos }
+  })
+  const conta = (s) => itens.filter((i) => i.situacao === s).length
+  return { itens, contagem: { novos: conta('novo'), existentes: conta('existente'), repetidos: conta('repetido'), ignorados: conta('ignorado') } }
+}
+
+export function operacoesDosDesligados(previa, { novoId, agora }) {
+  const operacoes = []
+  for (const item of previa.itens) {
+    const desligamento = item.dados?.desligamento
+    if (item.situacao === 'novo') {
+      operacoes.push({
+        tipo: 'definir',
+        caminho: `colaboradores/${novoId('colaboradores')}`,
+        dados: {
+          nome: item.nome,
+          setor: '',
+          loja: '',
+          cargo: '',
+          lideranca: '',
+          nascimentoDia: null,
+          nascimentoMes: null,
+          admissao: null,
+          paiOuMae: '',
+          telefone: '',
+          email: '',
+          desligamento: desligamento ?? null,
+          ativo: false,
+          criadoEm: agora(),
+          atualizadoEm: agora(),
+        },
+      })
+    } else if (item.situacao === 'existente') {
+      // Data vazia na planilha não apaga a que já existe.
+      operacoes.push({ tipo: 'atualizar', caminho: `colaboradores/${item.id}`, dados: { ativo: false, ...(desligamento ? { desligamento } : {}), atualizadoEm: agora() } })
+    }
+  }
+  return operacoes
+}
+
+export const CABECALHO_DOS_DESLIGADOS = ['Nome', 'Data de desligamento', 'Setor', 'Loja', 'Cargo']
+export const linhaDosDesligados = (c) => [c.nome ?? '', formatarData(c.desligamento), c.setor ?? '', c.loja ?? '', c.cargo ?? '']
+
+// Excluir de vez: apaga o cadastro e tira a pessoa das lideranças dos setores e do vendedor dos eletricistas
+// (o nome do vendedor fica como texto). Listas de presença e controles de aniversário guardam o nome e não mudam.
+export function operacoesDaExclusao({ id, setores, eletricistas = [], tirarDaLista }) {
+  const operacoes = [{ tipo: 'apagar', caminho: `colaboradores/${id}` }]
+  for (const setor of setores) {
+    const niveis = NIVEIS_DE_LIDERANCA.filter(({ campo }) => (setor[campo] ?? []).includes(id))
+    if (niveis.length) operacoes.push({ tipo: 'atualizar', caminho: `setores/${setor.id}`, dados: Object.fromEntries(niveis.map(({ campo }) => [campo, tirarDaLista(id)])) })
+  }
+  for (const e of eletricistas) if (e.vendedorId === id) operacoes.push({ tipo: 'atualizar', caminho: `eletricistas/${e.id}`, dados: { vendedorId: '' } })
+  return operacoes
+}

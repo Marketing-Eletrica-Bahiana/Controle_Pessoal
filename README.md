@@ -5,8 +5,9 @@ App interno da Elétrica Bahiana para organizar, num lugar só:
 - **Dashboard** (tela inicial): números gerais, listas abertas, aniversariantes do mês, setores,
   participação das marcas, presença nos treinamentos do CAE e do Comercial.
 - **Colaboradores**: quem trabalha em cada setor e loja, com gerentes, coordenadores e supervisores.
-  A parte **Pais e mães** mostra quem é pai ou mãe na empresa, com os contatos.
-- **Aniversariantes**: do mês (nascimento) e de empresa (tempo de casa).
+  A parte **Pais e mães** mostra quem é pai ou mãe na empresa, com os contatos, e a parte **Desligados**
+  mostra quem saiu, com a data de desligamento.
+- **Aniversariantes**: do mês (nascimento) e de empresa (tempo de casa), com o contato de cada pessoa.
 - **Fornecedores**: as marcas parceiras (Soprano, Legrand, Ledvance...).
 - **Eletricistas do CAE**: cadastro dos eletricistas, com o vendedor de cada um.
 - **Listas**: listas de presença com check-in pelo celular nos treinamentos, eventos e ações
@@ -51,8 +52,7 @@ Quem tem acesso ao app vê os contatos; só a administração edita. Há dois je
    preencha o telefone e o e-mail.
 2. **Muitas de uma vez:** em **Importar planilha**, use a lista oficial de colaboradores: as colunas
    `Tem Filhos` (Sim ou Não) e `Gênero` dizem se a pessoa é pai ou mãe, e o gênero não fica guardado.
-   Outra planilha também serve, com as colunas `Nome`, `Pai ou mãe` (`Pai`, `Mãe` ou `Não`), `Telefone` e
-   `E-mail`. Quem já está cadastrado com o mesmo nome só recebe o que estiver preenchido na planilha.
+   Quem já está cadastrado com o mesmo nome só recebe o que estiver preenchido na planilha.
 
 Celular abre a conversa no WhatsApp; telefone fixo abre a ligação. **Baixar lista** gera a planilha
 do que está filtrado na tela.
@@ -68,6 +68,21 @@ lá. Para evitar isso, importe a lista completa e marque, na prévia, **Substitu
 
 A prévia mostra quem vai ser desativado e avisa em vermelho se for mais da metade da equipe (sinal de planilha
 ou aba errada). Antes de gravar, o app pede confirmação.
+
+## Desligados
+
+Em **Colaboradores > Desligados** ficam todos os desativados, com a data de desligamento. Para trazer a lista
+oficial, clique em **Importar desligados** e escolha o arquivo: a aba "Desligados" já vem escolhida. Quem já está
+no cadastro é desativado e recebe a data; quem não está entra só com o nome e a data.
+
+Para tirar alguém do cadastro para sempre (um cadastro duplicado, por exemplo), use a lixeira na linha da pessoa
+ou **Excluir de vez** na ficha. O botão só aparece para quem já está desativado, e não dá para desfazer. As listas
+de presença e os controles de aniversário continuam mostrando o nome.
+
+## Mudar a ordem das listas
+
+Em qualquer tabela, clique no título de uma coluna para ordenar por ela; clique de novo para inverter. No
+celular, use o campo **Ordenar por** acima da lista. A ordem escolhida fica guardada enquanto você navega.
 
 ## Como cadastrar um novo usuário
 

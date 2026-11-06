@@ -18,6 +18,7 @@ import {
 import { el, icone, trocar } from '../ui/dom.js'
 import { baixarPlanilha } from '../ui/planilha.js'
 import { VARIANTE_DO_STATUS, cabecalhoDaAba, periodo } from './aniversariantes/comum.js'
+import { contatosDoColaborador } from './colaboradores/contatos.js'
 import { montarControle } from './aniversariantes/controle.js'
 import { montarHistorico } from './aniversariantes/historico.js'
 
@@ -169,6 +170,7 @@ function montarMes(raiz, { pessoa }) {
                   ehHoje(a.dia, periodo.mes, hoje) && periodo.ano === hoje.ano && etiqueta('Hoje!', 'vermelha'),
                 ],
               },
+              { rotulo: 'Contato', ordenavel: false, celula: (a) => contatosDoColaborador(a.colaborador) },
               { rotulo: 'Setor', celula: (a) => a.colaborador.setor || 'Sem setor' },
               { rotulo: 'Loja', celula: (a) => a.colaborador.loja || '' },
               empresa && { rotulo: 'Tempo de casa', celula: (a) => plural(a.anos, 'ano', 'anos') },

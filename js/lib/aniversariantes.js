@@ -1,5 +1,6 @@
 // Aniversariantes do mês (pelo dia e mês do nascimento) e de empresa (tempo de casa pela admissão),
 // e o controle mensal de quem participou da ação da mensagem de Feliz Aniversário.
+import { formatarWhatsapp } from './contato.js'
 import { formatarDiaMes, formatarMesAno, nomeDoMes } from './datas.js'
 import { STATUS_ANIVERSARIO, detalheDoColaborador } from './listas.js'
 import { compararTexto } from './texto.js'
@@ -112,16 +113,17 @@ export function abasDoMes({ mes, ano, doMes, deEmpresa, statusMes, statusEmpresa
     const p = mapa.get(id)
     return p ? [STATUS_ANIVERSARIO[p.status] ?? 'Pendente', p.observacao ?? ''] : ['Fora do controle', '']
   }
+  const contato = (c) => [formatarWhatsapp(c.telefone), c.email ?? '']
   return [
     {
       nome: 'Aniversariantes',
-      cabecalho: ['Dia', 'Nome', 'Setor', 'Loja', 'Status', 'Observação'],
-      linhas: doMes.map(({ colaborador: c, dia }) => [formatarDiaMes(dia, mes), c.nome, c.setor ?? '', c.loja ?? '', ...status(statusMes, c.id)]),
+      cabecalho: ['Dia', 'Nome', 'Setor', 'Loja', 'Telefone', 'E-mail', 'Status', 'Observação'],
+      linhas: doMes.map(({ colaborador: c, dia }) => [formatarDiaMes(dia, mes), c.nome, c.setor ?? '', c.loja ?? '', ...contato(c), ...status(statusMes, c.id)]),
     },
     {
       nome: 'Aniversário de empresa',
-      cabecalho: ['Dia', 'Nome', 'Setor', 'Loja', 'Anos de casa', 'Status', 'Observação'],
-      linhas: deEmpresa.map(({ colaborador: c, dia, anos }) => [formatarDiaMes(dia, mes), c.nome, c.setor ?? '', c.loja ?? '', anos, ...status(statusEmpresa, c.id)]),
+      cabecalho: ['Dia', 'Nome', 'Setor', 'Loja', 'Telefone', 'E-mail', 'Anos de casa', 'Status', 'Observação'],
+      linhas: deEmpresa.map(({ colaborador: c, dia, anos }) => [formatarDiaMes(dia, mes), c.nome, c.setor ?? '', c.loja ?? '', ...contato(c), anos, ...status(statusEmpresa, c.id)]),
     },
   ]
 }

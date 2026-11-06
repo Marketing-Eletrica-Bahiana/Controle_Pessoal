@@ -7,7 +7,7 @@ import { mensagemDeErro } from '../../lib/erros.js'
 import { ehListaDeAniversario } from '../../lib/listas.js'
 import { endereco } from '../../lib/rotas.js'
 import { combinaBusca, formatarNumero } from '../../lib/texto.js'
-import { aviso, bloco, campoBusca, carregando, etiqueta, filtroSelecao, listaComLimite, tabela } from '../../ui/componentes.js'
+import { aviso, bloco, campoBusca, carregando, etiqueta, filtroSelecao, tabela } from '../../ui/componentes.js'
 import { el, trocar } from '../../ui/dom.js'
 import { VARIANTE_DO_STATUS, cabecalhoDaAba } from './comum.js'
 
@@ -116,16 +116,15 @@ export function montarHistorico(raiz) {
       bloco(
         { titulo: 'Por colaborador', icone: 'users', descricao: 'Mês a mês, o que ficou marcado em cada controle.' },
         pessoas.length
-          ? listaComLimite(pessoas, (itens) =>
-              tabela({
-                itens,
+          ? tabela({
+                itens: pessoas,
+                limite: 200,
                 chave: (p) => p.pessoaId,
                 colunas: [
                   { rotulo: 'Nome', principal: true, celula: linkDaPessoa },
                   { rotulo: 'Meses', celula: (p) => el('div', { class: 'chips' }, p.registros.map(chip)) },
                 ],
-              }),
-            )
+              })
           : el('p', { class: 'texto-suave' }, 'Ninguém encontrado.'),
       ),
     )

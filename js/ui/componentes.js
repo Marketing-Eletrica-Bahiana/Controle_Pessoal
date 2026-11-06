@@ -1,6 +1,7 @@
 // Componentes do sistema de design #EnergiaBahiana: botões, janelas, avisos, campos, tabelas e cartões.
 import { mensagemDeErro } from '../lib/erros.js'
-import { atrasar, el, icone, trocar } from './dom.js'
+import { compararTexto } from '../lib/texto.js'
+import { achatar, atrasar, el, icone, trocar } from './dom.js'
 import { mascote } from './marca.js'
 
 let contadorDeIds = 0
@@ -290,31 +291,122 @@ export const indicadores = (itens, { classe } = {}) =>
     ),
   )
 
-// Tabela que vira lista de cartões no celular.
-// colunas: [{ rotulo, celula: (item) => conteúdo, classe, principal }]
-export function tabela({ colunas, itens, classe, chave = (item) => item.id, classeDaLinha }) {
-  return el(
-    'div',
-    { class: 'tabela-caixa' },
-    el(
-      'table',
-      { class: ['tabela', 'tabela--responsiva', classe] },
-      el('thead', {}, el('tr', {}, colunas.map((c) => el('th', { scope: 'col', class: c.classe }, c.rotulo)))),
+// Ordem escolhida em cada tabela, guardada enquanto a pessoa navega. A chave é a tela mais as colunas.
+const ordensDasTabelas = new Map()
+
+const textoDe = (conteudo) => achatar([conteudo]).map((no) => no.textContent).join(' ').replace(/\s+/g, ' ').trim()
+// "25/12/2026 14:30" vira "2026-12-25 14:30", para as datas ficarem em ordem.
+const valorDeOrdem = (texto) => texto.replace(/^(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1')
+const vazio = (v) => v === '' || v === null || v === undefined
+
+// Tabela que vira lista de cartões no celular, com setinhas no título das colunas para mudar a ordem
+// (no celular, um campo "Ordenar por"). A lista inteira é ordenada antes de mostrar os primeiros.
+// colunas: [{ rotulo, celula: (item) => conteúdo, classe, principal, ordem?: (item) => valor, ordenavel?: false }]
+// Sem "ordem", vale o texto da célula. limite: mostra só os primeiros, com botão para ver mais.
+export function tabela({ colunas, itens, classe, chave = (item) => item.id, classeDaLinha, limite }) {
+  const ordenaveis = colunas.filter((c) => c.rotulo && c.ordenavel !== false && !String(c.classe ?? '').includes('tabela__acoes'))
+  const idDaOrdem = `${window.location.hash.split('/').slice(0, 2).join('/')}|${colunas.map((c) => c.rotulo).join('|')}`
+  const caixa = el('div', { class: 'tabela-ordenavel' })
+
+  function ordemAtual() {
+    const ordem = ordensDasTabelas.get(idDaOrdem)
+    const coluna = ordem && ordenaveis.find((c) => c.rotulo === ordem.rotulo)
+    return coluna ? { coluna, sentido: ordem.sentido } : null
+  }
+
+  function ordenar(lista) {
+    const ordem = ordemAtual()
+    if (!ordem) return lista
+    const { coluna, sentido } = ordem
+    const valor = (item) => (coluna.ordem ? coluna.ordem(item) : valorDeOrdem(textoDe(coluna.celula(item))))
+    return lista
+      .map((item) => [valor(item), item])
+      .sort(([a], [b]) => {
+        // Vazios sempre no fim, nos dois sentidos.
+        if (vazio(a) || vazio(b)) return Number(vazio(a)) - Number(vazio(b))
+        return sentido * (typeof a === 'number' && typeof b === 'number' ? a - b : compararTexto(a, b))
+      })
+      .map(([, item]) => item)
+  }
+
+  function mudarOrdem(rotulo, sentido) {
+    const atual = ordensDasTabelas.get(idDaOrdem)
+    if (!rotulo) ordensDasTabelas.delete(idDaOrdem)
+    else ordensDasTabelas.set(idDaOrdem, { rotulo, sentido: sentido ?? (atual?.rotulo === rotulo ? -atual.sentido : 1) })
+    desenhar()
+  }
+
+  function titulo(c, ordem) {
+    if (!ordenaveis.includes(c)) return el('th', { scope: 'col', class: c.classe }, c.rotulo)
+    const ativa = ordem?.coluna === c
+    return el(
+      'th',
+      { scope: 'col', class: c.classe, 'aria-sort': ativa ? (ordem.sentido === 1 ? 'ascending' : 'descending') : null },
       el(
-        'tbody',
-        {},
-        itens.map((item) =>
-          el(
-            'tr',
-            { 'data-chave': chave(item), class: classeDaLinha?.(item) },
-            colunas.map((c) =>
-              el('td', { class: [c.classe, c.principal && 'tabela__principal'], 'data-rotulo': c.principal ? null : c.rotulo }, c.celula(item)),
+        'button',
+        { type: 'button', class: ['tabela__ordenar', ativa && 'ativo'], title: `Ordenar por ${c.rotulo}`, onClick: () => mudarOrdem(c.rotulo) },
+        c.rotulo,
+        icone(ativa ? (ordem.sentido === 1 ? 'chevron-up' : 'chevron-down') : 'chevrons-up-down'),
+      ),
+    )
+  }
+
+  function ordemNoCelular(ordem) {
+    const atual = ordem ? `${ordem.coluna.rotulo}|${ordem.sentido}` : ''
+    const opcoes = [
+      { valor: '', rotulo: 'Ordem padrão' },
+      ...ordenaveis.flatMap((c) => [
+        { valor: `${c.rotulo}|1`, rotulo: `${c.rotulo} (crescente)` },
+        { valor: `${c.rotulo}|-1`, rotulo: `${c.rotulo} (decrescente)` },
+      ]),
+    ]
+    const escolha = selecao(opcoes, atual, {
+      'aria-label': 'Ordenar por',
+      onChange: (e) => {
+        const [rotulo, sentido] = e.target.value.split('|')
+        mudarOrdem(rotulo || null, Number(sentido))
+      },
+    })
+    return el('label', { class: 'tabela__ordem-celular' }, el('span', {}, 'Ordenar por'), escolha)
+  }
+
+  function desenharTabela(lista, ordem) {
+    return el(
+      'div',
+      { class: 'tabela-caixa' },
+      el(
+        'table',
+        { class: ['tabela', 'tabela--responsiva', classe] },
+        el('thead', {}, el('tr', {}, colunas.map((c) => titulo(c, ordem)))),
+        el(
+          'tbody',
+          {},
+          lista.map((item) =>
+            el(
+              'tr',
+              { 'data-chave': chave(item), class: classeDaLinha?.(item) },
+              colunas.map((c) =>
+                el('td', { class: [c.classe, c.principal && 'tabela__principal'], 'data-rotulo': c.principal ? null : c.rotulo }, c.celula(item)),
+              ),
             ),
           ),
         ),
       ),
-    ),
-  )
+    )
+  }
+
+  function desenhar() {
+    const ordem = ordemAtual()
+    const lista = ordenar(itens)
+    trocar(
+      caixa,
+      ordenaveis.length > 0 && itens.length > 1 && ordemNoCelular(ordem),
+      limite ? listaComLimite(lista, (parte) => desenharTabela(parte, ordem), { passo: limite }) : desenharTabela(lista, ordem),
+    )
+  }
+
+  desenhar()
+  return caixa
 }
 
 // Mostra os primeiros itens de uma lista grande, com botão para ver mais.
