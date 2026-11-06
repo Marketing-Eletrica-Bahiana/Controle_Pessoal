@@ -349,24 +349,53 @@ export function prepararImportacao({ registros, colaboradores, setores }) {
       nome,
       situacao: atual ? 'existente' : 'novo',
       id: atual?.id ?? null,
+      inativo: atual?.ativo === false,
       antes: atual ? { setor: atual.setor ?? '', lideranca: atual.lideranca ?? '' } : null,
       dados,
       avisos,
     }
   })
 
+  // Para "Substituir a lista atual": quem está ativo e não aparece na planilha. Planilha sem nenhum nome não
+  // substitui nada (senão desativaria todo mundo).
+  const ausentes = vistos.size
+    ? colaboradores
+        .filter((c) => c.ativo !== false && !vistos.has(normalizar(c.nome)))
+        .sort((a, b) => compararTexto(a.nome, b.nome))
+        .map(({ id, nome }) => ({ id, nome }))
+    : []
+
   const conta = (s) => itens.filter((i) => i.situacao === s).length
   return {
     itens,
     setoresNovos: [...setoresNovos.values()],
+    ausentes,
     contagem: { novos: conta('novo'), existentes: conta('existente'), repetidos: conta('repetido'), ignorados: conta('ignorado') },
   }
+}
+
+// Avisos da prévia quando a pessoa escolhe substituir a lista atual. ativos: quantos estão ativos hoje.
+export function avisosDaSubstituicao(previa, ativos) {
+  const n = previa.ausentes.length
+  const reativados = previa.itens.filter((i) => i.situacao === 'existente' && i.inativo).length
+  const avisos = []
+  if (!n) avisos.push({ texto: 'Todos os colaboradores ativos estão na planilha: ninguém será desativado.' })
+  else {
+    const nomes = previa.ausentes.slice(0, 30).map((c) => c.nome).join(', ')
+    const resto = n > 30 ? ` e mais ${n - 30}` : ''
+    avisos.push({ texto: `${n === 1 ? '1 colaborador ativo não está na planilha e será desativado' : `${n} colaboradores ativos não estão na planilha e serão desativados`}: ${nomes}${resto}.` })
+    if (n * 2 > ativos) avisos.push({ texto: 'Mais da metade da equipe ativa seria desativada. Confira se escolheu a lista completa e a aba certa.', erro: true })
+  }
+  if (reativados) avisos.push({ texto: reativados === 1 ? '1 colaborador desativado está na planilha e volta a ficar ativo.' : `${reativados} colaboradores desativados estão na planilha e voltam a ficar ativos.` })
+  return avisos
 }
 
 // Gravações da importação. Quem já existe só recebe os campos preenchidos na planilha.
 // Setores que faltam são criados; quem tem liderança entra na lista do nível, e quem trocou ou perdeu
 // a liderança (ou mudou de setor) sai da lista antiga.
-export function operacoesDaImportacao(previa, { setores, atualizarExistentes = true, novoId, agora, incluirNaLista, tirarDaLista }) {
+// substituir: quem está na planilha é atualizado e volta a ficar ativo; quem não está (previa.ausentes) é
+// desativado, nunca apagado, para não perder o histórico das listas.
+export function operacoesDaImportacao(previa, { setores, atualizarExistentes = true, substituir = false, novoId, agora, incluirNaLista, tirarDaLista }) {
   const operacoes = []
   const novosSetores = new Map(previa.setoresNovos.map((nome) => [normalizar(nome), { id: idParaSetor(nome) || novoId('setores'), nome, gerentes: [], coordenadores: [], supervisores: [] }]))
   const conhecidos = [...setores, ...novosSetores.values()]
@@ -401,12 +430,16 @@ export function operacoesDaImportacao(previa, { setores, atualizarExistentes = t
         },
       })
       marcarLideranca(id, item.dados)
-    } else if (item.situacao === 'existente' && atualizarExistentes) {
+    } else if (item.situacao === 'existente' && (atualizarExistentes || substituir)) {
       const { nome: _nome, ...campos } = item.dados
+      if (substituir && item.inativo) campos.ativo = true
       if (Object.keys(campos).length === 0) continue
       operacoes.push({ tipo: 'atualizar', caminho: `colaboradores/${item.id}`, dados: { ...campos, atualizadoEm: agora() } })
       ajustarExistente(item)
     }
+  }
+  if (substituir) {
+    for (const { id } of previa.ausentes ?? []) operacoes.push({ tipo: 'atualizar', caminho: `colaboradores/${id}`, dados: { ativo: false, atualizadoEm: agora() } })
   }
 
   function marcarLideranca(id, dados) {

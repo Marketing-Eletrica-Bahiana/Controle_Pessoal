@@ -1,13 +1,15 @@
 // Janelas da aba Colaboradores: cadastro e edição, responsáveis do setor e importação de planilha.
 import { LOJAS } from '../../config.js'
 import { definirResponsaveis, importarColaboradores, salvarColaborador } from '../../dados/colaboradores.js'
-import { CAMPOS_DA_PLANILHA, LIDERANCAS, NIVEIS_DE_LIDERANCA, PAI_OU_MAE, aniversarioDe, prepararImportacao, validarColaborador } from '../../lib/colaboradores.js'
+import {
+  CAMPOS_DA_PLANILHA, LIDERANCAS, NIVEIS_DE_LIDERANCA, PAI_OU_MAE, aniversarioDe, avisosDaSubstituicao, prepararImportacao, validarColaborador,
+} from '../../lib/colaboradores.js'
 import { formatarWhatsapp, mascararTelefone } from '../../lib/contato.js'
 import { formatarData, formatarDiaMes, mascararData, mascararDiaMes } from '../../lib/datas.js'
 import { mensagemDeErro } from '../../lib/erros.js'
 import { combinaBusca, compararTexto, normalizar } from '../../lib/texto.js'
 import {
-  abrirJanela, aviso, avisar, botao, campo, campoBusca, comOcupado, entradaComMascara, entradaTexto, etiqueta, mostrarErros,
+  abrirJanela, aviso, avisar, botao, campo, campoBusca, comOcupado, confirmar, entradaComMascara, entradaTexto, etiqueta, mostrarErros,
   selecao,
 } from '../../ui/componentes.js'
 import { el, trocar } from '../../ui/dom.js'
@@ -227,12 +229,29 @@ export function abrirImportacaoColaboradores({ dados }) {
         ajuda: 'Só mudam os campos preenchidos na planilha; células vazias não apagam nada.',
         padrao: true,
       },
+      {
+        chave: 'substituir',
+        rotulo: 'Substituir a lista atual pela planilha',
+        ajuda: 'Para corrigir a lista sem duplicar ninguém. Quem está ativo no sistema e não está na planilha é desativado: o histórico fica guardado e dá para reativar. Quem está na planilha é atualizado e volta a ficar ativo. Use só com a lista completa da empresa.',
+        padrao: false,
+      },
     ],
-    preparar: (registros) => {
+    preparar: (registros, opcoes) => {
       const { colaboradores, setores } = dados()
       const previa = prepararImportacao({ registros, colaboradores, setores })
       previa.extras = previa.setoresNovos.length ? [`Setores que serão criados: ${previa.setoresNovos.join(', ')}.`] : []
+      if (opcoes.substituir) previa.extras.push(...avisosDaSubstituicao(previa, colaboradores.filter((c) => c.ativo !== false).length))
       return previa
+    },
+    confirmar: (previa, opcoes) => {
+      const n = previa.ausentes.length
+      if (!opcoes.substituir || !n) return true
+      return confirmar({
+        titulo: 'Substituir a lista atual',
+        texto: `${n === 1 ? '1 colaborador ativo não está na planilha e será desativado' : `${n} colaboradores ativos não estão na planilha e serão desativados`}. O histórico fica guardado, e dá para reativar depois.`,
+        botaoSim: 'Substituir a lista',
+        perigo: true,
+      })
     },
     colunas: [
       { rotulo: 'Pai ou mãe', celula: (i) => i.dados?.paiOuMae ?? '' },
@@ -245,7 +264,9 @@ export function abrirImportacaoColaboradores({ dados }) {
       { rotulo: 'Telefone', celula: (i) => formatarWhatsapp(i.dados?.telefone) },
       { rotulo: 'E-mail', celula: (i) => i.dados?.email ?? '' },
     ],
-    contarGravacoes: (previa, opcoes) => previa.contagem.novos + (opcoes.atualizar ? previa.contagem.existentes : 0),
-    gravar: (previa, opcoes, aoAvancar) => importarColaboradores(previa, { setores: dados().setores, atualizarExistentes: opcoes.atualizar }, aoAvancar),
+    contarGravacoes: (previa, opcoes) =>
+      previa.contagem.novos + (opcoes.atualizar || opcoes.substituir ? previa.contagem.existentes : 0) + (opcoes.substituir ? previa.ausentes.length : 0),
+    gravar: (previa, opcoes, aoAvancar) =>
+      importarColaboradores(previa, { setores: dados().setores, atualizarExistentes: opcoes.atualizar || opcoes.substituir, substituir: opcoes.substituir }, aoAvancar),
   })
 }

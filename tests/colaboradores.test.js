@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
   CABECALHO_DA_LISTA, CAMPOS_DA_PLANILHA, LIDERANCAS, SEM_SETOR, ajustesDeLideranca, contarPorLoja, ehSetorComercial, filtrarColaboradores,
-  filtrarPaisEMaes, liderancasAoDefinirResponsaveis, linhaDaLista, normalizarLideranca, normalizarLoja, normalizarPaiOuMae, normalizarTemFilhos,
+  avisosDaSubstituicao, filtrarPaisEMaes, liderancasAoDefinirResponsaveis, linhaDaLista, normalizarLideranca, normalizarLoja, normalizarPaiOuMae, normalizarTemFilhos,
   operacoesDaImportacao, paiOuMaeDoGenero, prepararImportacao, resumoDosSetores, validarColaborador,
 } from '../js/lib/colaboradores.js'
 import { acharCabecalho, exemplosDaColuna, extrairRegistros, lerTextoDoCsv, nomeDaColuna, sugerirMapeamento } from '../js/lib/importacao.js'
@@ -94,6 +94,60 @@ describe('colaboradores: cadastro', () => {
     assert.equal(normalizarPaiOuMae(''), '')
     assert.equal(normalizarPaiOuMae('Sim'), null)
     assert.equal(normalizarPaiOuMae('Pai e mãe'), null)
+  })
+})
+
+describe('importação: substituir a lista atual', () => {
+  // Na base: Gabriel, Sara, Vítor e Xavier ativos; Lia desativada.
+  const registros = [
+    { linha: 2, valores: { nome: 'Vitor Vendedor', cargo: 'Vendedor Sênior' } },
+    { linha: 3, valores: { nome: 'Lia Logística' } },
+    { linha: 4, valores: { nome: 'Nome Corrigido da Silva' } },
+  ]
+  const previa = prepararImportacao({ registros, colaboradores, setores })
+  const gravar = (opcoes) => {
+    let n = 0
+    return operacoesDaImportacao(previa, { setores, novoId: () => `novo${++n}`, agora: () => 'AGORA', incluirNaLista: () => 0, tirarDaLista: () => 0, ...opcoes })
+  }
+
+  it('lista quem está ativo e não está na planilha, em ordem de nome', () => {
+    assert.deepEqual(previa.ausentes.map((c) => c.id), ['g1', 's1', 'x1'])
+    assert.ok(previa.itens.find((i) => i.id === 'l1').inativo)
+  })
+
+  it('desativa quem não está na planilha e reativa quem voltou, sem apagar ninguém', () => {
+    const ops = gravar({ substituir: true })
+    assert.ok(!ops.some((o) => o.tipo === 'apagar'))
+    for (const id of ['g1', 's1', 'x1']) assert.deepEqual(ops.find((o) => o.caminho === `colaboradores/${id}`).dados, { ativo: false, atualizadoEm: 'AGORA' })
+    assert.equal(ops.find((o) => o.caminho === 'colaboradores/l1').dados.ativo, true)
+    assert.equal(ops.find((o) => o.caminho === 'colaboradores/v1').dados.cargo, 'Vendedor Sênior')
+    assert.ok(!('ativo' in ops.find((o) => o.caminho === 'colaboradores/v1').dados))
+    assert.ok(ops.some((o) => o.dados.nome === 'Nome Corrigido da Silva'))
+  })
+
+  it('substituir atualiza quem já existe mesmo com "Atualizar quem já existe" desmarcado', () => {
+    assert.equal(gravar({ substituir: true, atualizarExistentes: false }).find((o) => o.caminho === 'colaboradores/v1').dados.cargo, 'Vendedor Sênior')
+  })
+
+  it('sem substituir, ninguém é desativado nem reativado', () => {
+    const ops = gravar({})
+    assert.ok(!ops.some((o) => o.dados.ativo === false))
+    assert.ok(!ops.some((o) => o.caminho === 'colaboradores/l1'))
+  })
+
+  it('planilha sem nenhum nome não desativa ninguém', () => {
+    const vazia = prepararImportacao({ registros: [{ linha: 2, valores: { nome: '' } }], colaboradores, setores })
+    assert.deepEqual(vazia.ausentes, [])
+  })
+
+  it('avisa quantos saem, quantos voltam e quando a planilha parece incompleta', () => {
+    const avisos = avisosDaSubstituicao(previa, 4)
+    assert.match(avisos[0].texto, /^3 colaboradores ativos não estão na planilha e serão desativados: Gabriel Gerente, Sara Supervisora, Xavier Sem Setor\.$/)
+    assert.ok(avisos.some((a) => a.erro && /Mais da metade/.test(a.texto)))
+    assert.ok(avisos.some((a) => /1 colaborador desativado está na planilha e volta a ficar ativo/.test(a.texto)))
+    assert.ok(!avisosDaSubstituicao(previa, 100).some((a) => a.erro))
+    const completa = prepararImportacao({ registros: colaboradores.map((c, i) => ({ linha: i + 2, valores: { nome: c.nome } })), colaboradores, setores })
+    assert.match(avisosDaSubstituicao(completa, 4)[0].texto, /ninguém será desativado/)
   })
 })
 

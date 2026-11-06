@@ -48,7 +48,8 @@ export async function definirResponsaveis({ setorId, responsaveis, setores, cola
   await gravarLote(operacoes)
 }
 
-export function importarColaboradores(previa, { setores, atualizarExistentes }, aoAvancar) {
-  const operacoes = operacoesDaImportacao(previa, { setores, atualizarExistentes, novoId, agora, incluirNaLista, tirarDaLista })
+// substituir: quem não está na planilha é desativado (nunca apagado) e quem está volta a ficar ativo.
+export function importarColaboradores(previa, { setores, atualizarExistentes, substituir = false }, aoAvancar) {
+  const operacoes = operacoesDaImportacao(previa, { setores, atualizarExistentes, substituir, novoId, agora, incluirNaLista, tirarDaLista })
   return gravarLote(operacoes, aoAvancar)
 }

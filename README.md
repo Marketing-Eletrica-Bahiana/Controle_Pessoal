@@ -57,6 +57,18 @@ Quem tem acesso ao app vê os contatos; só a administração edita. Há dois je
 Celular abre a conversa no WhatsApp; telefone fixo abre a ligação. **Baixar lista** gera a planilha
 do que está filtrado na tela.
 
+## Corrigir a lista de colaboradores sem duplicar
+
+Se um nome foi corrigido na planilha, importar de novo cria um cadastro com o nome novo e o antigo continua
+lá. Para evitar isso, importe a lista completa e marque, na prévia, **Substituir a lista atual pela planilha**:
+
+- quem está na planilha é atualizado e, se estava desativado, volta a ficar ativo;
+- quem está ativo no sistema e não está na planilha é **desativado**, não apagado. O histórico de listas e
+  aniversários continua guardado, e dá para reativar depois (ou importar de novo a lista certa).
+
+A prévia mostra quem vai ser desativado e avisa em vermelho se for mais da metade da equipe (sinal de planilha
+ou aba errada). Antes de gravar, o app pede confirmação.
+
 ## Como cadastrar um novo usuário
 
 1. Entre no app com uma conta de administração.

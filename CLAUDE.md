@@ -137,6 +137,14 @@ Tela em `js/telas/colaboradores.js` (janelas em `js/telas/colaboradores/formular
   Datas do Excel chegam como número de série. Grava em lotes de 450.
   CSV: `lerTextoDoCsv` (`js/lib/importacao.js`) acerta os acentos do UTF-8, com ou sem BOM (Google Planilhas
   e "CSV UTF-8" do Excel), do ANSI do Windows (CSV comum do Excel) e do UTF-16 com BOM.
+- "Substituir a lista atual pela planilha" (opção da prévia, só em colaboradores, desmarcada por padrão):
+  quem está ativo e não está na planilha (`ausentes` de `prepararImportacao`) é desativado, nunca apagado,
+  porque presenças, controles de aniversário, vendedores dos eletricistas e líderes dos setores guardam o ID.
+  Quem está na planilha é atualizado (mesmo com "Atualizar quem já existe" desmarcado) e volta a ficar ativo.
+  A prévia lista quem sai (até 30 nomes) e quem volta (`avisosDaSubstituicao`), avisa em vermelho se mais da
+  metade dos ativos sairia, e há confirmação antes de gravar (`confirmar` na config do importador). Planilha sem
+  nenhum nome não desativa ninguém. Não há "excluir todos": um nome corrigido vira cadastro novo e o antigo fica
+  desativado com o histórico dele.
 - "Baixar lista" exporta o que está filtrado na tela (`Colaboradores [setor] [loja] DD-MM-AAAA.xlsx`),
   com colunas que voltam certinho na importação.
 - SheetJS só grava a planilha (sem cor no cabeçalho: a versão gratuita não pinta células).

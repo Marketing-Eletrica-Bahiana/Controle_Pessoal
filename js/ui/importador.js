@@ -4,8 +4,9 @@
 // config: {
 //   titulo, ajuda, campos (chave, rotulo, obrigatorio, sinonimos),
 //   opcoes: [{ chave, rotulo, ajuda, padrao }]          caixas de marcar da prévia
-//   preparar(registros, opcoes) => { itens, contagem, extras }
+//   preparar(registros, opcoes) => { itens, contagem, extras }   extras: textos ou { texto, erro }
 //   colunas: [{ rotulo, celula(item) }]                 colunas da tabela da prévia
+//   confirmar(previa, opcoes) => boolean | Promise       opcional: pergunta antes de gravar
 //   gravar(previa, opcoes, aoAvancar) => Promise
 // }
 import { acharCabecalho, exemplosDaColuna, extrairRegistros, nomeDaColuna, sugerirMapeamento } from '../lib/importacao.js'
@@ -191,6 +192,7 @@ export function abrirImportador(config) {
       disabled: !total,
       aoClicar: () =>
         comOcupado(importar, async () => {
+          if (config.confirmar && !(await config.confirmar(previa, opcoes))) return
           const progresso = el('p', { class: 'carregando-bloco', role: 'status' }, icone('loader-circle', 'girando'), 'Gravando...')
           rodape.replaceChildren(progresso)
           try {
@@ -225,7 +227,7 @@ export function abrirImportador(config) {
           ],
           { classe: 'indicadores--compactos' },
         ),
-        (previa.extras ?? []).map((texto) => aviso(texto)),
+        (previa.extras ?? []).map((extra) => (typeof extra === 'string' ? aviso(extra) : aviso(extra.texto, { erro: extra.erro }))),
         comAvisos > 0 && aviso(`${plural(comAvisos, 'linha tem', 'linhas têm')} algum aviso. Confira na tabela abaixo; o resto da linha é importado normalmente.`, { icone: 'triangle-alert' }),
         caixas.length > 0 && el('div', { class: 'opcoes opcoes--coluna' }, caixas),
         listaComLimite(previa.itens, (itens) =>
