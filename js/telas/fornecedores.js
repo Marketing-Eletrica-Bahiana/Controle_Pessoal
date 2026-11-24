@@ -1,5 +1,5 @@
-// Aba Fornecedores: marcas parceiras (Soprano, Legrand, Ledvance...). As pessoas que cada marca manda
-// para treinamentos e eventos ficam só dentro de cada lista de presença.
+// Aba Fornecedores: marcas parceiras (Soprano, Legrand, Ledvance...). A ficha guarda as pessoas da marca
+// (palestrantes, representantes e convidados; ver ./fornecedores/pessoas.js) e as participações nas listas.
 // Endereços: #/fornecedores e #/fornecedores/{id}
 import { definirAtivoFornecedor, salvarFornecedor } from '../dados/fornecedores.js'
 import { ouvirFontes } from '../dados/fontes.js'
@@ -14,6 +14,7 @@ import {
   entradaComMascara, entradaTexto, estadoVazio, etiqueta, ficha, filtroSelecao, mostrarErros,
 } from '../ui/componentes.js'
 import { el, icone, trocar } from '../ui/dom.js'
+import { blocoDePessoas } from './fornecedores/pessoas.js'
 import { participacoesDoFornecedor } from './listas/historico.js'
 
 const filtros = { busca: '', situacao: 'ativos' }
@@ -51,7 +52,7 @@ export function montar(raiz, { pessoa, params }) {
         cabecalhoPagina({
           titulo: 'Fornecedores',
           icone: 'handshake',
-          descricao: 'Marcas parceiras que participam dos treinamentos e eventos. Quem cada marca envia é registrado em cada lista de presença.',
+          descricao: 'Marcas parceiras que participam dos treinamentos e eventos. Na ficha de cada marca ficam os palestrantes, representantes e convidados dela.',
           acoes: [admin && botao({ texto: 'Nova marca', icone: 'plus', variante: 'principal', aoClicar: () => abrirFormulario() })],
         }),
         el(
@@ -148,7 +149,7 @@ export function montar(raiz, { pessoa, params }) {
       campos.nome.no,
       campos.contatoNome.no,
       el('div', { class: 'formulario__linha' }, campos.contatoEmail.no, campos.contatoTelefone.no),
-      el('p', { class: 'campo__ajuda' }, 'Palestrantes e representantes mudam a cada evento: eles são registrados dentro de cada lista de presença.'),
+      el('p', { class: 'campo__ajuda' }, 'Palestrantes, representantes e convidados da marca são cadastrados na ficha dela, em "Pessoas da marca".'),
       caixaDeErro,
       el('div', { class: 'janela-modal__acoes' }, botao({ texto: 'Cancelar', aoClicar: () => janela.fechar() }), salvar),
     )
@@ -218,6 +219,7 @@ export function montar(raiz, { pessoa, params }) {
           ['Telefone', f.contatoTelefone ? el('a', { href: `tel:+55${f.contatoTelefone.replace(/\D/g, '')}` }, f.contatoTelefone) : ''],
         ]),
       ),
+      blocoDePessoas(f, { admin, fornecedor: () => dados.fornecedores.find((x) => x.id === id) }),
       fixos.participacoes,
     )
     if (!pararParticipacoes) pararParticipacoes = participacoesDoFornecedor(fixos.participacoes, { fornecedorId: f.id })

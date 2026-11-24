@@ -5,7 +5,10 @@ import {
   linkDoWhatsapp, mascararTelefone, normalizarWhatsapp, operacoesDaImportacao, prepararImportacao, validarEletricista,
   vendedoresDosEletricistas, vendedoresPossiveis,
 } from '../js/lib/eletricistas.js'
-import { filtrarFornecedores, validarFornecedor } from '../js/lib/fornecedores.js'
+import {
+  FUNCOES_DO_FORNECEDOR, filtrarFornecedores, novoIdDePessoa, pessoasComAlteracao, pessoasDoFornecedor, pessoasSem, validarFornecedor,
+  validarPessoaDoFornecedor,
+} from '../js/lib/fornecedores.js'
 import { sugerirMapeamento } from '../js/lib/importacao.js'
 
 const colaboradores = [
@@ -136,5 +139,46 @@ describe('fornecedores', () => {
   it('filtra por nome e situação', () => {
     assert.deepEqual(filtrarFornecedores(fornecedores).map((f) => f.id), ['f1'])
     assert.deepEqual(filtrarFornecedores(fornecedores, { situacao: 'todos', busca: 'sop' }).map((f) => f.id), ['f2'])
+  })
+})
+
+describe('fornecedores: pessoas da marca', () => {
+  const pessoas = [
+    { id: 'p1', nome: 'Rita Representante', funcao: 'Representante', telefone: '', email: '' },
+    { id: 'p2', nome: 'Caio Convidado', funcao: 'Convidado', telefone: '', email: '' },
+    { id: 'p3', nome: 'Paula Palestrante', funcao: 'Palestrante', telefone: '', email: '' },
+    { id: 'p4', nome: 'Ana Palestrante', funcao: 'Palestrante', telefone: '', email: '' },
+  ]
+
+  it('mostra palestrantes, representantes e convidados, cada grupo por nome; marca antiga não tem ninguém', () => {
+    assert.deepEqual(FUNCOES_DO_FORNECEDOR, ['Palestrante', 'Representante', 'Convidado'])
+    assert.deepEqual(pessoasDoFornecedor({ pessoas }).map((p) => p.id), ['p4', 'p3', 'p1', 'p2'])
+    assert.deepEqual(pessoasDoFornecedor({ nome: 'Antiga' }), [])
+    assert.deepEqual(pessoasDoFornecedor(null), [])
+  })
+
+  it('pede nome e função, sem repetir nome na mesma marca, com contato opcional', () => {
+    const r = validarPessoaDoFornecedor({ nome: ' Novo  Nome ', funcao: 'Palestrante', telefone: '(71) 99999-8888', email: ' Novo@Marca.com ' }, { pessoas })
+    assert.ok(r.valido)
+    assert.deepEqual(r.dados, { nome: 'Novo Nome', funcao: 'Palestrante', telefone: '71999998888', email: 'novo@marca.com' })
+    const sem = validarPessoaDoFornecedor({ nome: 'X', funcao: 'Convidado' })
+    assert.deepEqual(sem.dados, { nome: 'X', funcao: 'Convidado', telefone: '', email: '' })
+    const ruim = validarPessoaDoFornecedor({ nome: 'rita representante', funcao: 'Gerente', telefone: '9999', email: 'sem-arroba' }, { pessoas })
+    assert.equal(ruim.erros.nome, 'Essa pessoa já está cadastrada nesta marca.')
+    assert.match(ruim.erros.funcao, /Palestrante, Representante ou Convidado/)
+    assert.match(ruim.erros.telefone, /DDD/)
+    assert.match(ruim.erros.email, /não parece válido/)
+    assert.ok(validarPessoaDoFornecedor({ nome: 'Rita Representante', funcao: 'Palestrante' }, { pessoas, idAtual: 'p1' }).valido)
+  })
+
+  it('inclui, troca e tira pessoas sem mexer nas outras', () => {
+    const nova = { id: 'p9', nome: 'Nova', funcao: 'Convidado', telefone: '', email: '' }
+    assert.deepEqual(pessoasComAlteracao(pessoas, nova).map((p) => p.id), ['p1', 'p2', 'p3', 'p4', 'p9'])
+    assert.deepEqual(pessoasComAlteracao([], nova), [nova])
+    const trocada = pessoasComAlteracao(pessoas, { ...pessoas[0], funcao: 'Palestrante' })
+    assert.equal(trocada.length, 4)
+    assert.equal(trocada[0].funcao, 'Palestrante')
+    assert.deepEqual(pessoasSem(pessoas, 'p2').map((p) => p.id), ['p1', 'p3', 'p4'])
+    assert.notEqual(novoIdDePessoa(), novoIdDePessoa())
   })
 })

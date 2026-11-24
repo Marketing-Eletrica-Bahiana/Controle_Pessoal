@@ -3,7 +3,7 @@ import { fonte } from '../../dados/fontes.js'
 import { historicoDaPessoa as lerHistorico, pessoasDaMarca } from '../../dados/listas.js'
 import { formatarData } from '../../lib/datas.js'
 import { mensagemDeErro } from '../../lib/erros.js'
-import { historicoDaPessoa as montarHistorico, listasDaMarca, resultadoNaLista } from '../../lib/listas.js'
+import { historicoDaPessoa as montarHistorico, listasDaMarca, nomeComFuncao, resultadoNaLista } from '../../lib/listas.js'
 import { plural } from '../../lib/texto.js'
 import { aviso, bloco, carregando, etiqueta, indicadores, tabela } from '../../ui/componentes.js'
 import { el, trocar } from '../../ui/dom.js'
@@ -120,7 +120,7 @@ export function participacoesDoFornecedor(caixa, { fornecedorId }) {
                 rotulo: 'Quem a marca enviou',
                 celula: (l) => {
                   const enviados = pessoas[l.id] ?? []
-                  return enviados.length ? enviados.map((p) => `${p.nome}${p.presente ? '' : ' (não veio)'}`).join(', ') : el('span', { class: 'texto-suave' }, 'Ninguém registrado')
+                  return enviados.length ? enviados.map((p) => `${nomeComFuncao(p)}${p.presente ? '' : ' (não veio)'}`).join(', ') : el('span', { class: 'texto-suave' }, 'Ninguém registrado')
                 },
               },
             ],

@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
-  CABECALHO_COMPLETA, CABECALHO_PRESENTES, contarPresencas, ehListaDeAniversario, filtrarListas, historicoDaPessoa, idDaPresenca,
-  linhasCompleta, linhasPresentes, listasDaMarca, nomeDoArquivoDaLista, ondeE, pessoasNaLista, presencaDeColaborador,
+  CABECALHO_COMPLETA, CABECALHO_PRESENTES, contarPresencas, ehListaDeAniversario, filtrarListas, fornecedorJaNaLista, funcaoDaPresenca,
+  historicoDaPessoa, idDaPresenca, linhasCompleta, linhasPresentes, listasDaMarca, marcaDaPresenca, nomeComFuncao, nomeDoArquivoDaLista, ondeE,
+  pessoasNaLista, presencaDeColaborador,
   presencaDeConvidado, presencaDeEletricista, presencaDeFornecedor, presencasParaCheckin, quandoE, resultadoNaLista,
   resumoDaLista, validarLista,
 } from '../js/lib/listas.js'
@@ -51,6 +52,14 @@ describe('listas: presenças', () => {
     assert.equal(presencaDeEletricista({ id: 'e1', nome: 'Eli', vendedorNome: 'Bia' }, false).convocado, false)
     const f = presencaDeFornecedor(' Pat ', { id: 'legrand', nome: 'Legrand' })
     assert.deepEqual([f.nome, f.detalhe, f.fornecedorId, f.pessoaId], ['Pat', 'Legrand', 'legrand', ''])
+    const comFuncao = presencaDeFornecedor('Pat', { id: 'legrand', nome: 'Legrand' }, 'Palestrante')
+    assert.equal(comFuncao.detalhe, 'Legrand · Palestrante')
+    assert.equal(marcaDaPresenca(comFuncao), 'Legrand')
+    assert.equal(funcaoDaPresenca(comFuncao), 'Palestrante')
+    assert.equal(nomeComFuncao(comFuncao), 'Pat (Palestrante)')
+    // Presença antiga, só com a marca, e colaborador (o detalhe dele não tem função).
+    assert.equal(nomeComFuncao(f), 'Pat')
+    assert.equal(nomeComFuncao(presencas[0]), 'Vítor Vendas')
     assert.equal(presencaDeConvidado('Visita').convocado, false)
     assert.deepEqual([...pessoasNaLista(presencas)].sort(), ['colaborador_c1', 'colaborador_c2', 'colaborador_c3', 'eletricista_e1'])
   })
@@ -73,6 +82,15 @@ describe('listas: presenças', () => {
     assert.deepEqual(r.comercialFaltou.map((p) => p.nome), ['Vítor Vendas'])
     assert.deepEqual([...r.porMarca.keys()], ['Legrand'])
     assert.deepEqual(resumoDaLista({ ...lista, tipo: 'Evento' }, presencas).comercialFaltou, [])
+  })
+
+  it('agrupa por marca as pessoas com e sem função, e não repete a mesma pessoa da marca', () => {
+    const comFuncao = { ...presencaDeFornecedor('Lia Legrand', { id: 'legrand', nome: 'Legrand' }, 'Representante'), id: 'f2' }
+    const todas = [...presencas, comFuncao]
+    assert.deepEqual([...resumoDaLista(lista, todas).porMarca].map(([marca, pessoas]) => [marca, pessoas.length]), [['Legrand', 2]])
+    assert.ok(fornecedorJaNaLista(todas, 'legrand', 'pat PALESTRANTE'))
+    assert.ok(!fornecedorJaNaLista(todas, 'soprano', 'Pat Palestrante'))
+    assert.ok(!fornecedorJaNaLista(todas, 'legrand', 'Vítor Vendas'))
   })
 })
 

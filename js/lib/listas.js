@@ -92,15 +92,27 @@ export const presencaDeEletricista = (e, convocado = true) => ({
   convocado,
 })
 
-export const presencaDeFornecedor = (nome, fornecedor) => ({
+// Pessoa de fornecedor: detalhe "Marca · Função" (Palestrante, Representante ou Convidado). Presenças antigas só
+// têm a marca no detalhe.
+export const presencaDeFornecedor = (nome, fornecedor, funcao = '') => ({
   ...base,
   tipoPessoa: 'fornecedor',
   pessoaId: '',
   nome: limparEspacos(nome),
-  detalhe: fornecedor.nome,
+  detalhe: [fornecedor.nome, funcao].filter(Boolean).join(' · '),
   fornecedorId: fornecedor.id,
   convocado: true,
 })
+
+const partesDoDetalhe = (p) => String(p?.detalhe ?? '').split(' · ')
+export const marcaDaPresenca = (p) => partesDoDetalhe(p)[0]
+export const funcaoDaPresenca = (p) => (p?.tipoPessoa === 'fornecedor' ? partesDoDetalhe(p)[1] ?? '' : '')
+// "Nome (Palestrante)" para pessoa de fornecedor com função; só o nome nos outros casos.
+export const nomeComFuncao = (p) => (funcaoDaPresenca(p) ? `${p.nome} (${funcaoDaPresenca(p)})` : p.nome)
+
+// A mesma pessoa da mesma marca já está na lista (pelo nome, sem diferenciar maiúsculas e acentos)?
+export const fornecedorJaNaLista = (presencas, fornecedorId, nome) =>
+  presencas.some((p) => p.tipoPessoa === 'fornecedor' && p.fornecedorId === fornecedorId && normalizar(p.nome) === normalizar(nome))
 
 export const presencaDeConvidado = (nome) => ({
   ...base,
@@ -157,8 +169,9 @@ export function resumoDaLista(lista, presencas, colaboradores = []) {
   }
   const porMarca = new Map()
   for (const p of presencas.filter((x) => x.tipoPessoa === 'fornecedor')) {
-    if (!porMarca.has(p.detalhe)) porMarca.set(p.detalhe, [])
-    porMarca.get(p.detalhe).push(p)
+    const marca = marcaDaPresenca(p)
+    if (!porMarca.has(marca)) porMarca.set(marca, [])
+    porMarca.get(marca).push(p)
   }
   return { conta: contarPresencas(presencas), presentes, ausentes, naoConvocados, comercialFaltou, porMarca }
 }

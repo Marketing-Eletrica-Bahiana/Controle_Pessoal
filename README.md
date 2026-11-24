@@ -8,7 +8,8 @@ App interno da Elétrica Bahiana para organizar, num lugar só:
   A parte **Pais e mães** mostra quem é pai ou mãe na empresa, com os contatos, e a parte **Desligados**
   mostra quem saiu, com a data de desligamento.
 - **Aniversariantes**: do mês (nascimento) e de empresa (tempo de casa), com o contato de cada pessoa.
-- **Fornecedores**: as marcas parceiras (Soprano, Legrand, Ledvance...).
+- **Fornecedores**: as marcas parceiras (Soprano, Legrand, Ledvance...), com os palestrantes, representantes e
+  convidados de cada uma.
 - **Eletricistas do CAE**: cadastro dos eletricistas, com o vendedor de cada um.
 - **Listas**: listas de presença com check-in pelo celular nos treinamentos, eventos e ações
   internas, com planilha para usar no sorteador.
@@ -42,6 +43,18 @@ no banco de dados.
    os check-ins ficam guardados no aparelho e sobem sozinhos quando a conexão voltar (não saia do
    app antes disso).
 5. No fim, **Baixar presentes** gera a planilha para o sorteador (a primeira coluna é "Nome").
+
+## Pessoas das marcas
+
+Na ficha de cada marca (aba **Fornecedores**, clique na marca), a parte **Pessoas da marca** guarda os
+palestrantes, representantes e convidados que ela costuma enviar. Clique em **Adicionar pessoa**, preencha o nome,
+escolha a função (Palestrante, Representante ou Convidado) e, se quiser, o telefone e o e-mail. O lápis edita e a
+lixeira tira a pessoa da marca (as listas já feitas continuam com o nome).
+
+Ao montar uma lista de presença, em **Convocados > Adicionar pessoa de fornecedor**, escolha a marca e comece a
+digitar: as pessoas da marca aparecem como sugestão, já com a função. Dá para digitar um nome novo também; nesse caso,
+a caixa **Guardar também na ficha da marca** (já marcada) cadastra a pessoa para as próximas listas. A função aparece
+junto da marca no check-in, no resumo e nas planilhas (por exemplo, "Soprano · Palestrante").
 
 ## Pais e mães
 

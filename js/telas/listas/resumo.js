@@ -1,7 +1,7 @@
 // Aba Resumo da lista: presentes, ausentes (convocados que não vieram) e não convocados que vieram.
 // No Treinamento Comercial, destaca quem do setor comercial foi convocado e faltou.
 import { formatarHora } from '../../lib/datas.js'
-import { TIPOS_DE_PESSOA, resumoDaLista } from '../../lib/listas.js'
+import { TIPOS_DE_PESSOA, nomeComFuncao, resumoDaLista } from '../../lib/listas.js'
 import { formatarNumero, plural } from '../../lib/texto.js'
 import { bloco, indicadores, tabela } from '../../ui/componentes.js'
 import { el, trocar } from '../../ui/dom.js'
@@ -60,7 +60,7 @@ export function montarResumo(caixa, ctx) {
             'ul',
             { class: 'lista-simples' },
             [...r.porMarca].map(([marca, pessoas]) =>
-              el('li', {}, el('strong', {}, `${marca}: `), pessoas.map((p) => `${p.nome}${p.presente ? '' : ' (não veio)'}`).join(', ')),
+              el('li', {}, el('strong', {}, `${marca}: `), pessoas.map((p) => `${nomeComFuncao(p)}${p.presente ? '' : ' (não veio)'}`).join(', ')),
             ),
           ),
         ),

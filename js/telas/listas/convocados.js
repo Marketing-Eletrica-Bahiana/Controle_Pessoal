@@ -1,11 +1,13 @@
 // Aba Convocados da lista: o admin monta quem foi chamado (colaboradores, eletricistas e pessoas
 // de fornecedor); a organização só vê.
 import { LOJAS } from '../../config.js'
+import { salvarPessoaDoFornecedor } from '../../dados/fornecedores.js'
 import { adicionarConvocados, removerPresenca } from '../../dados/listas.js'
 import { mensagemDeErro } from '../../lib/erros.js'
 import { vendedoresDosEletricistas } from '../../lib/eletricistas.js'
+import { FUNCOES_DO_FORNECEDOR, pessoasDoFornecedor } from '../../lib/fornecedores.js'
 import {
-  TIPOS_DE_PESSOA, idDaPresenca, pessoasNaLista, presencaDeColaborador, presencaDeEletricista, presencaDeFornecedor,
+  TIPOS_DE_PESSOA, fornecedorJaNaLista, idDaPresenca, pessoasNaLista, presencaDeColaborador, presencaDeEletricista, presencaDeFornecedor,
 } from '../../lib/listas.js'
 import { pode } from '../../lib/papeis.js'
 import { combinaBusca, compararTexto, limparEspacos, normalizar, plural } from '../../lib/texto.js'
@@ -14,6 +16,7 @@ import {
   entradaTexto, etiqueta, listaComLimite, selecao, tabela,
 } from '../../ui/componentes.js'
 import { el, icone, trocar } from '../../ui/dom.js'
+import { campoEscolherPessoa } from '../../ui/escolherPessoa.js'
 
 const PLURAIS = {
   colaborador: ['colaborador', 'colaboradores'],
@@ -325,7 +328,8 @@ function abrirEletricistas(ctx) {
   janela.focar()
 }
 
-// Pessoa de fornecedor (palestrante, representante): existe só dentro desta lista.
+// Pessoa de fornecedor (palestrante, representante ou convidado da marca): escolhida entre as pessoas da ficha da
+// marca ou digitada, sempre com a função. Quem é digitado pode ficar guardado na ficha para as próximas listas.
 function abrirFornecedor(ctx) {
   const janela = abrirJanela({ titulo: 'Adicionar pessoa de fornecedor', largura: 560 })
   const marcas = ctx.dados().fornecedores.filter((f) => f.ativo !== false).sort((a, b) => compararTexto(a.nome, b.nome))
@@ -334,7 +338,38 @@ function abrirFornecedor(ctx) {
     rotulo: 'Marca',
     entrada: selecao([{ valor: '', rotulo: 'Escolha a marca' }, ...marcas.map((f) => ({ valor: f.id, rotulo: f.nome }))], marcas.find((f) => naLista.has(f.id))?.id ?? ''),
   })
-  const nome = campo({ rotulo: 'Nome da pessoa', entrada: entradaTexto({ maxlength: 120, placeholder: 'Palestrante ou representante', 'data-foco': true }) })
+  // Sempre na versão mais nova: quem acabou de ser guardado na ficha já aparece na próxima busca.
+  const marcaEscolhida = () => ctx.dados().fornecedores.find((f) => f.id === marca.entrada.value) ?? null
+  const cadastradas = () => pessoasDoFornecedor(marcaEscolhida())
+  // Pessoa da ficha da marca: a escolhida na lista ou alguém com o mesmo nome (sem diferenciar acentos).
+  const cadastrada = (nome) =>
+    cadastradas().find((p) => p.id === pessoa.valor()?.id) ?? cadastradas().find((p) => normalizar(p.nome) === normalizar(nome)) ?? null
+
+  const funcao = campo({ rotulo: 'Função', entrada: selecao([{ valor: '', rotulo: 'Escolha a função' }, ...FUNCOES_DO_FORNECEDOR], '') })
+  const pessoa = campoEscolherPessoa({
+    rotulo: 'Nome da pessoa',
+    opcional: false,
+    placeholder: 'Digite o nome',
+    ajuda: 'Quem está cadastrado na ficha da marca aparece como sugestão. Também dá para digitar um nome novo.',
+    semResultado: null,
+    buscar: (texto) => cadastradas().filter((p) => combinaBusca(p.nome, texto)),
+    detalhe: (p) => p.funcao,
+    aoEscolher: (p) => {
+      funcao.entrada.value = p.funcao
+      funcao.mostrarErro('')
+      atualizarGuardar()
+    },
+  })
+  pessoa.entrada.setAttribute('data-foco', '')
+  const guardar = caixaDeMarcar({ rotulo: 'Guardar também na ficha da marca, para as próximas listas', marcada: true })
+  function atualizarGuardar() {
+    const nome = limparEspacos(pessoa.entrada.value)
+    guardar.no.hidden = !nome || !marcaEscolhida() || Boolean(cadastrada(nome))
+  }
+  pessoa.entrada.addEventListener('input', atualizarGuardar)
+  marca.entrada.addEventListener('change', atualizarGuardar)
+  atualizarGuardar()
+
   const feitos = el('p', { class: 'texto-suave texto-pequeno' })
   const nomesFeitos = []
   const salvar = botao({ texto: 'Adicionar', icone: 'plus', variante: 'principal', tipo: 'submit' })
@@ -342,22 +377,40 @@ function abrirFornecedor(ctx) {
     'form',
     { class: 'formulario', novalidate: true },
     marcas.length ? marca.no : aviso('Cadastre a marca na aba Fornecedores primeiro.', { erro: true }),
-    nome.no,
-    el('p', { class: 'campo__ajuda' }, 'Essas pessoas não ficam cadastradas: existem só dentro desta lista, ligadas à marca.'),
+    pessoa.no,
+    funcao.no,
+    guardar.no,
     feitos,
     el('div', { class: 'janela-modal__acoes' }, botao({ texto: 'Fechar', aoClicar: () => janela.fechar() }), salvar),
   )
   formulario.addEventListener('submit', async (e) => {
     e.preventDefault()
-    const fornecedor = marcas.find((f) => f.id === marca.entrada.value)
-    const texto = limparEspacos(nome.entrada.value)
+    const fornecedor = marcaEscolhida()
+    const texto = limparEspacos(pessoa.entrada.value)
+    const funcaoEscolhida = funcao.entrada.value
     if (!fornecedor) return marca.mostrarErro('Escolha a marca.')
-    if (!texto) return nome.mostrarErro('Informe o nome.')
-    await gravar(ctx, [presencaDeFornecedor(texto, fornecedor)], null, salvar)
-    nomesFeitos.push(`${texto} (${fornecedor.nome})`)
-    feitos.textContent = `Adicionados: ${nomesFeitos.join(', ')}. Pode adicionar mais.`
-    nome.entrada.value = ''
-    nome.entrada.focus()
+    if (!texto) return pessoa.mostrarErro('Informe o nome.')
+    if (texto.length > 120) return pessoa.mostrarErro('Use até 120 letras.')
+    if (!FUNCOES_DO_FORNECEDOR.includes(funcaoEscolhida)) return funcao.mostrarErro('Escolha Palestrante, Representante ou Convidado.')
+    const daFicha = cadastrada(texto)
+    const nome = daFicha?.nome ?? texto
+    if (fornecedorJaNaLista(ctx.presencas(), fornecedor.id, nome)) return pessoa.mostrarErro(`${nome} já está nesta lista pela ${fornecedor.nome}.`)
+    const guardarNaFicha = !daFicha && guardar.entrada.checked
+    await comOcupado(salvar, async () => {
+      try {
+        if (guardarNaFicha) await salvarPessoaDoFornecedor(fornecedor.id, { nome, funcao: funcaoEscolhida, telefone: '', email: '' })
+        await adicionarConvocados(ctx.lista().id, [presencaDeFornecedor(nome, fornecedor, funcaoEscolhida)])
+        avisar(guardarNaFicha ? `${nome} entrou na lista e na ficha da ${fornecedor.nome}.` : '1 pessoa convocada.')
+        nomesFeitos.push(`${nome} (${fornecedor.nome})`)
+        feitos.textContent = `Adicionados: ${nomesFeitos.join(', ')}. Pode adicionar mais.`
+        pessoa.entrada.value = ''
+        pessoa.entrada.dispatchEvent(new Event('input')) // limpa a escolha anterior
+        funcao.entrada.value = ''
+        pessoa.entrada.focus()
+      } catch (erro) {
+        avisarErro(mensagemDeErro(erro))
+      }
+    })
   })
   janela.corpo.append(formulario)
   janela.focar()

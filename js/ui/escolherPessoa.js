@@ -1,9 +1,12 @@
 // Campo de busca com sugestões para escolher uma pessoa de uma lista (ex.: o vendedor do eletricista).
-// buscar(texto) devolve os itens já ordenados; cada item tem { id, nome }.
+// buscar(texto) devolve os itens já ordenados; cada item tem { id, nome }. aoEscolher(item) avisa a escolha.
 import { campo, entradaTexto, novoIdDeElemento } from './componentes.js'
 import { el, icone, trocar } from './dom.js'
 
-export function campoEscolherPessoa({ rotulo, ajuda, opcional = true, inicial = null, buscar, detalhe = () => '', etiqueta = () => '', placeholder = 'Digite para buscar' }) {
+export function campoEscolherPessoa({
+  rotulo, ajuda, opcional = true, inicial = null, buscar, detalhe = () => '', etiqueta = () => '', placeholder = 'Digite para buscar', aoEscolher,
+  semResultado = 'Ninguém encontrado.', // null: sem sugestão, a lista nem abre (o campo aceita nome novo)
+}) {
   let escolhido = inicial?.id ? inicial : null
   let itens = []
   let ativo = -1
@@ -49,12 +52,14 @@ export function campoEscolherPessoa({ rotulo, ajuda, opcional = true, inicial = 
     entrada.value = item.nome
     c.mostrarErro('')
     fechar()
+    aoEscolher?.(item)
   }
 
   function abrir() {
     const texto = escolhido && entrada.value === escolhido.nome ? '' : entrada.value
     itens = buscar(texto).slice(0, 8)
     ativo = -1
+    if (!itens.length && !semResultado) return fechar()
     trocar(
       lista,
       itens.length
@@ -75,7 +80,7 @@ export function campoEscolherPessoa({ rotulo, ajuda, opcional = true, inicial = 
               detalhe(item) && el('span', { class: 'tabela__detalhe' }, detalhe(item)),
             ),
           )
-        : el('li', { class: 'sugestoes__vazio' }, 'Ninguém encontrado.'),
+        : el('li', { class: 'sugestoes__vazio' }, semResultado),
     )
     lista.hidden = false
     entrada.setAttribute('aria-expanded', 'true')

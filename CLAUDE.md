@@ -32,6 +32,7 @@ fornecedores, eletricistas do CAE, listas de presença com check-in pelo celular
 8. (Feita) Desligados, excluir de vez, setinhas de ordem nas tabelas e contato nos aniversariantes (ver
    "Desligados, exclusão e ordem das tabelas").
 9. (Feita em 24/11/2026, a pedido) "Desativar" colaborador virou "Desligar", com a data (ver "Desligar").
+10. (Feita em 24/11/2026, a pedido) Pessoas da marca na ficha do fornecedor (ver "Pessoas da marca").
 
 A pessoa autorizou fazer as etapas 2 a 6 em sequência, sem pedir aprovação entre elas, depois de
 conferida a integração da Etapa 1.
@@ -94,7 +95,9 @@ Nomes exatos (as regras dependem deles):
   campo aparece quando alguém entra nele. ID tirado do nome sem acentos (`"recursos-humanos"`),
   para a importação nunca duplicar setor.
 - `fornecedores/{id}`: `nome` (marca), `contatoNome`, `contatoEmail`, `contatoTelefone`
-  (`"(71) 3333-4444"`), `ativo`, `criadoEm`. Só o nome é obrigatório.
+  (`"(71) 3333-4444"`), `ativo`, `criadoEm`, `pessoas` (lista de `{ id, nome, funcao, telefone, email }`; `funcao`
+  é `"Palestrante"`, `"Representante"` ou `"Convidado"`; telefone só com números). Só o nome é obrigatório. Marca
+  antiga não tem `pessoas`: o código trata como lista vazia.
 - `eletricistas/{id}`: `nome`, `whatsapp` (só números com DDD, 10 ou 11), `vendedorId`,
   `vendedorNome`, `consentimentoLgpd`, `dataConsentimento`, `dataCadastro` (Timestamps), `ativo`.
 - `listas/{id}`: `nome`, `tipo`, `data` (`"AAAA-MM-DD"`), `loja` (uma das lojas ou
@@ -157,8 +160,8 @@ Tela em `js/telas/colaboradores.js` (janelas em `js/telas/colaboradores/formular
 ## Fornecedores e eletricistas (Etapa 3)
 
 - Fornecedores (`js/telas/fornecedores.js`, regras em `js/lib/fornecedores.js`): cartões com busca e
-  situação; ficha `#/fornecedores/{id}` com contato e o bloco "Participações". Marca repetida (sem
-  diferenciar acentos) não é aceita. Pessoas enviadas pelas marcas ficam só dentro das listas.
+  situação; ficha `#/fornecedores/{id}` com contato, "Pessoas da marca" (ver "Pessoas da marca") e o bloco
+  "Participações". Marca repetida (sem diferenciar acentos) não é aceita.
 - Eletricistas (`js/telas/eletricistas.js`, janelas em `js/telas/eletricistas/formulario.js`,
   regras em `js/lib/eletricistas.js`): busca por nome, filtro por vendedor (pelo nome gravado) e
   situação; ficha `#/eletricistas/{id}`; "Baixar lista" com colunas que voltam na importação.
@@ -306,6 +309,27 @@ fornecedores e usuários continuam com "Desativar".
   ficha) para corrigir ou informar a data (quem foi pela substituição da lista fica sem data).
 - Etiqueta "Desligado", filtro Situação "Desligados", coluna Situação da planilha "Desligado" e os avisos da
   substituição da lista e da importação de desligados falam em "vai para Desligados".
+
+## Pessoas da marca (Etapa 10)
+
+Pedido: na ficha do fornecedor, adicionar palestrante, representante ou convidado da marca.
+
+- Guardadas no próprio documento da marca (campo `pessoas`), não em subcoleção: as regras de `fornecedores`
+  (admin grava) já cobrem, sem mudar `firestore.rules`, e as pessoas chegam junto com o ouvinte de `fornecedores`.
+- Regras em `js/lib/fornecedores.js` (com testes): `FUNCOES_DO_FORNECEDOR` (ordem da tela), `pessoasDoFornecedor`
+  (por função e nome), `validarPessoaDoFornecedor` (nome e função obrigatórios, nome sem repetir na marca, telefone e
+  e-mail opcionais como nos colaboradores), `pessoasComAlteracao`, `pessoasSem`, `novoIdDePessoa`.
+- Gravação em `js/dados/fornecedores.js` (`salvarPessoaDoFornecedor`, `tirarPessoaDoFornecedor`), em transação:
+  lê a lista atual da marca e grava a lista nova, para duas pessoas não apagarem o que a outra fez.
+- Tela em `js/telas/fornecedores/pessoas.js`: bloco "Pessoas da marca" (tabela com Nome, Função, Contatos de
+  `contatosDoColaborador` e, para admin, editar e tirar com confirmação) e a janela de cadastro. Organizador só vê.
+- Listas (`abrirFornecedor` em `js/telas/listas/convocados.js`): o nome é um `campoEscolherPessoa` com as pessoas da
+  marca escolhida (`semResultado: null`: sem sugestão, a lista não abre e o nome novo é aceito); escolher alguém
+  preenche a função (`aoEscolher`). Função obrigatória. Nome novo mostra a caixa "Guardar também na ficha da marca"
+  (marcada). A mesma pessoa da mesma marca não entra duas vezes (`fornecedorJaNaLista`).
+- Presença de fornecedor: `detalhe` vira `"Marca · Função"` (`presencaDeFornecedor(nome, fornecedor, funcao)`);
+  presenças antigas têm só a marca. `marcaDaPresenca`, `funcaoDaPresenca` e `nomeComFuncao` (`js/lib/listas.js`) leem
+  o detalhe; o resumo agrupa pela marca e mostra "Nome (Função)", assim como "Quem a marca enviou" na ficha.
 
 ## Papéis
 
