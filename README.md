@@ -62,22 +62,31 @@ do que está filtrado na tela.
 Se um nome foi corrigido na planilha, importar de novo cria um cadastro com o nome novo e o antigo continua
 lá. Para evitar isso, importe a lista completa e marque, na prévia, **Substituir a lista atual pela planilha**:
 
-- quem está na planilha é atualizado e, se estava desativado, volta a ficar ativo;
-- quem está ativo no sistema e não está na planilha é **desativado**, não apagado. O histórico de listas e
-  aniversários continua guardado, e dá para reativar depois (ou importar de novo a lista certa).
+- quem está na planilha é atualizado e, se estava em Desligados, volta a ficar ativo;
+- quem está ativo no sistema e não está na planilha vai para **Desligados**, não é apagado. O histórico de listas
+  e aniversários continua guardado, e dá para reativar depois (ou importar de novo a lista certa).
 
-A prévia mostra quem vai ser desativado e avisa em vermelho se for mais da metade da equipe (sinal de planilha
+A prévia mostra quem vai para Desligados e avisa em vermelho se for mais da metade da equipe (sinal de planilha
 ou aba errada). Antes de gravar, o app pede confirmação.
 
 ## Desligados
 
-Em **Colaboradores > Desligados** ficam todos os desativados, com a data de desligamento. Para trazer a lista
-oficial, clique em **Importar desligados** e escolha o arquivo: a aba "Desligados" já vem escolhida. Quem já está
-no cadastro é desativado e recebe a data; quem não está entra só com o nome e a data.
+Quando alguém sair da empresa, há três jeitos de levar a pessoa para **Colaboradores > Desligados**:
+
+1. Na lista de colaboradores, clique no ícone de pessoa com um X (**Desligar**) na linha dela.
+2. Na ficha da pessoa, clique em **Desligar**.
+3. Na parte **Desligados**, clique em **Desligar colaborador** e digite o nome.
+
+A janela pede a data de desligamento (já vem com a de hoje). A pessoa sai dos setores, das novas listas e dos
+aniversariantes, mas o histórico fica guardado. Para corrigir a data depois, use o ícone de calendário na linha
+dela em Desligados (ou **Data de desligamento** na ficha). **Reativar** traz a pessoa de volta e apaga a data.
+
+Para trazer a lista oficial, clique em **Importar desligados** e escolha o arquivo: a aba "Desligados" já vem
+escolhida. Quem já está no cadastro vai para Desligados e recebe a data; quem não está entra só com o nome e a data.
 
 Para tirar alguém do cadastro para sempre (um cadastro duplicado, por exemplo), use a lixeira na linha da pessoa
-ou **Excluir de vez** na ficha. O botão só aparece para quem já está desativado, e não dá para desfazer. As listas
-de presença e os controles de aniversário continuam mostrando o nome.
+ou **Excluir de vez** na ficha. O botão só aparece para quem já está em Desligados, e não dá para desfazer. As
+listas de presença e os controles de aniversário continuam mostrando o nome.
 
 ## Mudar a ordem das listas
 

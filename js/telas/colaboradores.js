@@ -2,7 +2,7 @@
 // Endereços: #/colaboradores, #/colaboradores/setores, #/colaboradores/setores/{id},
 // #/colaboradores/pais-e-maes, #/colaboradores/desligados, #/colaboradores/ficha/{id}
 import { LOJAS } from '../config.js'
-import { definirAtivoColaborador, excluirColaborador } from '../dados/colaboradores.js'
+import { excluirColaborador, reativarColaborador } from '../dados/colaboradores.js'
 import { ouvirFontes } from '../dados/fontes.js'
 import {
   CABECALHO_DA_LISTA, CABECALHO_DOS_DESLIGADOS, NIVEIS_DE_LIDERANCA, PAI_OU_MAE, SEM_SETOR, aniversarioDe, contarPorLoja, filtrarColaboradores,
@@ -20,7 +20,9 @@ import {
 import { el, trocar } from '../ui/dom.js'
 import { baixarPlanilha } from '../ui/planilha.js'
 import { contatosDoColaborador, emailDoColaborador, telefoneDoColaborador } from './colaboradores/contatos.js'
-import { abrirFormularioColaborador, abrirImportacaoColaboradores, abrirImportacaoDesligados, abrirResponsaveis } from './colaboradores/formularios.js'
+import {
+  abrirDesligamento, abrirFormularioColaborador, abrirImportacaoColaboradores, abrirImportacaoDesligados, abrirResponsaveis,
+} from './colaboradores/formularios.js'
 import { liderancaDoSetor } from './colaboradores/lideranca.js'
 import { historicoDaPessoa } from './listas/historico.js'
 
@@ -63,6 +65,8 @@ export function montar(raiz, { pessoa, params }) {
 
   const botaoImportarDesligados = (variante) =>
     botao({ texto: 'Importar desligados', icone: 'file-spreadsheet', variante, aoClicar: () => abrirImportacaoDesligados({ dados: atuais }) })
+  const botaoDesligar = (variante) =>
+    botao({ texto: 'Desligar colaborador', icone: 'user-x', variante, aoClicar: () => abrirDesligamento({ dados: atuais }) })
 
   function cabecalhoDaAba() {
     return [
@@ -73,7 +77,7 @@ export function montar(raiz, { pessoa, params }) {
         acoes: !admin
           ? []
           : vista === 'desligados'
-            ? [botaoImportarDesligados('principal')]
+            ? [botaoImportarDesligados(), botaoDesligar('principal')]
             : [
                 botao({ texto: 'Importar planilha', icone: 'file-spreadsheet', aoClicar: () => abrirImportacaoColaboradores({ dados: atuais }) }),
                 botao({ texto: 'Novo colaborador', icone: 'user-plus', variante: 'principal', aoClicar: () => abrirFormularioColaborador({ dados: atuais }) }),
@@ -134,7 +138,7 @@ export function montar(raiz, { pessoa, params }) {
         rotulo: 'Situação',
         opcoes: [
           { valor: 'ativos', rotulo: 'Ativos' },
-          { valor: 'inativos', rotulo: 'Desativados' },
+          { valor: 'inativos', rotulo: 'Desligados' },
           { valor: 'todos', rotulo: 'Todos' },
         ],
         valor: filtros.situacao,
@@ -199,7 +203,7 @@ export function montar(raiz, { pessoa, params }) {
           celula: (c) => [
             el('a', { class: 'tabela__nome', href: endereco('colaboradores', 'ficha', c.id) }, c.nome),
             c.lideranca && etiqueta(c.lideranca, 'marinho'),
-            c.ativo === false && etiqueta('Desativado', 'alerta'),
+            c.ativo === false && etiqueta('Desligado', 'alerta'),
           ],
         },
         comSetor && { rotulo: 'Setor', celula: (c) => c.setor || 'Sem setor' },
@@ -217,14 +221,18 @@ export function montar(raiz, { pessoa, params }) {
       botaoIcone({ icone: 'pencil', rotulo: `Editar ${c.nome}`, aoClicar: () => abrirFormularioColaborador({ colaborador: c, dados: atuais }) }),
       c.ativo === false
         ? [
-            botaoIcone({ icone: 'user-check', rotulo: `Reativar ${c.nome}`, aoClicar: () => mudarAtivo(c, true) }),
+            botaoIcone({ icone: 'calendar', rotulo: `Data de desligamento de ${c.nome}`, aoClicar: () => desligar(c) }),
+            botaoIcone({ icone: 'user-check', rotulo: `Reativar ${c.nome}`, aoClicar: () => reativar(c) }),
             botaoIcone({ icone: 'trash-2', rotulo: `Excluir ${c.nome} de vez`, perigo: true, aoClicar: () => excluirDeVez(c) }),
           ]
-        : botaoIcone({ icone: 'user-x', rotulo: `Desativar ${c.nome}`, perigo: true, aoClicar: () => mudarAtivo(c, false) }),
+        : botaoIcone({ icone: 'user-x', rotulo: `Desligar ${c.nome}`, perigo: true, aoClicar: () => desligar(c) }),
     )
   }
 
-  // Só quem já está desativado pode ser excluído de vez: assim ninguém ativo some por um clique errado.
+  // Desligar pede a data e manda a pessoa para Desligados; em quem já está lá, corrige a data.
+  const desligar = (c) => abrirDesligamento({ colaborador: c, dados: atuais })
+
+  // Só quem já está em Desligados pode ser excluído de vez: assim ninguém ativo some por um clique errado.
   async function excluirDeVez(c) {
     const ok = await confirmar({
       titulo: 'Excluir de vez',
@@ -242,19 +250,10 @@ export function montar(raiz, { pessoa, params }) {
     }
   }
 
-  async function mudarAtivo(c, ativo) {
-    if (!ativo) {
-      const ok = await confirmar({
-        titulo: 'Desativar colaborador',
-        texto: `${c.nome} deixa de aparecer nos setores, nas novas listas e nos aniversariantes, mas o histórico de participação fica guardado. Dá para reativar depois.`,
-        botaoSim: 'Desativar',
-        perigo: true,
-      })
-      if (!ok) return
-    }
+  async function reativar(c) {
     try {
-      await definirAtivoColaborador(c.id, ativo)
-      avisar(ativo ? `Cadastro de ${c.nome} reativado.` : `Cadastro de ${c.nome} desativado.`)
+      await reativarColaborador(c.id)
+      avisar(`Cadastro de ${c.nome} reativado.`)
     } catch (e) {
       avisar(mensagemDeErro(e), { erro: true })
     }
@@ -356,7 +355,8 @@ export function montar(raiz, { pessoa, params }) {
     })
   }
 
-  // Desligados: quem está desativado, com a data de desligamento (aba "Desligados" da lista oficial).
+  // Desligados: quem saiu da empresa (ativo: false), com a data de desligamento. Entra pelo botão Desligar ou pela
+  // aba "Desligados" da lista oficial.
 
   function desenharDesligados() {
     const todos = filtrarDesligados(dados.colaboradores)
@@ -368,9 +368,9 @@ export function montar(raiz, { pessoa, params }) {
         estadoVazio({
           titulo: 'Nenhum desligado ainda',
           texto: admin
-            ? 'Importe a aba "Desligados" da lista oficial, com o nome e a data de desligamento. Quem for desativado no cadastro também aparece aqui.'
+            ? 'Quando alguém sair da empresa, use "Desligar colaborador" e informe a data. Para muitos de uma vez, importe a aba "Desligados" da lista oficial.'
             : 'Quem sair da empresa aparece aqui, com a data de desligamento.',
-          acoes: admin ? [botaoImportarDesligados('principal')] : [],
+          acoes: admin ? [botaoImportarDesligados(), botaoDesligar('principal')] : [],
         }),
       )
     }
@@ -505,14 +505,15 @@ export function montar(raiz, { pessoa, params }) {
               botao({ texto: 'Editar', icone: 'pencil', aoClicar: () => abrirFormularioColaborador({ colaborador: c, dados: atuais }) }),
               c.ativo === false
                 ? [
-                    botao({ texto: 'Reativar', icone: 'user-check', aoClicar: () => mudarAtivo(c, true) }),
+                    botao({ texto: 'Data de desligamento', icone: 'calendar', aoClicar: () => desligar(c) }),
+                    botao({ texto: 'Reativar', icone: 'user-check', aoClicar: () => reativar(c) }),
                     botao({ texto: 'Excluir de vez', icone: 'trash-2', variante: 'perigo-claro', aoClicar: () => excluirDeVez(c) }),
                   ]
-                : botao({ texto: 'Desativar', icone: 'user-x', variante: 'perigo-claro', aoClicar: () => mudarAtivo(c, false) }),
+                : botao({ texto: 'Desligar', icone: 'user-x', variante: 'perigo-claro', aoClicar: () => desligar(c) }),
             ].flat()
           : [],
       }),
-      el('div', { class: 'acoes acoes--esquerda' }, c.lideranca && etiqueta(c.lideranca, 'marinho'), c.ativo === false ? etiqueta('Desativado', 'alerta') : etiqueta('Ativo', 'forte')),
+      el('div', { class: 'acoes acoes--esquerda' }, c.lideranca && etiqueta(c.lideranca, 'marinho'), c.ativo === false ? etiqueta('Desligado', 'alerta') : etiqueta('Ativo', 'forte')),
       bloco(
         { titulo: 'Dados', icone: 'badge-check' },
         ficha([

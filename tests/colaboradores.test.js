@@ -4,7 +4,7 @@ import {
   CABECALHO_DA_LISTA, CAMPOS_DA_PLANILHA, LIDERANCAS, SEM_SETOR, ajustesDeLideranca, contarPorLoja, ehSetorComercial, filtrarColaboradores,
   avisosDaSubstituicao, filtrarDesligados, filtrarPaisEMaes, liderancasAoDefinirResponsaveis, linhaDaLista, linhaDosDesligados, normalizarLideranca,
   normalizarLoja, normalizarTemFilhos, operacoesDaExclusao, operacoesDaImportacao, operacoesDosDesligados, paiOuMaeDoGenero, prepararDesligados,
-  prepararImportacao, resumoDosSetores, validarColaborador, CABECALHO_DOS_DESLIGADOS, CAMPOS_DOS_DESLIGADOS,
+  prepararImportacao, resumoDosSetores, validarColaborador, validarDesligamento, CABECALHO_DOS_DESLIGADOS, CAMPOS_DOS_DESLIGADOS,
 } from '../js/lib/colaboradores.js'
 import { acharCabecalho, exemplosDaColuna, extrairRegistros, lerTextoDoCsv, nomeDaColuna, sugerirMapeamento } from '../js/lib/importacao.js'
 
@@ -134,12 +134,12 @@ describe('importação: substituir a lista atual', () => {
 
   it('avisa quantos saem, quantos voltam e quando a planilha parece incompleta', () => {
     const avisos = avisosDaSubstituicao(previa, 4)
-    assert.match(avisos[0].texto, /^3 colaboradores ativos não estão na planilha e serão desativados: Gabriel Gerente, Sara Supervisora, Xavier Sem Setor\.$/)
+    assert.match(avisos[0].texto, /^3 colaboradores ativos não estão na planilha e vão para Desligados: Gabriel Gerente, Sara Supervisora, Xavier Sem Setor\.$/)
     assert.ok(avisos.some((a) => a.erro && /Mais da metade/.test(a.texto)))
-    assert.ok(avisos.some((a) => /1 colaborador desativado está na planilha e volta a ficar ativo/.test(a.texto)))
+    assert.ok(avisos.some((a) => /1 colaborador desligado está na planilha e volta a ficar ativo/.test(a.texto)))
     assert.ok(!avisosDaSubstituicao(previa, 100).some((a) => a.erro))
     const completa = prepararImportacao({ registros: colaboradores.map((c, i) => ({ linha: i + 2, valores: { nome: c.nome } })), colaboradores, setores })
-    assert.match(avisosDaSubstituicao(completa, 4)[0].texto, /ninguém será desativado/)
+    assert.match(avisosDaSubstituicao(completa, 4)[0].texto, /ninguém vai para Desligados/)
   })
 })
 
@@ -550,6 +550,22 @@ describe('colaboradores: desligados', () => {
     ]
     assert.deepEqual(filtrarDesligados(pessoas).map((c) => c.id), ['c', 'a', 'b'])
     assert.deepEqual(filtrarDesligados(pessoas, { busca: 'bia' }).map((c) => c.id), ['b'])
+  })
+
+  it('Desligar pede a data, sem data no futuro nem antes da admissão', () => {
+    const hoje = '2026-11-24'
+    assert.deepEqual(validarDesligamento('24/11/2026', { hoje }), { erro: '', data: '2026-11-24' })
+    assert.deepEqual(validarDesligamento('5/1/26', { hoje }), { erro: '', data: '2026-01-05' })
+    assert.equal(validarDesligamento('  ', { hoje }).erro, 'Informe a data de desligamento.')
+    assert.match(validarDesligamento('31/02/2026', { hoje }).erro, /DD\/MM\/AAAA/)
+    assert.match(validarDesligamento('25/11/2026', { hoje }).erro, /futuro/)
+    assert.equal(validarDesligamento('01/02/2020', { hoje, admissao: '2021-03-15' }).erro, 'A data de desligamento não pode ser antes da admissão (15/03/2021).')
+    assert.equal(validarDesligamento('15/03/2021', { hoje, admissao: '2021-03-15' }).data, '2021-03-15')
+  })
+
+  it('na planilha geral, quem saiu aparece como Desligado', () => {
+    assert.equal(linhaDaLista({ nome: 'Ana', ativo: false }).at(-1), 'Desligado')
+    assert.equal(linhaDaLista({ nome: 'Davi', ativo: true }).at(-1), 'Ativo')
   })
 
   it('a aba "Desligados" da lista oficial acha as colunas e desativa quem já existe', () => {

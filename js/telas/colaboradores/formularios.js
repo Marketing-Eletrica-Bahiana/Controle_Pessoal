@@ -1,12 +1,12 @@
-// Janelas da aba Colaboradores: cadastro e edição, responsáveis do setor e importação de planilhas.
+// Janelas da aba Colaboradores: cadastro e edição, desligamento, responsáveis do setor e importação de planilhas.
 import { LOJAS } from '../../config.js'
-import { definirResponsaveis, importarColaboradores, importarDesligados, salvarColaborador } from '../../dados/colaboradores.js'
+import { definirResponsaveis, desligarColaborador, importarColaboradores, importarDesligados, salvarColaborador } from '../../dados/colaboradores.js'
 import {
   CAMPOS_DA_PLANILHA, CAMPOS_DOS_DESLIGADOS, LIDERANCAS, NIVEIS_DE_LIDERANCA, PAI_OU_MAE, aniversarioDe, avisosDaSubstituicao,
-  prepararDesligados, prepararImportacao, validarColaborador,
+  prepararDesligados, prepararImportacao, validarColaborador, validarDesligamento,
 } from '../../lib/colaboradores.js'
 import { formatarWhatsapp, mascararTelefone } from '../../lib/contato.js'
-import { formatarData, formatarDiaMes, mascararData, mascararDiaMes } from '../../lib/datas.js'
+import { formatarData, formatarDiaMes, hojeISO, mascararData, mascararDiaMes } from '../../lib/datas.js'
 import { mensagemDeErro } from '../../lib/erros.js'
 import { combinaBusca, compararTexto, normalizar } from '../../lib/texto.js'
 import {
@@ -14,6 +14,7 @@ import {
   selecao,
 } from '../../ui/componentes.js'
 import { el, trocar } from '../../ui/dom.js'
+import { campoEscolherPessoa } from '../../ui/escolherPessoa.js'
 import { abrirImportador } from '../../ui/importador.js'
 
 // dados(): { colaboradores, setores } sempre com a versão mais nova.
@@ -99,6 +100,82 @@ export function abrirFormularioColaborador({ colaborador = null, dados, aoSalvar
         avisar(novo ? `Cadastro de ${limpos.nome} feito!` : 'Alterações salvas.')
         janela.fechar()
         aoSalvar?.(id)
+      } catch (e) {
+        caixaDeErro.replaceChildren(aviso(mensagemDeErro(e), { erro: true }))
+      }
+    })
+  })
+
+  janela.corpo.append(formulario)
+  janela.focar()
+}
+
+// Desligar: a pessoa vai para Desligados com a data de desligamento (hoje, de início).
+// Sem colaborador, a janela pede para escolher quem saiu entre os ativos (botão da parte Desligados).
+// Com alguém que já está em Desligados, só corrige ou informa a data.
+export function abrirDesligamento({ colaborador = null, dados, aoDesligar }) {
+  const jaDesligado = colaborador?.ativo === false
+  const janela = abrirJanela({ titulo: jaDesligado ? 'Data de desligamento' : 'Desligar colaborador', largura: 520 })
+
+  const pessoa = colaborador
+    ? null
+    : campoEscolherPessoa({
+        rotulo: 'Quem foi desligado?',
+        opcional: false,
+        placeholder: 'Digite o nome',
+        buscar: (texto) =>
+          dados()
+            .colaboradores.filter((c) => c.ativo !== false && combinaBusca(c.nome, texto))
+            .sort((a, b) => compararTexto(a.nome, b.nome)),
+        detalhe: (c) => [c.setor || 'Sem setor', c.loja].filter(Boolean).join(' · '),
+      })
+  if (pessoa) pessoa.entrada.setAttribute('data-foco', '')
+  const data = campo({
+    rotulo: 'Data de desligamento',
+    entrada: entradaComMascara(mascararData, {
+      value: formatarData(colaborador?.desligamento ?? hojeISO()),
+      placeholder: 'DD/MM/AAAA',
+      maxlength: 10,
+      ...(pessoa ? {} : { 'data-foco': true }),
+    }),
+  })
+
+  const texto = jaDesligado
+    ? `Corrija ou informe o dia em que ${colaborador.nome} saiu da empresa.`
+    : `${colaborador ? colaborador.nome : 'A pessoa'} vai para Desligados e deixa de aparecer nos setores, nas novas listas e nos aniversariantes. O histórico de participação fica guardado, e dá para reativar depois.`
+  const caixaDeErro = el('div')
+  const salvar = botao({ texto: jaDesligado ? 'Salvar' : 'Desligar', icone: jaDesligado ? 'check' : 'user-x', variante: jaDesligado ? 'principal' : 'perigo', tipo: 'submit' })
+  const formulario = el(
+    'form',
+    { class: 'formulario', novalidate: true },
+    el('p', {}, texto),
+    pessoa?.no,
+    data.no,
+    caixaDeErro,
+    el('div', { class: 'janela-modal__acoes' }, botao({ texto: 'Cancelar', aoClicar: () => janela.fechar() }), salvar),
+  )
+
+  formulario.addEventListener('submit', async (evento) => {
+    evento.preventDefault()
+    caixaDeErro.replaceChildren()
+    const escolhido = colaborador ?? dados().colaboradores.find((c) => c.id === pessoa.valor()?.id)
+    if (!escolhido) {
+      pessoa.mostrarErro(pessoa.textoSolto() ? 'Escolha a pessoa na lista que aparece ao digitar.' : 'Escolha quem foi desligado.')
+      pessoa.entrada.focus()
+      return
+    }
+    const { erro, data: desligamento } = validarDesligamento(data.entrada.value, { admissao: escolhido.admissao })
+    if (erro) {
+      data.mostrarErro(erro)
+      data.entrada.focus()
+      return
+    }
+    await comOcupado(salvar, async () => {
+      try {
+        await desligarColaborador(escolhido.id, desligamento)
+        avisar(jaDesligado ? 'Data de desligamento salva.' : `${escolhido.nome} foi para Desligados.`)
+        janela.fechar()
+        aoDesligar?.(escolhido.id)
       } catch (e) {
         caixaDeErro.replaceChildren(aviso(mensagemDeErro(e), { erro: true }))
       }
@@ -233,7 +310,7 @@ export function abrirImportacaoColaboradores({ dados }) {
       {
         chave: 'substituir',
         rotulo: 'Substituir a lista atual pela planilha',
-        ajuda: 'Para corrigir a lista sem duplicar ninguém. Quem está ativo no sistema e não está na planilha é desativado: o histórico fica guardado e dá para reativar. Quem está na planilha é atualizado e volta a ficar ativo. Use só com a lista completa da empresa.',
+        ajuda: 'Para corrigir a lista sem duplicar ninguém. Quem está ativo no sistema e não está na planilha vai para Desligados: o histórico fica guardado e dá para reativar. Quem está na planilha é atualizado e volta a ficar ativo. Use só com a lista completa da empresa.',
         padrao: false,
       },
     ],
@@ -249,7 +326,7 @@ export function abrirImportacaoColaboradores({ dados }) {
       if (!opcoes.substituir || !n) return true
       return confirmar({
         titulo: 'Substituir a lista atual',
-        texto: `${n === 1 ? '1 colaborador ativo não está na planilha e será desativado' : `${n} colaboradores ativos não estão na planilha e serão desativados`}. O histórico fica guardado, e dá para reativar depois.`,
+        texto: `${n === 1 ? '1 colaborador ativo não está na planilha e vai para Desligados' : `${n} colaboradores ativos não estão na planilha e vão para Desligados`}. O histórico fica guardado, e dá para reativar depois.`,
         botaoSim: 'Substituir a lista',
         perigo: true,
       })
@@ -276,7 +353,7 @@ export function abrirImportacaoColaboradores({ dados }) {
 export function abrirImportacaoDesligados({ dados }) {
   abrirImportador({
     titulo: 'Importar desligados',
-    ajuda: 'Use a aba "Desligados" da lista oficial, com o nome e a data de desligamento. Quem já está no cadastro é desativado e recebe a data. Quem não está entra só com o nome e a data.',
+    ajuda: 'Use a aba "Desligados" da lista oficial, com o nome e a data de desligamento. Quem já está no cadastro vai para Desligados e recebe a data. Quem não está entra só com o nome e a data.',
     aba: 'desligados',
     campos: CAMPOS_DOS_DESLIGADOS,
     preparar: (registros) => {

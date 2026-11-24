@@ -31,6 +31,7 @@ fornecedores, eletricistas do CAE, listas de presença com check-in pelo celular
 7. (Feita) Pais e mães, contatos dos colaboradores e aba Ramal (ver "Pais e mães e Ramal").
 8. (Feita) Desligados, excluir de vez, setinhas de ordem nas tabelas e contato nos aniversariantes (ver
    "Desligados, exclusão e ordem das tabelas").
+9. (Feita em 24/11/2026, a pedido) "Desativar" colaborador virou "Desligar", com a data (ver "Desligar").
 
 A pessoa autorizou fazer as etapas 2 a 6 em sequência, sem pedir aprovação entre elas, depois de
 conferida a integração da Etapa 1.
@@ -129,8 +130,8 @@ Tela em `js/telas/colaboradores.js` (janelas em `js/telas/colaboradores/formular
 - Exibição da liderança (`js/telas/colaboradores/lideranca.js`): cartões do setor, setor aberto e
   Dashboard, sempre na ordem hierárquica e sem o título de nível vazio. Setor sem ninguém não mostra
   o quadro nos cartões; o setor aberto avisa "Ninguém definido como responsável".
-- Desativar em vez de apagar (confirmação). Só quem já está desativado pode ser excluído de vez (ver "Desligados,
-  exclusão e ordem das tabelas"). Nome repetido não é aceito no cadastro.
+- Desligar em vez de apagar (janela com a data; ver "Desligar"). Só quem já está em Desligados pode ser excluído de
+  vez (ver "Desligados, exclusão e ordem das tabelas"). Nome repetido não é aceito no cadastro.
 - Importação (`js/ui/importador.js`, a mesma janela serve para eletricistas): arquivo, aba e
   linha dos títulos achados sozinhos; a pessoa confere a coluna de cada campo (com exemplos);
   prévia com novos, já existentes (mesmo nome sem acentos), repetidos, sem nome e avisos por linha.
@@ -288,6 +289,23 @@ Telas em `js/telas/aniversariantes.js` (mês) e `js/telas/aniversariantes/` (`co
   pessoa navega. Telas em cartões (Fornecedores, Listas) mantêm a ordem própria.
 - Aniversariantes: coluna Contato (`contatosDoColaborador`) nas tabelas do mês; a planilha do mês ganhou Telefone e
   E-mail.
+
+## Desligar (Etapa 9)
+
+A pessoa reclamou que só havia "Desativar" e não via como mandar alguém para Desligados. Para colaboradores, a
+palavra na tela é sempre **Desligar/Desligado** (no banco continua `ativo: false` + `desligamento`). Eletricistas,
+fornecedores e usuários continuam com "Desativar".
+
+- `abrirDesligamento` (`js/telas/colaboradores/formularios.js`): janela com a data (hoje de início, máscara
+  DD/MM/AAAA), validada por `validarDesligamento` (`js/lib/colaboradores.js`, com testes): obrigatória, sem data no
+  futuro e nunca antes da admissão. Grava com `desligarColaborador(id, data)` (`ativo: false` + `desligamento`);
+  `reativarColaborador` volta `ativo: true` e apaga a data. Não há mais `definirAtivoColaborador`.
+- Três entradas: ícone `user-x` "Desligar" na linha (lista, setor), botão "Desligar" na ficha e "Desligar
+  colaborador" no topo de Desligados (sem colaborador: escolhe a pessoa entre os ativos com `campoEscolherPessoa`).
+- Em quem já está em Desligados, a mesma janela vira "Data de desligamento" (ícone `calendar` na linha, botão na
+  ficha) para corrigir ou informar a data (quem foi pela substituição da lista fica sem data).
+- Etiqueta "Desligado", filtro Situação "Desligados", coluna Situação da planilha "Desligado" e os avisos da
+  substituição da lista e da importação de desligados falam em "vai para Desligados".
 
 ## Papéis
 

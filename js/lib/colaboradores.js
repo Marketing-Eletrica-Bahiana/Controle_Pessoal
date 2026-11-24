@@ -142,6 +142,17 @@ export function validarColaborador(entrada, { colaboradores = [], setores = [], 
   }
 }
 
+// Data de desligamento digitada ("DD/MM/AAAA"): obrigatória, sem data no futuro e nunca antes da admissão.
+// Devolve { erro, data } com a data em "AAAA-MM-DD".
+export function validarDesligamento(texto, { admissao = null, hoje = hojeISO() } = {}) {
+  if (!limparEspacos(texto)) return { erro: 'Informe a data de desligamento.', data: null }
+  const data = lerData(texto)
+  if (!data) return { erro: 'Use DD/MM/AAAA, por exemplo 05/11/2026.', data: null }
+  if (data > hoje) return { erro: 'A data de desligamento não pode ser no futuro.', data: null }
+  if (admissao && data < admissao) return { erro: `A data de desligamento não pode ser antes da admissão (${formatarData(admissao)}).`, data: null }
+  return { erro: '', data }
+}
+
 // Filtros da lista geral. filtros: { busca, setor, loja, lideranca, situacao }.
 export function filtrarColaboradores(lista, { busca = '', setor = '', loja = '', lideranca = '', situacao = 'ativos' } = {}) {
   return lista
@@ -367,14 +378,14 @@ export function avisosDaSubstituicao(previa, ativos) {
   const n = previa.ausentes.length
   const reativados = previa.itens.filter((i) => i.situacao === 'existente' && i.inativo).length
   const avisos = []
-  if (!n) avisos.push({ texto: 'Todos os colaboradores ativos estão na planilha: ninguém será desativado.' })
+  if (!n) avisos.push({ texto: 'Todos os colaboradores ativos estão na planilha: ninguém vai para Desligados.' })
   else {
     const nomes = previa.ausentes.slice(0, 30).map((c) => c.nome).join(', ')
     const resto = n > 30 ? ` e mais ${n - 30}` : ''
-    avisos.push({ texto: `${n === 1 ? '1 colaborador ativo não está na planilha e será desativado' : `${n} colaboradores ativos não estão na planilha e serão desativados`}: ${nomes}${resto}.` })
-    if (n * 2 > ativos) avisos.push({ texto: 'Mais da metade da equipe ativa seria desativada. Confira se escolheu a lista completa e a aba certa.', erro: true })
+    avisos.push({ texto: `${n === 1 ? '1 colaborador ativo não está na planilha e vai para Desligados' : `${n} colaboradores ativos não estão na planilha e vão para Desligados`}: ${nomes}${resto}.` })
+    if (n * 2 > ativos) avisos.push({ texto: 'Mais da metade da equipe ativa iria para Desligados. Confira se escolheu a lista completa e a aba certa.', erro: true })
   }
-  if (reativados) avisos.push({ texto: reativados === 1 ? '1 colaborador desativado está na planilha e volta a ficar ativo.' : `${reativados} colaboradores desativados estão na planilha e voltam a ficar ativos.` })
+  if (reativados) avisos.push({ texto: reativados === 1 ? '1 colaborador desligado está na planilha e volta a ficar ativo.' : `${reativados} colaboradores desligados estão na planilha e voltam a ficar ativos.` })
   return avisos
 }
 
@@ -478,10 +489,10 @@ export const linhaDaLista = (c) => [
   c.paiOuMae ?? '',
   formatarWhatsapp(c.telefone),
   c.email ?? '',
-  c.ativo === false ? 'Desativado' : 'Ativo',
+  c.ativo === false ? 'Desligado' : 'Ativo',
 ]
 
-// Desligados: colaboradores desativados, com a data de desligamento quando se sabe ("AAAA-MM-DD" ou null).
+// Desligados: colaboradores desativados (ativo: false), com a data de desligamento quando se sabe ("AAAA-MM-DD" ou null).
 // Os mais recentes primeiro; sem data, no fim.
 export function filtrarDesligados(lista, { busca = '' } = {}) {
   return lista
@@ -520,7 +531,7 @@ export function prepararDesligados({ registros, colaboradores }) {
       else avisos.push('Data de desligamento não entendida (precisa ter dia, mês e ano); fica em branco.')
     }
     const atual = existentes.get(chave)
-    if (atual && atual.ativo !== false) avisos.push('Está ativo no cadastro e será desativado.')
+    if (atual && atual.ativo !== false) avisos.push('Está ativo no cadastro e vai para Desligados.')
     return { linha, nome, situacao: atual ? 'existente' : 'novo', id: atual?.id ?? null, dados, avisos }
   })
   const conta = (s) => itens.filter((i) => i.situacao === s).length

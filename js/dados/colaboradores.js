@@ -37,9 +37,10 @@ export async function salvarColaborador({ id = null, antes = null, dados, setore
   return colaboradorId
 }
 
-// Desativar em vez de apagar, para manter o histórico de participação. Reativar tira a data de desligamento.
-export const definirAtivoColaborador = (id, ativo) =>
-  atualizar(`colaboradores/${id}`, ativo ? { ativo, desligamento: null, atualizadoEm: agora() } : { ativo, atualizadoEm: agora() })
+// Desligar em vez de apagar, para manter o histórico de participação: a pessoa vai para Desligados com a data
+// ("AAAA-MM-DD"). Serve também para corrigir a data de quem já está lá. Reativar tira a data de desligamento.
+export const desligarColaborador = (id, desligamento) => atualizar(`colaboradores/${id}`, { ativo: false, desligamento, atualizadoEm: agora() })
+export const reativarColaborador = (id) => atualizar(`colaboradores/${id}`, { ativo: true, desligamento: null, atualizadoEm: agora() })
 
 // Excluir de vez (só para quem já está desativado; a tela confirma antes).
 export async function excluirColaborador({ id, setores }) {
