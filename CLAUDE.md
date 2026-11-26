@@ -44,6 +44,8 @@ fornecedores, eletricistas do CAE, listas de presença com check-in pelo celular
 10. (Feita em 24/11/2026, a pedido) Pessoas da marca na ficha do fornecedor (ver "Pessoas da marca").
 11. (Feita em 26/11/2026, a pedido) Edição em dois computadores: "Histórico de alterações" e "Editar em mais de um
     computador" no README, e a regra no topo deste arquivo.
+12. (Feita em 26/11/2026, a pedido) Quadro "Informações Pessoais" na ficha do colaborador (ver "Informações
+    Pessoais").
 
 A pessoa autorizou fazer as etapas 2 a 6 em sequência, sem pedir aprovação entre elas, depois de
 conferida a integração da Etapa 1.
@@ -98,9 +100,10 @@ Nomes exatos (as regras dependem deles):
   `"Lauro de Freitas"` ou `"Aracaju"`; `LOJAS` em `js/config.js`), `cargo`, `lideranca`
   (`"Gerente"`, `"Coordenador"`, `"Supervisor"` ou `""`), `nascimentoDia` e `nascimentoMes` (números ou null; o
   ano nunca é guardado, LGPD), `admissao` (`"AAAA-MM-DD"` ou null), `paiOuMae` (`"Pai"`, `"Mãe"` ou `""`),
-  `telefone` (só números com DDD, 10 ou 11), `email` (minúsculas), `desligamento` (`"AAAA-MM-DD"` ou null), `ativo`, `criadoEm`,
-  `atualizadoEm`. IDs automáticos. Cadastro antigo pode não ter `paiOuMae`, `telefone` e `email`: o
-  código trata como vazio e os campos aparecem quando a pessoa é salva.
+  `telefone` (só números com DDD, 10 ou 11), `email` (minúsculas), `desligamento` (`"AAAA-MM-DD"` ou null),
+  `informacoesPessoais` (`{ pet, familia, sonhos, time, hobby }`, textos de até 300 letras), `ativo`, `criadoEm`,
+  `atualizadoEm`. IDs automáticos. Cadastro antigo pode não ter `paiOuMae`, `telefone`, `email` e
+  `informacoesPessoais`: o código trata como vazio e os campos aparecem quando a pessoa é salva.
 - `setores/{id}`: `nome`, `gerentes`, `coordenadores` e `supervisores` (listas de IDs de
   colaboradores). Setor antigo pode não ter `coordenadores`: o código trata como lista vazia e o
   campo aparece quando alguém entra nele. ID tirado do nome sem acentos (`"recursos-humanos"`),
@@ -341,6 +344,22 @@ Pedido: na ficha do fornecedor, adicionar palestrante, representante ou convidad
 - Presença de fornecedor: `detalhe` vira `"Marca · Função"` (`presencaDeFornecedor(nome, fornecedor, funcao)`);
   presenças antigas têm só a marca. `marcaDaPresenca`, `funcaoDaPresenca` e `nomeComFuncao` (`js/lib/listas.js`) leem
   o detalhe; o resumo agrupa pela marca e mostra "Nome (Função)", assim como "Quem a marca enviou" na ficha.
+
+## Informações Pessoais (Etapa 12)
+
+Pedido: na ficha do colaborador, um quadro "Informações Pessoais" ligado à participação nas ações internas, com os
+espaços Pet, Família, Sonhos, Time e Hobby (nomes e ordem como a pessoa pediu).
+
+- Campo `informacoesPessoais` no próprio documento do colaborador: as regras de `colaboradores` (admin grava) já
+  cobrem, sem mudar `firestore.rules`. Gravado sozinho (`salvarInformacoesPessoais` em `js/dados/colaboradores.js`),
+  então o formulário "Editar" do cadastro e a importação nunca apagam as respostas.
+- Regras em `js/lib/colaboradores.js` (com testes): `INFORMACOES_PESSOAIS` (campo, rótulo e exemplo, na ordem da
+  tela; é a única lista dos espaços), `LIMITE_DA_INFORMACAO_PESSOAL` (300), `informacoesPessoaisDe`,
+  `temInformacoesPessoais`, `validarInformacoesPessoais` (todas opcionais; limpa espaços e mantém as quebras de linha).
+- Tela em `js/telas/colaboradores/informacoes.js`: bloco logo abaixo de "Dados" na ficha (ícone `star`), com
+  "Preencher" (vazio) ou "Editar" só para admin, e a janela com cinco caixas de texto. Organizador só vê. A
+  classe `bloco--informacoes-pessoais` mostra as quebras de linha.
+- Não entram na planilha "Baixar lista" nem na importação (não foi pedido).
 
 ## Papéis
 

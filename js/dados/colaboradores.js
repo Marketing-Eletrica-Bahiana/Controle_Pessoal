@@ -1,8 +1,9 @@
 // Gravação de colaboradores/{id} e setores/{id}.
 // colaboradores: nome, setor (nome do setor), loja, cargo, lideranca, nascimentoDia, nascimentoMes,
 //   admissao ("AAAA-MM-DD"), paiOuMae ("Pai", "Mãe" ou ""), telefone (só números com DDD), email,
-//   desligamento ("AAAA-MM-DD" ou null), ativo, criadoEm, atualizadoEm. Nascimento sem ano (LGPD).
-//   Cadastro antigo pode não ter paiOuMae, telefone, email e desligamento.
+//   desligamento ("AAAA-MM-DD" ou null), informacoesPessoais ({ pet, familia, sonhos, time, hobby }), ativo, criadoEm,
+//   atualizadoEm. Nascimento sem ano (LGPD).
+//   Cadastro antigo pode não ter paiOuMae, telefone, email, desligamento e informacoesPessoais.
 // setores: nome, gerentes, coordenadores e supervisores (listas de ids de colaboradores).
 //   Setor antigo pode não ter "coordenadores"; o campo aparece quando alguém entra nele.
 import {
@@ -41,6 +42,9 @@ export async function salvarColaborador({ id = null, antes = null, dados, setore
 // ("AAAA-MM-DD"). Serve também para corrigir a data de quem já está lá. Reativar tira a data de desligamento.
 export const desligarColaborador = (id, desligamento) => atualizar(`colaboradores/${id}`, { ativo: false, desligamento, atualizadoEm: agora() })
 export const reativarColaborador = (id) => atualizar(`colaboradores/${id}`, { ativo: true, desligamento: null, atualizadoEm: agora() })
+
+// Informações Pessoais: grava as cinco respostas juntas ({ pet, familia, sonhos, time, hobby }).
+export const salvarInformacoesPessoais = (id, informacoesPessoais) => atualizar(`colaboradores/${id}`, { informacoesPessoais, atualizadoEm: agora() })
 
 // Excluir de vez (só para quem já está desativado; a tela confirma antes).
 export async function excluirColaborador({ id, setores }) {

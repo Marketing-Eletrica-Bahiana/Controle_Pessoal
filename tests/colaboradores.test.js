@@ -5,6 +5,7 @@ import {
   avisosDaSubstituicao, filtrarDesligados, filtrarPaisEMaes, liderancasAoDefinirResponsaveis, linhaDaLista, linhaDosDesligados, normalizarLideranca,
   normalizarLoja, normalizarTemFilhos, operacoesDaExclusao, operacoesDaImportacao, operacoesDosDesligados, paiOuMaeDoGenero, prepararDesligados,
   prepararImportacao, resumoDosSetores, validarColaborador, validarDesligamento, CABECALHO_DOS_DESLIGADOS, CAMPOS_DOS_DESLIGADOS,
+  INFORMACOES_PESSOAIS, LIMITE_DA_INFORMACAO_PESSOAL, informacoesPessoaisDe, temInformacoesPessoais, validarInformacoesPessoais,
 } from '../js/lib/colaboradores.js'
 import { acharCabecalho, exemplosDaColuna, extrairRegistros, lerTextoDoCsv, nomeDaColuna, sugerirMapeamento } from '../js/lib/importacao.js'
 
@@ -621,5 +622,31 @@ describe('colaboradores: excluir de vez', () => {
       { tipo: 'atualizar', caminho: 'setores/rh', dados: { coordenadores: { tirar: ['g1'] }, supervisores: { tirar: ['g1'] } } },
       { tipo: 'atualizar', caminho: 'eletricistas/e1', dados: { vendedorId: '' } },
     ])
+  })
+})
+
+describe('colaboradores: informações pessoais', () => {
+  it('tem os cinco espaços na ordem pedida', () => {
+    assert.deepEqual(INFORMACOES_PESSOAIS.map((i) => i.rotulo), ['Pet', 'Família', 'Sonhos', 'Time', 'Hobby'])
+  })
+
+  it('cadastro antigo, sem o campo, fica com tudo vazio', () => {
+    assert.deepEqual(informacoesPessoaisDe({ nome: 'Ana' }), { pet: '', familia: '', sonhos: '', time: '', hobby: '' })
+    assert.equal(temInformacoesPessoais({ nome: 'Ana' }), false)
+    assert.equal(temInformacoesPessoais({ informacoesPessoais: { time: 'Bahia' } }), true)
+    assert.equal(informacoesPessoaisDe({ informacoesPessoais: { pet: 3 } }).pet, '')
+  })
+
+  it('limpa espaços, mantém as quebras de linha e aceita tudo vazio', () => {
+    const { valido, dados } = validarInformacoesPessoais({ pet: '  Thor   e  Mel ', sonhos: 'Viajar\r\n\r\n\r\n  Estudar  ', hobby: '' })
+    assert.equal(valido, true)
+    assert.deepEqual(dados, { pet: 'Thor e Mel', familia: '', sonhos: 'Viajar\n\nEstudar', time: '', hobby: '' })
+    assert.equal(validarInformacoesPessoais({}).valido, true)
+  })
+
+  it('não aceita resposta acima do limite', () => {
+    const { valido, erros } = validarInformacoesPessoais({ familia: 'a'.repeat(LIMITE_DA_INFORMACAO_PESSOAL + 1), time: 'a'.repeat(LIMITE_DA_INFORMACAO_PESSOAL) })
+    assert.equal(valido, false)
+    assert.deepEqual(Object.keys(erros), ['familia'])
   })
 })

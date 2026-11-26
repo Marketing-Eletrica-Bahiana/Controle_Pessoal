@@ -856,6 +856,15 @@ a {
   overflow-wrap: anywhere;
 }
 
+/* Informações Pessoais: respostas mais longas, com as quebras de linha que a pessoa digitou. */
+.bloco--informacoes-pessoais .ficha {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.bloco--informacoes-pessoais .ficha dd {
+  white-space: pre-line;
+}
+
 /* Formulários */
 
 .formulario {

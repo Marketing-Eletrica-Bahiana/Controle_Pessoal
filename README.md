@@ -6,7 +6,8 @@ App interno da Elétrica Bahiana para organizar, num lugar só:
   participação das marcas, presença nos treinamentos do CAE e do Comercial.
 - **Colaboradores**: quem trabalha em cada setor e loja, com gerentes, coordenadores e supervisores.
   A parte **Pais e mães** mostra quem é pai ou mãe na empresa, com os contatos, e a parte **Desligados**
-  mostra quem saiu, com a data de desligamento.
+  mostra quem saiu, com a data de desligamento. A ficha de cada pessoa tem as **Informações Pessoais** (pet,
+  família, sonhos, time e hobby) para as ações internas.
 - **Aniversariantes**: do mês (nascimento) e de empresa (tempo de casa), com o contato de cada pessoa.
 - **Fornecedores**: as marcas parceiras (Soprano, Legrand, Ledvance...), com os palestrantes, representantes e
   convidados de cada uma.
@@ -69,6 +70,14 @@ Quem tem acesso ao app vê os contatos; só a administração edita. Há dois je
 
 Celular abre a conversa no WhatsApp; telefone fixo abre a ligação. **Baixar lista** gera a planilha
 do que está filtrado na tela.
+
+## Informações Pessoais
+
+Na ficha de cada colaborador (clique no nome da pessoa), o quadro **Informações Pessoais** guarda o que ela conta
+sobre si para as nossas ações internas: **Pet**, **Família**, **Sonhos**, **Time** e **Hobby**. Clique em
+**Preencher** (ou **Editar**, se já houver algo) e escreva as respostas. Todos os espaços são opcionais, com até 300
+letras cada: deixe em branco o que a pessoa não quiser contar. Quem tem acesso ao app vê o quadro; só a administração
+preenche.
 
 ## Corrigir a lista de colaboradores sem duplicar
 
@@ -199,6 +208,8 @@ entre no GitHub com uma conta que tenha acesso à organização Marketing-Eletri
 
 A mais recente primeiro. Cada alteração entra aqui no mesmo envio em que vai para o site.
 
+- **26/11/2026**: na ficha do colaborador, o quadro **Informações Pessoais** (Pet, Família, Sonhos, Time e Hobby),
+  para as ações internas. Só a administração preenche.
 - **26/11/2026**: o site passa a ser editado em dois computadores. Criados este histórico e o passo a passo acima.
 - **24/11/2026**: na ficha do fornecedor, **Pessoas da marca** (palestrantes, representantes e convidados). Elas
   aparecem como sugestão em Convocados > Adicionar pessoa de fornecedor, e a função aparece junto da marca na lista.

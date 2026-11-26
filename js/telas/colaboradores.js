@@ -23,6 +23,7 @@ import { contatosDoColaborador, emailDoColaborador, telefoneDoColaborador } from
 import {
   abrirDesligamento, abrirFormularioColaborador, abrirImportacaoColaboradores, abrirImportacaoDesligados, abrirResponsaveis,
 } from './colaboradores/formularios.js'
+import { blocoDeInformacoesPessoais } from './colaboradores/informacoes.js'
 import { liderancaDoSetor } from './colaboradores/lideranca.js'
 import { historicoDaPessoa } from './listas/historico.js'
 
@@ -529,6 +530,7 @@ export function montar(raiz, { pessoa, params }) {
           c.ativo === false && ['Desligamento', formatarData(c.desligamento)],
         ]),
       ),
+      blocoDeInformacoesPessoais(c, { admin }),
       fixos.historico,
     )
     if (!pararHistorico) pararHistorico = historicoDaPessoa(fixos.historico, { tipo: 'colaborador', id: c.id })

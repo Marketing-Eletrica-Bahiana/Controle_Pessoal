@@ -153,6 +153,43 @@ export function validarDesligamento(texto, { admissao = null, hoje = hojeISO() }
   return { erro: '', data }
 }
 
+// Informações Pessoais (Etapa 12): o que a pessoa conta para as ações internas. Ficam no campo "informacoesPessoais"
+// do colaborador ({ pet, familia, sonhos, time, hobby }), todas opcionais. Esta lista é a ordem da tela.
+export const INFORMACOES_PESSOAIS = [
+  { campo: 'pet', rotulo: 'Pet', exemplo: 'Ex.: Thor, um vira-lata de 3 anos' },
+  { campo: 'familia', rotulo: 'Família', exemplo: 'Ex.: dois filhos, Ana e Pedro' },
+  { campo: 'sonhos', rotulo: 'Sonhos', exemplo: 'Ex.: conhecer a Europa, terminar a faculdade' },
+  { campo: 'time', rotulo: 'Time', exemplo: 'Ex.: o time de futebol do coração' },
+  { campo: 'hobby', rotulo: 'Hobby', exemplo: 'Ex.: pedalar, cozinhar, ler' },
+]
+export const LIMITE_DA_INFORMACAO_PESSOAL = 300
+
+// Cadastro antigo não tem o campo: tudo vazio.
+export const informacoesPessoaisDe = (c) =>
+  Object.fromEntries(INFORMACOES_PESSOAIS.map(({ campo }) => [campo, typeof c?.informacoesPessoais?.[campo] === 'string' ? c.informacoesPessoais[campo] : '']))
+
+export const temInformacoesPessoais = (c) => Object.values(informacoesPessoaisDe(c)).some(Boolean)
+
+// Texto de cada resposta: espaços repetidos saem, as quebras de linha ficam (no máximo uma linha em branco seguida).
+const limparResposta = (texto) =>
+  String(texto ?? '')
+    .split(/\r?\n/)
+    .map(limparEspacos)
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+
+// Devolve { erros, valido, dados } com dados = { pet, familia, sonhos, time, hobby }.
+export function validarInformacoesPessoais(entrada = {}) {
+  const erros = {}
+  const dados = {}
+  for (const { campo } of INFORMACOES_PESSOAIS) {
+    dados[campo] = limparResposta(entrada[campo])
+    if (dados[campo].length > LIMITE_DA_INFORMACAO_PESSOAL) erros[campo] = `Use até ${LIMITE_DA_INFORMACAO_PESSOAL} letras.`
+  }
+  return { erros, valido: Object.keys(erros).length === 0, dados }
+}
+
 // Filtros da lista geral. filtros: { busca, setor, loja, lideranca, situacao }.
 export function filtrarColaboradores(lista, { busca = '', setor = '', loja = '', lideranca = '', situacao = 'ativos' } = {}) {
   return lista
