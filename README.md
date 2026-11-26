@@ -181,3 +181,34 @@ Pela linha de comando: `firebase deploy --only firestore:indexes`.
 Para testar em casa, sirva a pasta com qualquer servidor estático (por exemplo
 `python -m http.server 8000`) e abra `http://localhost:8000/`. Os testes rodam com Node 24:
 `npm test`.
+
+### Editar em mais de um computador
+
+O site é editado em dois computadores. O GitHub é o lugar que junta tudo: o que fica só em um computador o outro
+não vê.
+
+1. **Antes de começar qualquer alteração**, puxe o que foi feito no outro computador (`git pull` na pasta do projeto)
+   e leia o **Histórico de alterações** logo abaixo.
+2. **Ao terminar**, escreva a alteração no histórico, faça o commit e envie para a `main` (`git push`).
+
+Para preparar um computador novo: copie a pasta do projeto (ou clone o repositório), instale o Git e o Node 24 e
+entre no GitHub com uma conta que tenha acesso à organização Marketing-Eletrica-Bahiana. A demonstração local
+(`.claude/demo/`) e a pasta `Fonte - Klavika` ficam fora do repositório: vão junto só quando a pasta é copiada.
+
+## Histórico de alterações
+
+A mais recente primeiro. Cada alteração entra aqui no mesmo envio em que vai para o site.
+
+- **26/11/2026**: o site passa a ser editado em dois computadores. Criados este histórico e o passo a passo acima.
+- **24/11/2026**: na ficha do fornecedor, **Pessoas da marca** (palestrantes, representantes e convidados). Elas
+  aparecem como sugestão em Convocados > Adicionar pessoa de fornecedor, e a função aparece junto da marca na lista.
+- **24/11/2026**: em Colaboradores, **Desativar** virou **Desligar**, com a data de desligamento. A pessoa vai para
+  Desligados, e a data pode ser corrigida depois pelo ícone de calendário.
+- **06/11/2026**: parte **Desligados** (com a importação da aba "Desligados" da lista oficial), **Excluir de vez**,
+  ordem das tabelas pelo título das colunas e contato nos aniversariantes.
+- **06/11/2026**: importação de colaboradores com a opção **Substituir a lista atual pela planilha**, sem duplicar.
+- **04/11/2026**: a importação reconhece "Tem Filhos" e "Gênero" para marcar pai ou mãe, e o CSV mantém os acentos.
+- **04/11/2026**: parte **Pais e mães**, contatos dos colaboradores e aba **Ramal** (ainda vazia).
+- **02/11/2026**: a liderança ganhou o nível **Coordenador**.
+- **31/10/2026**: primeira versão: login com Google, Usuários, Colaboradores, Fornecedores, Eletricistas do CAE,
+  Listas com check-in, Aniversariantes e Dashboard.

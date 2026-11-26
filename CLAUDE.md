@@ -11,6 +11,15 @@ fornecedores, eletricistas do CAE, listas de presença com check-in pelo celular
 
 ## Como trabalhar neste projeto
 
+- **Dois computadores (desde 26/11/2026).** A pessoa edita o projeto em dois PCs, e cada um tem a sua Claude, sem
+  a memória do outro. O GitHub é o que junta os dois. Em todo pedido de alteração:
+  1. Antes de mexer em qualquer arquivo: `git status` e `git pull` nesta pasta. Se houver mudança local sem commit
+     ou o pull der conflito, parar e avisar a pessoa antes de continuar.
+  2. Ler o "Histórico de alterações" no fim do `README.md` e as etapas abaixo, para saber o que foi feito no outro
+     computador.
+  3. Ao terminar: escrever a alteração no "Histórico de alterações" (data DD/MM/AAAA, o que mudou em linguagem
+     simples, a mais recente primeiro), atualizar este arquivo, testar, fazer o commit e o `git push` para a
+     `main`. Nada fica só no computador.
 - Trabalhar em etapas. Ao fim de cada uma: testar, fazer o commit e enviar para a `main`.
 - Toda a interface em português do Brasil. Nunca usar travessão nos textos da interface.
 - Datas exibidas como DD/MM/AAAA e horas como HH:MM, no fuso `America/Bahia` (`js/lib/datas.js`).
@@ -33,6 +42,8 @@ fornecedores, eletricistas do CAE, listas de presença com check-in pelo celular
    "Desligados, exclusão e ordem das tabelas").
 9. (Feita em 24/11/2026, a pedido) "Desativar" colaborador virou "Desligar", com a data (ver "Desligar").
 10. (Feita em 24/11/2026, a pedido) Pessoas da marca na ficha do fornecedor (ver "Pessoas da marca").
+11. (Feita em 26/11/2026, a pedido) Edição em dois computadores: "Histórico de alterações" e "Editar em mais de um
+    computador" no README, e a regra no topo deste arquivo.
 
 A pessoa autorizou fazer as etapas 2 a 6 em sequência, sem pedir aprovação entre elas, depois de
 conferida a integração da Etapa 1.
@@ -402,7 +413,10 @@ carregado só aqui, só cores da paleta, sem animação com `prefers-reduced-mot
 `/demo.html`, que é o `index.html` com `js/dados/banco.js` trocado (pelo import map) por
 `banco-demo.js`, um banco de mentira no `localStorage` com dados de `semente.js`. Papel pela URL:
 `/demo.html?papel=admin|organizador`; `?vazio` começa sem pais e mães; `?zerar` volta à semente. Nunca
-grava no Firestore real. Como a pasta é ignorada, ela não vem junto ao clonar o repositório.
+grava no Firestore real. Como a pasta é ignorada, ela não vem junto ao clonar o repositório e não passa de um
+computador para o outro pelo `git pull` (vai só quando a pasta é copiada). Ela fica fora porque `banco-demo.js` usa
+um e-mail fictício no domínio da empresa. Se ela faltar neste computador, avisar a pessoa e conferir só com `npm test`.
+Se a semente mudar aqui, a do outro computador continua a antiga, o que não atrapalha: é só para testar.
 
 ## Notas técnicas
 
