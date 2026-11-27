@@ -1,5 +1,5 @@
 // Gravação de listas/{id} e da subcoleção presencas/{id}.
-// listas: nome, tipo, data ("AAAA-MM-DD"), loja (uma das lojas ou "Outro local"), local, fornecedores
+// listas: nome, tipo, data ("AAAA-MM-DD"), loja (uma das lojas, "Todas as lojas" ou "Outro local"), local, fornecedores
 //   (IDs das marcas), status ("aberta" | "encerrada"), criadoPor (nome), criadoEm.
 // presencas: tipoPessoa, pessoaId, nome, detalhe, fornecedorId, convocado, presente, horaCheckin,
 //   checkinPor (nome de quem fez o check-in). Colaborador e eletricista usam o ID "tipo_pessoaId".

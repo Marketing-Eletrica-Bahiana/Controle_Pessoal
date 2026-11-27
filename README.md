@@ -226,6 +226,9 @@ entre no GitHub com uma conta que tenha acesso à organização Marketing-Eletri
 
 A mais recente primeiro. Cada alteração entra aqui no mesmo envio em que vai para o site.
 
+- **27/11/2026**: na lista de presença, a loja pode ser **Todas as lojas** (para ações e eventos das três lojas). Em
+  Convocados > Adicionar colaboradores > Loja inteira, **Todas as lojas** convoca todos os colaboradores ativos de uma
+  vez.
 - **27/11/2026**: no Dashboard, o bloco **Endomarketing e eventos**, com as listas do tipo Ação de Endomarketing e
   Evento do período: quantas foram, quantos participaram, a presença dos convocados, um gráfico e a tabela de cada uma.
 - **27/11/2026**: em Colaboradores, a parte **Participação**, com o ranking de quem mais participou das ações de

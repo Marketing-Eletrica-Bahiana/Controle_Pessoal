@@ -7,7 +7,8 @@ import { mensagemDeErro } from '../../lib/erros.js'
 import { vendedoresDosEletricistas } from '../../lib/eletricistas.js'
 import { FUNCOES_DO_FORNECEDOR, pessoasDoFornecedor } from '../../lib/fornecedores.js'
 import {
-  TIPOS_DE_PESSOA, fornecedorJaNaLista, idDaPresenca, pessoasNaLista, presencaDeColaborador, presencaDeEletricista, presencaDeFornecedor,
+  TIPOS_DE_PESSOA, TODAS_AS_LOJAS, ehDaLoja, fornecedorJaNaLista, idDaPresenca, pessoasNaLista, presencaDeColaborador, presencaDeEletricista,
+  presencaDeFornecedor,
 } from '../../lib/listas.js'
 import { pode } from '../../lib/papeis.js'
 import { combinaBusca, compararTexto, limparEspacos, normalizar, plural } from '../../lib/texto.js'
@@ -200,14 +201,14 @@ function abrirColaboradores(ctx) {
     const opcoes =
       tipo === 'setor'
         ? [...ctx.dados().setores].sort((a, b) => compararTexto(a.nome, b.nome)).map((s) => ({ valor: s.nome, rotulo: s.nome }))
-        : LOJAS.map((l) => ({ valor: l, rotulo: l }))
+        : [...LOJAS, TODAS_AS_LOJAS].map((l) => ({ valor: l, rotulo: l }))
     const escolha = selecao([{ valor: '', rotulo: tipo === 'setor' ? 'Escolha o setor' : 'Escolha a loja' }, ...opcoes], '', { 'data-foco': true })
     const previa = el('div')
     const adicionar = botao({ texto: 'Adicionar', icone: 'plus', variante: 'principal', disabled: true })
     let pessoas = []
     escolha.addEventListener('change', () => {
       const valor = escolha.value
-      const todos = valor ? ativos().filter((c) => (tipo === 'setor' ? normalizar(c.setor) === normalizar(valor) : c.loja === valor)) : []
+      const todos = valor ? ativos().filter((c) => (tipo === 'setor' ? normalizar(c.setor) === normalizar(valor) : ehDaLoja(c, valor))) : []
       pessoas = todos.filter(fora)
       adicionar.disabled = !pessoas.length
       trocar(adicionar, icone('plus'), el('span', {}, pessoas.length ? `Adicionar ${plural(pessoas.length, 'pessoa', 'pessoas')}` : 'Adicionar'))

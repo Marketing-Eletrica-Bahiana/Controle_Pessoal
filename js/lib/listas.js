@@ -7,8 +7,12 @@ import { compararTexto, combinaBusca, limparEspacos, normalizar } from './texto.
 export const TIPOS_DE_LISTA = ['Treinamento CAE', 'Treinamento Comercial', 'Evento', 'Ação de Endomarketing', 'Outro']
 export const TIPOS_DE_ANIVERSARIO = ['Aniversariantes do mês', 'Aniversário de empresa']
 export const TODOS_OS_TIPOS = [...TIPOS_DE_LISTA, ...TIPOS_DE_ANIVERSARIO]
+export const TODAS_AS_LOJAS = 'Todas as lojas'
 export const OUTRO_LOCAL = 'Outro local'
-export const LOCAIS = [...LOJAS, OUTRO_LOCAL]
+export const LOCAIS = [...LOJAS, TODAS_AS_LOJAS, OUTRO_LOCAL]
+
+// Colaborador da loja escolhida em "Adicionar loja inteira"; "Todas as lojas" traz todo mundo (até quem está sem loja).
+export const ehDaLoja = (colaborador, loja) => loja === TODAS_AS_LOJAS || colaborador.loja === loja
 
 export const ehListaDeAniversario = (lista) => TIPOS_DE_ANIVERSARIO.includes(lista?.tipo)
 
@@ -30,7 +34,7 @@ export function validarLista(entrada) {
   if (!TIPOS_DE_LISTA.includes(entrada.tipo)) erros.tipo = 'Escolha o tipo.'
   const data = lerData(entrada.data)
   if (!data) erros.data = 'Use DD/MM/AAAA, por exemplo 05/11/2026.'
-  if (!LOCAIS.includes(entrada.loja)) erros.loja = 'Escolha a loja ou "Outro local".'
+  if (!LOCAIS.includes(entrada.loja)) erros.loja = 'Escolha a loja, "Todas as lojas" ou "Outro local".'
   if (entrada.loja === OUTRO_LOCAL && !local) erros.local = 'Diga onde vai ser.'
   if (local.length > 120) erros.local = 'Use até 120 letras.'
   return {

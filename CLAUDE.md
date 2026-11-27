@@ -49,6 +49,7 @@ fornecedores, eletricistas do CAE, listas de presença com check-in pelo celular
 13. (Feita em 27/11/2026, a pedido) Parte "Participação" em Colaboradores e observações nos rankings dos
     aniversariantes (ver "Participação").
 14. (Feita em 27/11/2026, a pedido) Bloco "Endomarketing e eventos" no Dashboard (ver "Dashboard").
+15. (Feita em 27/11/2026, a pedido) Opção "Todas as lojas" na loja da lista e em "Loja inteira" (ver "Listas").
 
 A pessoa autorizou fazer as etapas 2 a 6 em sequência, sem pedir aprovação entre elas, depois de
 conferida a integração da Etapa 1.
@@ -117,7 +118,7 @@ Nomes exatos (as regras dependem deles):
   antiga não tem `pessoas`: o código trata como lista vazia.
 - `eletricistas/{id}`: `nome`, `whatsapp` (só números com DDD, 10 ou 11), `vendedorId`,
   `vendedorNome`, `consentimentoLgpd`, `dataConsentimento`, `dataCadastro` (Timestamps), `ativo`.
-- `listas/{id}`: `nome`, `tipo`, `data` (`"AAAA-MM-DD"`), `loja` (uma das lojas ou
+- `listas/{id}`: `nome`, `tipo`, `data` (`"AAAA-MM-DD"`), `loja` (uma das lojas, `"Todas as lojas"` ou
   `"Outro local"`), `local`, `fornecedores` (IDs das marcas), `status` (`"aberta"` |
   `"encerrada"`), `criadoPor` (nome de quem criou), `criadoEm`.
 - `listas/{id}/presencas/{id}`: `tipoPessoa` (`"colaborador"` | `"eletricista"` | `"fornecedor"` |
@@ -208,6 +209,10 @@ Tela em `js/telas/listas.js` (visão geral e página da lista) com as partes em 
   `#/listas/{id}/checkin`, `/convocados` e `/resumo`.
 - Tipos: Treinamento CAE, Treinamento Comercial, Evento, Ação de Endomarketing, Outro (os dois de
   aniversário entram na Etapa 5). "Outro local" pede o local.
+- Loja da lista (`LOCAIS` em `js/lib/listas.js`): as três lojas, "Todas as lojas" (`TODAS_AS_LOJAS`, Etapa 15, a pedido,
+  para ações e eventos das três lojas juntas; o local continua opcional) e "Outro local". As regras do Firestore não
+  conferem esse campo. "Loja inteira" em Convocados também tem "Todas as lojas", que traz todos os colaboradores
+  ativos, até quem está sem loja (`ehDaLoja`).
 - Admin cria, edita, encerra, reabre e exclui (apaga as presenças junto, com confirmação). Nova
   lista abre direto em Convocados.
 - Convocados (admin): colaboradores um a um, setor inteiro ou loja inteira (só ativos e quem ainda

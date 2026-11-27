@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
-  CABECALHO_COMPLETA, CABECALHO_PRESENTES, contarPresencas, ehListaDeAniversario, filtrarListas, fornecedorJaNaLista, funcaoDaPresenca,
+  CABECALHO_COMPLETA, CABECALHO_PRESENTES, LOCAIS, TODAS_AS_LOJAS, contarPresencas, ehDaLoja, ehListaDeAniversario, filtrarListas, fornecedorJaNaLista, funcaoDaPresenca,
   historicoDaPessoa, idDaPresenca, linhasCompleta, linhasPresentes, listasDaMarca, marcaDaPresenca, nomeComFuncao, nomeDoArquivoDaLista, ondeE,
   pessoasNaLista, presencaDeColaborador,
   presencaDeConvidado, presencaDeEletricista, presencaDeFornecedor, presencasParaCheckin, quandoE, resultadoNaLista,
@@ -25,6 +25,19 @@ describe('listas: cadastro e filtros', () => {
     assert.deepEqual(r.dados, { nome: 'Treino', tipo: 'Evento', data: '2026-11-05', loja: 'Aracaju', local: '', fornecedores: ['a'] })
     const ruim = validarLista({ nome: '', tipo: 'Aniversariantes do mês', data: '31/02/2026', loja: 'Outro local', local: '' })
     assert.deepEqual(Object.keys(ruim.erros).sort(), ['data', 'local', 'nome', 'tipo'])
+    assert.equal(validarLista({ nome: 'Treino', tipo: 'Evento', data: '05/11/2026', loja: 'Loja inventada', local: '' }).erros.loja, 'Escolha a loja, "Todas as lojas" ou "Outro local".')
+  })
+
+  it('"Todas as lojas": vale na lista e traz todo mundo na loja inteira', () => {
+    const r = validarLista({ nome: 'Café', tipo: 'Ação de Endomarketing', data: '05/11/2026', loja: TODAS_AS_LOJAS, local: '' })
+    assert.ok(r.valido)
+    assert.equal(r.dados.loja, 'Todas as lojas')
+    assert.equal(ondeE({ loja: TODAS_AS_LOJAS, local: 'Matriz e lojas' }), 'Todas as lojas · Matriz e lojas')
+    assert.ok(LOCAIS.indexOf(TODAS_AS_LOJAS) < LOCAIS.indexOf('Outro local'))
+    assert.ok(ehDaLoja({ loja: 'Aracaju' }, TODAS_AS_LOJAS))
+    assert.ok(ehDaLoja({ loja: '' }, TODAS_AS_LOJAS))
+    assert.ok(ehDaLoja({ loja: 'Aracaju' }, 'Aracaju'))
+    assert.ok(!ehDaLoja({ loja: 'Aracaju' }, 'Lauro de Freitas'))
   })
 
   it('filtra por tipo, situação, ano e busca, mais recentes primeiro', () => {
