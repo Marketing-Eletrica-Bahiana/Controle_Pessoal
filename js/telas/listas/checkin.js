@@ -5,10 +5,10 @@ import { formatarHora } from '../../lib/datas.js'
 import { mensagemDeErro } from '../../lib/erros.js'
 import {
   LIMITE_DA_OBSERVACAO, SITUACOES_DO_CHECKIN, contarPresencas, idDaPresenca, limparObservacao, presencaDeColaborador,
-  presencaDeConvidado, presencaDeEletricista, presencaDeOutraPessoa, presencasParaCheckin, rotuloDaSituacao, situacaoNoCheckin,
-  tipoDaPresenca,
+  participaDoSorteio, presencaDeConvidado, presencaDeEletricista, presencaDeOutraPessoa, presencasParaCheckin, rotuloDaSituacao,
+  situacaoNoCheckin, tipoDaPresenca,
 } from '../../lib/listas.js'
-import { combinaBusca, compararTexto, formatarNumero, limparEspacos } from '../../lib/texto.js'
+import { combinaBusca, compararTexto, formatarNumero, limparEspacos, plural } from '../../lib/texto.js'
 import { pode } from '../../lib/papeis.js'
 import {
   abrirJanela, aviso, avisar, avisarErro, botao, campo, campoBusca, entradaTexto, etiqueta,
@@ -16,6 +16,7 @@ import {
 import { el, icone, trocar } from '../../ui/dom.js'
 import { abrirFormularioEletricista } from '../eletricistas/formulario.js'
 import { abrirPlanilhaNaLista } from './planilha.js'
+import { marcaDoSorteio } from './sorteio.js'
 
 // ctx: { pessoa, lista(), presencas(), pendente(), dados() => { colaboradores, eletricistas } }
 export function montarCheckin(caixa, ctx) {
@@ -74,6 +75,7 @@ export function montarCheckin(caixa, ctx) {
       ),
       el('div', { class: 'barra', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(parte), 'aria-label': 'Convocados presentes' }, el('span', { style: { width: `${parte}%` } })),
       conta.naoConvocadosPresentes > 0 && el('p', { class: 'checkin__extra' }, `+ ${formatarNumero(conta.naoConvocadosPresentes)} não ${conta.naoConvocadosPresentes === 1 ? 'convocado presente' : 'convocados presentes'}`),
+      ctx.lista().temSorteio && el('p', { class: 'checkin__extra' }, icone('trophy'), ` ${plural(presencas.filter((p) => p.presente && participaDoSorteio(p)).length, 'presente', 'presentes')} no sorteio`),
     )
     const faltam = presencas.filter((p) => !p.presente).length
     trocar(
@@ -142,6 +144,8 @@ export function montarCheckin(caixa, ctx) {
         nome,
         el('span', { class: 'checkin__detalhe' }, etiqueta(tipoDaPresenca(p)), !p.convocado && etiqueta('Não convocado', 'alerta'), p.detalhe),
         p.observacao && el('span', { class: 'checkin__observacao' }, icone('message-circle'), p.observacao),
+        // Lista com sorteio: quem pode marcar a situação troca "No sorteio" / "Fora do sorteio" com um toque.
+        ctx.lista().temSorteio && marcaDoSorteio(p, { listaId: ctx.lista().id, podeMarcar: podeMarcarSituacao(podeFazer) }),
       ),
       el(
         'div',

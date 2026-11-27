@@ -2,7 +2,9 @@
 // marcada no check-in (Não participou ou Outros) e a observação. No Treinamento Comercial, destaca quem do setor
 // comercial foi convocado e faltou.
 import { formatarHora } from '../../lib/datas.js'
-import { nomeComFuncao, resumoDaLista, rotuloDaSituacao, situacaoNoCheckin, tipoDaPresenca } from '../../lib/listas.js'
+import {
+  nomeComFuncao, participaDoSorteio, resumoDaLista, rotuloDaSituacao, rotuloDoSorteio, situacaoNoCheckin, tipoDaPresenca,
+} from '../../lib/listas.js'
 import { formatarNumero, plural } from '../../lib/texto.js'
 import { bloco, etiqueta, indicadores, tabela } from '../../ui/componentes.js'
 import { el, trocar } from '../../ui/dom.js'
@@ -13,7 +15,7 @@ export function montarResumo(caixa, ctx) {
   caixa.replaceChildren(conteudo)
 
   // Ausentes mostram a situação marcada; a observação aparece quando alguém da tabela tem.
-  const tabelaDe = (pessoas, { comHora = false, comSituacao = false } = {}) =>
+  const tabelaDe = (pessoas, { comHora = false, comSituacao = false, comSorteio = false } = {}) =>
     pessoas.length
       ? tabela({
           itens: pessoas,
@@ -31,6 +33,7 @@ export function montarResumo(caixa, ctx) {
               },
             },
             pessoas.some((p) => p.observacao) && { rotulo: 'Observação', ordenavel: false, celula: (p) => p.observacao ?? '' },
+            comSorteio && { rotulo: 'Sorteio', celula: (p) => etiqueta(rotuloDoSorteio(p), participaDoSorteio(p) ? 'forte' : 'alerta') },
           ].filter(Boolean),
         })
       : el('p', { class: 'texto-suave' }, 'Ninguém.')
@@ -77,7 +80,14 @@ export function montarResumo(caixa, ctx) {
             ),
           ),
         ),
-      bloco({ titulo: `Presentes (${formatarNumero(r.presentes.length)})`, icone: 'circle-check' }, tabelaDe(r.presentes, { comHora: true })),
+      bloco(
+        {
+          titulo: `Presentes (${formatarNumero(r.presentes.length)})`,
+          icone: 'circle-check',
+          descricao: lista.temSorteio ? `${plural(r.presentes.filter(participaDoSorteio).length, 'presente', 'presentes')} no sorteio.` : '',
+        },
+        tabelaDe(r.presentes, { comHora: true, comSorteio: lista.temSorteio === true }),
+      ),
     )
   }
 

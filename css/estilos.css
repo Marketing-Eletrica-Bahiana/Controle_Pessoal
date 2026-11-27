@@ -2313,6 +2313,31 @@ a.tabela__nome:hover {
   overflow-wrap: anywhere;
 }
 
+/* Lista com sorteio: "No sorteio" / "Fora do sorteio", um toque troca. */
+.checkin__sorteio {
+  align-self: flex-start;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  font-family: inherit;
+}
+
+button.checkin__sorteio {
+  cursor: pointer;
+}
+
+button.checkin__sorteio:hover,
+button.checkin__sorteio:focus-visible {
+  outline: 2px solid var(--medio);
+  outline-offset: 2px;
+}
+
+.checkin__extra .icone {
+  width: 16px;
+  height: 16px;
+  vertical-align: -3px;
+}
+
 .checkin__observacao .icone {
   width: 16px;
   height: 16px;

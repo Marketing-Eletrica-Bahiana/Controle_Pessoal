@@ -21,6 +21,7 @@ import { el, icone, trocar } from '../../ui/dom.js'
 import { campoEscolherPessoa } from '../../ui/escolherPessoa.js'
 import { avisoDasRegras } from '../outrasPessoas/formulario.js'
 import { abrirPlanilhaNaLista } from './planilha.js'
+import { marcaDoSorteio } from './sorteio.js'
 
 const PLURAIS = {
   colaborador: ['colaborador', 'colaboradores'],
@@ -67,6 +68,7 @@ export function montarConvocados(caixa, ctx) {
                 { rotulo: 'Tipo', celula: tipoDaPresenca },
                 { rotulo: 'Convocado', celula: (p) => (p.convocado ? 'Sim' : etiqueta('Não convocado', 'alerta')) },
                 { rotulo: 'Presente', celula: (p) => (p.presente ? etiqueta('Presente', 'forte') : 'Não') },
+                ctx.lista().temSorteio && { rotulo: 'Sorteio', celula: (p) => marcaDoSorteio(p, { listaId: ctx.lista().id, podeMarcar: admin }) },
                 admin && {
                   rotulo: 'Ações',
                   classe: 'tabela__acoes',

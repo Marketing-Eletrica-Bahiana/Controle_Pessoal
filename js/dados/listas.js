@@ -1,9 +1,10 @@
 // Gravação de listas/{id} e da subcoleção presencas/{id}.
 // listas: nome, tipo, data ("AAAA-MM-DD"), loja (uma das lojas, "Todas as lojas" ou "Outro local"), local, fornecedores
-//   (IDs das marcas), status ("aberta" | "encerrada"), criadoPor (nome), criadoEm.
-// presencas: tipoPessoa, pessoaId, nome, detalhe, fornecedorId, convocado, presente, horaCheckin,
+//   (IDs das marcas), temSorteio, status ("aberta" | "encerrada"), criadoPor (nome), criadoEm.
+// presencas: tipoPessoa, pessoaId, nome, detalhe, grupo (outra pessoa), fornecedorId, convocado, presente, horaCheckin,
 //   checkinPor (nome de quem fez o check-in), status ("participou", "nao_participou", "outros" ou "", marcado no
-//   check-in) e observacao. Colaborador e eletricista usam o ID "tipo_pessoaId".
+//   check-in), observacao e sorteio (true/false; sem o campo vale participaDoSorteio). Colaborador, eletricista e outra
+//   pessoa usam o ID "tipo_pessoaId".
 import { idDaPresenca, limparObservacao, mudancaDeSituacao } from '../lib/listas.js'
 import { operacoesDaPlanilhaDaLista } from '../lib/planilhaDaLista.js'
 import {
@@ -62,6 +63,9 @@ export function marcarPresenca(listaId, presencaId, presente, pessoa) {
 // Situação escolhida ao abrir o nome no check-in (Participou, Não participou, Outros ou sem marcação) e a observação.
 export const marcarSituacao = (listaId, presenca, situacao, observacao, pessoa) =>
   atualizar(caminhoDaPresenca(listaId, presenca.id), { ...mudancaDeSituacao(situacao, presenca, pessoa.nome, agora()), observacao: limparObservacao(observacao) })
+
+// Dentro ou fora do sorteio (lista com sorteio). Não espera o servidor, como o check-in.
+export const marcarSorteio = (listaId, presencaId, participa) => atualizar(caminhoDaPresenca(listaId, presencaId), { sorteio: participa })
 
 // Participante não convocado que chegou: entra já presente.
 export function adicionarNaoConvocado(listaId, presenca, pessoa) {

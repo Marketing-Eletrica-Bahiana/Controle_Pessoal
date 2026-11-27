@@ -18,7 +18,7 @@ App interno da Elétrica Bahiana para organizar, num lugar só:
 - **Outras pessoas**: a Diretoria, os prestadores de serviço e outras pessoas que não são colaboradores, mas entram
   nas listas (como na festa de final de ano).
 - **Listas**: listas de presença com check-in pelo celular nos treinamentos, eventos e ações
-  internas, com planilha para usar no sorteador.
+  internas, com planilha para usar no sorteador e, na lista com sorteio, quem participa ou não do sorteio.
 - **Ramal**: lugar reservado para a lista de ramais, que será preenchida no futuro.
 - **Usuários** (só administração): quem pode entrar e com qual papel.
 
@@ -85,6 +85,20 @@ Para pôr essas pessoas numa lista (por exemplo a festa de final de ano):
 - Em **Importar planilha** na lista, os nomes também são procurados em Outras pessoas.
 
 Na lista e nas planilhas baixadas, o tipo da pessoa aparece como o grupo (Diretoria, Prestador de serviço).
+
+## Sorteio na lista (festa de final de ano)
+
+1. Abra a lista, toque em **Editar** e marque **Esta lista tem sorteio**. A lista ganha a marca "Com sorteio".
+2. No **check-in**, cada pessoa mostra **No sorteio** ou **Fora do sorteio**. Um toque troca. Colaboradores (e
+   eletricistas, pessoas de fornecedor e convidados) começam no sorteio; a Diretoria e os prestadores de serviço
+   começam fora. A Organização também pode trocar, com a lista aberta. Em Convocados, a coluna **Sorteio** faz o
+   mesmo.
+3. Ao baixar, **Baixar presentes** e **Baixar lista completa** ganham a coluna **Participa do sorteio** (Sim ou Não).
+   **Baixar lista do sorteio** traz só quem está presente e participa, com o Nome na primeira coluna, pronto para o
+   sorteador.
+
+O topo do check-in mostra quantos presentes estão no sorteio. Para o organizador trocar o sorteio, as regras novas do
+Firebase precisam estar publicadas (ver "Como publicar novas regras do Firestore").
 
 Para esta aba funcionar, as regras do Firebase precisam ser publicadas de novo uma vez (ver "Como publicar novas
 regras do Firestore" mais abaixo). Até lá, a aba mostra esse aviso.
@@ -271,6 +285,9 @@ entre no GitHub com uma conta que tenha acesso à organização Marketing-Eletri
 
 A mais recente primeiro. Cada alteração entra aqui no mesmo envio em que vai para o site.
 
+- **27/11/2026**: **sorteio** nas listas. Em Editar, a opção **Esta lista tem sorteio**; no check-in, cada pessoa fica
+  **No sorteio** ou **Fora do sorteio** (um toque troca; Diretoria e prestadores começam fora); as planilhas ganham a
+  coluna **Participa do sorteio** e há o botão **Baixar lista do sorteio** (só presentes que participam).
 - **27/11/2026**: as pessoas da aba **Outras pessoas** entram nas listas: **Convocados > Adicionar outras pessoas**
   (por grupo), a busca do check-in em "Adicionar participante não convocado" e a importação de planilha na lista. O
   tipo mostrado é o grupo (Diretoria, Prestador de serviço). Sem as regras novas publicadas, a lista continua abrindo.

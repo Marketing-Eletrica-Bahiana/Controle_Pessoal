@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
-  CABECALHO_COMPLETA, CABECALHO_PRESENTES, LOCAIS, PAIS_E_MAES, TODAS_AS_LOJAS, colaboradoresDoGrupo, contarPresencas, ehAcaoDeEndomarketing,
+  CABECALHO_COMPLETA, CABECALHO_PRESENTES, CABECALHO_SORTEIO, cabecalhoCompleta, cabecalhoPresentes, linhasDoSorteio, participaDoSorteio,
+  rotuloDoSorteio, LOCAIS, PAIS_E_MAES, TODAS_AS_LOJAS, colaboradoresDoGrupo, contarPresencas, ehAcaoDeEndomarketing,
   ehDaLoja, ehDoTipo, SITUACOES_DO_CHECKIN, contaComoFalta, limparObservacao, mudancaDeSituacao, situacaoDaPresenca, situacaoNoCheckin, ehListaDeAniversario, filtrarListas, fornecedorJaNaLista, funcaoDaPresenca,
   historicoDaPessoa, idDaPresenca, linhasCompleta, linhasPresentes, listasDaMarca, marcaDaPresenca, nomeComFuncao, nomeDoArquivoDaLista, ondeE,
   pessoasNaLista, presencaDeColaborador,
@@ -23,7 +24,8 @@ describe('listas: cadastro e filtros', () => {
   it('valida nome, tipo, data e local', () => {
     const r = validarLista({ nome: ' Treino ', tipo: 'Evento', data: '05/11/2026', loja: 'Aracaju', local: '', fornecedores: ['a', 'a'] })
     assert.ok(r.valido)
-    assert.deepEqual(r.dados, { nome: 'Treino', tipo: 'Evento', data: '2026-11-05', loja: 'Aracaju', local: '', fornecedores: ['a'] })
+    assert.deepEqual(r.dados, { nome: 'Treino', tipo: 'Evento', data: '2026-11-05', loja: 'Aracaju', local: '', fornecedores: ['a'], temSorteio: false })
+    assert.equal(validarLista({ nome: 'Festa', tipo: 'Evento', data: '18/12/2026', loja: 'Aracaju', local: '', temSorteio: true }).dados.temSorteio, true)
     const ruim = validarLista({ nome: '', tipo: 'Aniversariantes do mês', data: '31/02/2026', loja: 'Outro local', local: '' })
     assert.deepEqual(Object.keys(ruim.erros).sort(), ['data', 'local', 'nome', 'tipo'])
     assert.equal(validarLista({ nome: 'Treino', tipo: 'Evento', data: '05/11/2026', loja: 'Loja inventada', local: '' }).erros.loja, 'Escolha a loja, "Todas as lojas" ou "Outro local".')
@@ -94,6 +96,31 @@ describe('listas: presenças', () => {
     assert.equal(tipoDaPresenca({ tipoPessoa: 'eletricista' }), 'Eletricista')
     assert.equal(linhasPresentes([{ ...diretor, presente: true }])[0][1], 'Diretoria')
     assert.ok(pessoasNaLista([diretor]).has('outro_o1'))
+  })
+
+  it('sorteio: quem participa, colunas das planilhas e lista do sorteio', () => {
+    const colaborador = { ...presencaDeColaborador({ id: 'c1', nome: 'Bia', setor: 'RH', loja: 'Aracaju' }), presente: true }
+    const diretor = { ...presencaDeOutraPessoa({ id: 'o1', nome: 'Ana Diretora', grupo: 'Diretoria' }), presente: true }
+    const prestadorNoSorteio = { ...presencaDeOutraPessoa({ id: 'o2', nome: 'Caio', grupo: 'Prestador de serviço' }), presente: true, sorteio: true }
+    const colaboradorFora = { ...presencaDeColaborador({ id: 'c2', nome: 'Davi', setor: 'RH', loja: 'Aracaju' }), presente: true, sorteio: false }
+    const ausente = presencaDeColaborador({ id: 'c3', nome: 'Eva', setor: 'RH', loja: 'Aracaju' })
+    // Sem marcação: colaborador participa; Diretoria e prestadores começam fora.
+    assert.deepEqual([colaborador, diretor, prestadorNoSorteio, colaboradorFora].map(participaDoSorteio), [true, false, true, false])
+    assert.equal(rotuloDoSorteio(diretor), 'Fora do sorteio')
+    const presencas = [colaborador, diretor, prestadorNoSorteio, colaboradorFora, ausente]
+    assert.deepEqual(cabecalhoPresentes(), CABECALHO_PRESENTES)
+    assert.equal(cabecalhoPresentes({ sorteio: true }).at(-1), 'Participa do sorteio')
+    assert.deepEqual(linhasPresentes(presencas, { sorteio: true }).map((l) => [l[0], l.at(-1)]), [['Ana Diretora', 'Não'], ['Bia', 'Sim'], ['Caio', 'Sim'], ['Davi', 'Não']])
+    assert.equal(linhasPresentes(presencas)[0].length, CABECALHO_PRESENTES.length)
+    assert.equal(cabecalhoCompleta({ sorteio: true }).length, CABECALHO_COMPLETA.length + 1)
+    assert.equal(linhasCompleta(presencas, { sorteio: true }).find((l) => l[0] === 'Eva').at(-1), 'Sim')
+    assert.deepEqual(CABECALHO_SORTEIO[0], 'Nome')
+    assert.deepEqual(linhasDoSorteio(presencas), [['Bia', 'Colaborador', 'RH · Aracaju'], ['Caio', 'Prestador de serviço', '']])
+  })
+})
+
+describe('listas: presenças (tipos)', () => {
+  it('monta colaborador, eletricista, fornecedor e convidado', () => {
     assert.deepEqual(presencaDeColaborador({ id: 'c1', nome: 'Vítor', setor: 'Comercial', loja: 'Aracaju' }), {
       fornecedorId: '', presente: false, horaCheckin: null, checkinPor: null, tipoPessoa: 'colaborador', pessoaId: 'c1', nome: 'Vítor', detalhe: 'Comercial · Aracaju', convocado: true,
     })

@@ -62,9 +62,17 @@ export function validarLista(entrada) {
   return {
     erros,
     valido: Object.keys(erros).length === 0,
-    dados: { nome, tipo: entrada.tipo, data, loja: entrada.loja, local, fornecedores: [...new Set(entrada.fornecedores ?? [])] },
+    dados: {
+      nome, tipo: entrada.tipo, data, loja: entrada.loja, local, fornecedores: [...new Set(entrada.fornecedores ?? [])], temSorteio: entrada.temSorteio === true,
+    },
   }
 }
+
+// Sorteio (pedido de 27/11/2026, festa de final de ano): na lista com "temSorteio", cada pessoa é marcada no check-in
+// como dentro ou fora do sorteio, e as planilhas dizem quem participa. Sem marcação, colaboradores e os demais
+// participam; quem vem de Outras pessoas (Diretoria, prestadores de serviço) começa fora.
+export const participaDoSorteio = (p) => (typeof p?.sorteio === 'boolean' ? p.sorteio : p?.tipoPessoa !== 'outro')
+export const rotuloDoSorteio = (p) => (participaDoSorteio(p) ? 'No sorteio' : 'Fora do sorteio')
 
 export function filtrarListas(listas, { busca = '', tipo = '', situacao = '', ano = '' } = {}) {
   return listas
@@ -251,29 +259,44 @@ export const comercialQueFaltou = (lista, presencas, colaboradores) => resumoDaL
 const horaDe = (p) => (p.horaCheckin instanceof Date ? formatarHora(p.horaCheckin) : '')
 const tipoDe = tipoDaPresenca
 
-// "Baixar presentes": a primeira coluna é "Nome" (o sorteador procura essa coluna).
+const simOuNao = (valor) => (valor ? 'Sim' : 'Não')
+
+// "Baixar presentes": a primeira coluna é "Nome" (o sorteador procura essa coluna). Com { sorteio: true } (lista com
+// sorteio), ganha a coluna "Participa do sorteio" no fim.
 export const CABECALHO_PRESENTES = ['Nome', 'Tipo', 'Detalhe', 'Hora do check-in']
-export const linhasPresentes = (presencas) =>
+export const COLUNA_DO_SORTEIO = 'Participa do sorteio'
+export const cabecalhoPresentes = ({ sorteio = false } = {}) => (sorteio ? [...CABECALHO_PRESENTES, COLUNA_DO_SORTEIO] : CABECALHO_PRESENTES)
+export const linhasPresentes = (presencas, { sorteio = false } = {}) =>
   presencas
     .filter((p) => p.presente)
     .sort((a, b) => compararTexto(a.nome, b.nome))
-    .map((p) => [p.nome, tipoDe(p), p.detalhe ?? '', horaDe(p)])
+    .map((p) => [p.nome, tipoDe(p), p.detalhe ?? '', horaDe(p), ...(sorteio ? [simOuNao(participaDoSorteio(p))] : [])])
 
 export const CABECALHO_COMPLETA = ['Nome', 'Tipo', 'Detalhe', 'Convocado', 'Presente', 'Hora do check-in', 'Check-in feito por', 'Situação', 'Observação']
-export const linhasCompleta = (presencas) =>
+export const cabecalhoCompleta = ({ sorteio = false } = {}) => (sorteio ? [...CABECALHO_COMPLETA, COLUNA_DO_SORTEIO] : CABECALHO_COMPLETA)
+export const linhasCompleta = (presencas, { sorteio = false } = {}) =>
   [...presencas]
     .sort((a, b) => compararTexto(a.nome, b.nome))
     .map((p) => [
       p.nome,
       tipoDe(p),
       p.detalhe ?? '',
-      p.convocado ? 'Sim' : 'Não',
-      p.presente ? 'Sim' : 'Não',
+      simOuNao(p.convocado),
+      simOuNao(p.presente),
       horaDe(p),
       p.presente ? p.checkinPor ?? '' : '',
       rotuloDaSituacao(situacaoNoCheckin(p)) || 'Sem marcação',
       p.observacao ?? '',
+      ...(sorteio ? [simOuNao(participaDoSorteio(p))] : []),
     ])
+
+// "Baixar lista do sorteio": só quem está presente e participa, com "Nome" na primeira coluna (para o sorteador).
+export const CABECALHO_SORTEIO = ['Nome', 'Tipo', 'Detalhe']
+export const linhasDoSorteio = (presencas) =>
+  presencas
+    .filter((p) => p.presente && participaDoSorteio(p))
+    .sort((a, b) => compararTexto(a.nome, b.nome))
+    .map((p) => [p.nome, tipoDe(p), p.detalhe ?? ''])
 
 // Nome do arquivo: nome da lista + data.
 export const nomeDoArquivoDaLista = (lista, complemento = '') =>
