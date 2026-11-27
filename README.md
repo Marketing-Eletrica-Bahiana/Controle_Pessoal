@@ -58,13 +58,15 @@ no banco de dados.
 Em **Listas**, abra a lista e clique em **Importar planilha**: o botão fica no **Check-in** (ao lado de "Adicionar
 participante não convocado") e em **Convocados**, e só aparece para a Administração. A planilha precisa de uma coluna com o
 **nome** da pessoa; se tiver, também **Participou?** (Sim, Não ou Outros) e **Observação**. O app procura cada nome
-nos colaboradores (inclusive os desligados, para listas antigas) e nos eletricistas, e mostra uma prévia antes de
-gravar:
+nos colaboradores (inclusive os desligados, para listas antigas), nos eletricistas e em Outras pessoas, e mostra uma
+prévia antes de gravar:
 
 - **Entra na lista**: achou a pessoa. Nome parecido (por exemplo "Ana Santos" para "Ana Exemplo Santos") aparece com aviso.
 - **Já está na lista**: recebe a situação e a observação da planilha (célula vazia não apaga nada).
-- **Não achado**: o nome não está no cadastro. Confira a grafia, ou marque **Incluir quem não está no cadastro como
-  convidado**.
+- **Não achado**: o nome não está em nenhum cadastro. Na coluna **Outras pessoas** a linha vem com **Cadastrar**
+  marcado e o grupo **Outro**: ao gravar, a pessoa é cadastrada em Outras pessoas e entra na lista. Troque o grupo
+  (Diretoria, Prestador de serviço) se quiser, ou desmarque para ela ficar de fora (por exemplo, um colaborador com o
+  nome escrito diferente: confira a grafia).
 
 Se a planilha é a lista de quem esteve na ação, deixe marcada **Quem está na planilha participou** (ela já vem marcada
 quando a data da lista passou).
@@ -285,6 +287,9 @@ entre no GitHub com uma conta que tenha acesso à organização Marketing-Eletri
 
 A mais recente primeiro. Cada alteração entra aqui no mesmo envio em que vai para o site.
 
+- **27/11/2026**: na **Importar planilha** da lista, quem aparece como **Não achado** vem marcado em **Cadastrar**: ao
+  gravar, é cadastrado em Outras pessoas (grupo escolhido na linha, Outro de início) e entra na lista. Desmarcado,
+  fica de fora. Saiu a opção antiga "Incluir quem não está no cadastro como convidado".
 - **27/11/2026**: as regras novas do Firebase (`firestore.rules`, com Outras pessoas e o sorteio) foram publicadas no
   console. O arquivo e o console estão iguais.
 - **27/11/2026**: **sorteio** nas listas. Em Editar, a opção **Esta lista tem sorteio**; no check-in, cada pessoa fica

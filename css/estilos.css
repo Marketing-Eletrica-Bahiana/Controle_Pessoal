@@ -2313,6 +2313,29 @@ a.tabela__nome:hover {
   overflow-wrap: anywhere;
 }
 
+/* Importar planilha na lista: "Cadastrar" em Outras pessoas e o grupo, na linha de quem não foi achado. */
+.importador__outra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.importador__grupo {
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--medio);
+  border-radius: var(--raio);
+  background: var(--branco);
+  color: var(--preto);
+  font-size: 0.875rem;
+}
+
+.importador__grupo:disabled {
+  background: var(--medio-5);
+  opacity: 0.6;
+}
+
 /* Lista com sorteio: "No sorteio" / "Fora do sorteio", um toque troca. */
 .checkin__sorteio {
   align-self: flex-start;

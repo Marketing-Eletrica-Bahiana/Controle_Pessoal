@@ -71,6 +71,9 @@ fornecedores, eletricistas do CAE, listas de presença com check-in pelo celular
     regras novas; (b) essas pessoas nas listas; (c) sorteio marcado no check-in e na planilha. Escolhas dela: cadastro
     próprio (não só dentro da lista), sorteio só marcado e baixado (o sorteio é feito fora do site) e Diretoria e
     prestadores começando fora do sorteio. Ver "Outras pessoas".
+23. (Feita em 27/11/2026, a pedido) Na importação de planilha da lista, quem não foi achado vem marcado para ser
+    cadastrado em Outras pessoas (com o grupo escolhido na linha) e entrar na lista; desmarcado, fica de fora (ver
+    "Listas").
 
 A pessoa autorizou fazer as etapas 2 a 6 em sequência, sem pedir aprovação entre elas, depois de
 conferida a integração da Etapa 1.
@@ -261,8 +264,19 @@ Tela em `js/telas/listas.js` (visão geral e página da lista) com as partes em 
   (situações novo, existente, naoEncontrado, repetido, ignorado), `operacoesDaPlanilhaDaLista` (gravadas em lote por
   `importarPlanilhaNaLista`). Todo mundo entra como convocado; "Participou" grava `presente: true` sem hora (a planilha
   não diz) e `checkinPor` = quem importou. Quem já está na lista só muda no que a planilha disser (vazio não apaga).
-  Opções: "Quem está na planilha participou" (marcada quando a data da lista já passou) e "Incluir quem não está no
-  cadastro como convidado" (desmarcada; senão a linha fica de fora como "Não achado").
+  Opção: "Quem está na planilha participou" (marcada quando a data da lista já passou). A antiga opção "Incluir quem
+  não está no cadastro como convidado" saiu em 27/11/2026 (Etapa 23); convidado que já está na lista continua sendo
+  achado pelo nome.
+- Não achados (Etapa 23, 27/11/2026, a pedido: "se aparecer assim [Não achado], eu quero que você adicione em outras
+  pessoas. E também deixe um botão para eu marcar ou desmarcar para adicionar ou não"): com
+  `cadastrarNaoAchados: true` (a tela passa quando `outrasPessoas` não está em `indisponiveis`), cada "Não achado" vem
+  com `adicionar: true` e `grupo: "Outro"`; a coluna "Outras pessoas" da prévia tem a caixa "Cadastrar" e a escolha do
+  grupo. As escolhas ficam num `Map` linha → `{ adicionar, grupo }` (`opcoes.escolhas`) e sobrevivem quando a prévia
+  é refeita. `operacoesDaPlanilhaDaLista` (agora recebe `agora`) grava `outrasPessoas/{novoId}` (nome, grupo, empresa
+  vazia, ativo, criadoEm) e a presença `outro_{id}` com a situação e a observação da planilha; desmarcado fica de
+  fora. `contarNaoAchados` dá `{ cadastrar, deFora }` para os números do topo ("Novos em Outras pessoas", "Ficam de
+  fora"). `abrirImportador` passa `{ atualizar }` como segundo argumento de `celula`: a caixa chama `atualizar()` e os
+  números do topo e o botão são refeitos sem redesenhar a tabela.
 - Admin cria, edita, encerra, reabre e exclui (apaga as presenças junto, com confirmação). Nova
   lista abre direto em Convocados.
 - Convocados (admin): colaboradores um a um, setor inteiro ou loja inteira (só ativos e quem ainda

@@ -7,7 +7,9 @@
 //                                                        (sem diferenciar acentos); sem ela, a primeira
 //   opcoes: [{ chave, rotulo, ajuda, padrao }]          caixas de marcar da prévia
 //   preparar(registros, opcoes) => { itens, contagem, extras }   extras: textos ou { texto, erro }
-//   colunas: [{ rotulo, celula(item) }]                 colunas da tabela da prévia
+//   colunas: [{ rotulo, celula(item, { atualizar }) }]  colunas da tabela da prévia; quem muda o item na própria linha
+//                                                        (uma caixa de marcar) chama atualizar() para refazer os
+//                                                        números do topo e o botão, sem redesenhar a tabela
 //   confirmar(previa, opcoes) => boolean | Promise       opcional: pergunta antes de gravar
 //   gravar(previa, opcoes, aoAvancar) => Promise
 //   indicadores(previa) => [{ rotulo, valor, detalhe }]  opcional: troca os números do topo da prévia
@@ -190,14 +192,15 @@ export function abrirImportador(config) {
       ),
     )
 
-    const total = config.contarGravacoes(previa, opcoes)
+    let total = 0
+    const numeros = el('div')
     const importar = botao({
-      texto: !total ? 'Nada para importar' : config.textoDoBotao ? config.textoDoBotao(total) : `Importar ${plural(total, 'registro', 'registros')}`,
+      texto: 'Importar',
       icone: 'check',
       variante: 'principal',
-      disabled: !total,
       aoClicar: () =>
         comOcupado(importar, async () => {
+          if (!total) return
           if (config.confirmar && !(await config.confirmar(previa, opcoes))) return
           const progresso = el('p', { class: 'carregando-bloco', role: 'status' }, icone('loader-circle', 'girando'), 'Gravando...')
           rodape.replaceChildren(progresso)
@@ -219,11 +222,13 @@ export function abrirImportador(config) {
     })
     const rodape = el('div', { class: 'janela-modal__acoes' }, botao({ texto: 'Voltar às colunas', icone: 'arrow-left', aoClicar: () => passoColunas() }), importar)
 
-    trocar(
-      area,
-      el(
-        'div',
-        { class: 'formulario' },
+    // Números do topo e texto do botão; refeitos quando a pessoa muda algo numa linha da prévia.
+    function atualizar() {
+      total = config.contarGravacoes(previa, opcoes)
+      trocar(importar, icone('check'), el('span', {}, !total ? 'Nada para importar' : config.textoDoBotao ? config.textoDoBotao(total) : `Importar ${plural(total, 'registro', 'registros')}`))
+      importar.disabled = !total
+      trocar(
+        numeros,
         indicadores(
           config.indicadores?.(previa) ?? [
             { rotulo: 'Novos', valor: formatarNumero(contagem.novos) },
@@ -233,6 +238,16 @@ export function abrirImportador(config) {
           ],
           { classe: 'indicadores--compactos' },
         ),
+      )
+    }
+    atualizar()
+
+    trocar(
+      area,
+      el(
+        'div',
+        { class: 'formulario' },
+        numeros,
         (previa.extras ?? []).map((extra) => (typeof extra === 'string' ? aviso(extra) : aviso(extra.texto, { erro: extra.erro }))),
         comAvisos > 0 && aviso(`${plural(comAvisos, 'linha tem', 'linhas têm')} algum aviso. Confira na tabela abaixo; o resto da linha é importado normalmente.`, { icone: 'triangle-alert' }),
         caixas.length > 0 && el('div', { class: 'opcoes opcoes--coluna' }, caixas),
@@ -253,7 +268,7 @@ export function abrirImportador(config) {
                 ],
               },
               { rotulo: 'Situação', celula: (i) => etiqueta(...situacoes[i.situacao]) },
-              ...colunasComDados,
+              ...colunasComDados.map((c) => ({ ...c, celula: (i) => c.celula(i, { atualizar }) })),
             ],
           }),
         erro && blocoDeErro(erro),

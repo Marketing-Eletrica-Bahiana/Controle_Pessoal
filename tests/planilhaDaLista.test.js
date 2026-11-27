@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
-  CAMPOS_DA_PLANILHA_DA_LISTA, acharPessoaDaPlanilha, contarGravacoesDaPlanilha, lerParticipou, marcacaoDoItem, noCadastro,
+  CAMPOS_DA_PLANILHA_DA_LISTA, acharPessoaDaPlanilha, contarGravacoesDaPlanilha, contarNaoAchados, lerParticipou, marcacaoDoItem, noCadastro,
   operacoesDaPlanilhaDaLista, prepararPlanilhaDaLista,
 } from '../js/lib/planilhaDaLista.js'
 import { sugerirMapeamento } from '../js/lib/importacao.js'
@@ -73,11 +73,35 @@ describe('lista: importar planilha', () => {
     assert.deepEqual([noCadastro(p.itens[0]), marcacaoDoItem(p.itens[0]), noCadastro(p.itens[5]), marcacaoDoItem(p.itens[5])], ['Ana Exemplo Santos', 'Participou', 'Eli Eletricista (eletricista)', ''])
     assert.equal(contarGravacoesDaPlanilha(p), 4)
 
-    // Opções: sem "Participou?" conta como participou; quem não está no cadastro entra como convidado.
-    const comOpcoes = prepararPlanilhaDaLista(base, { participaram: true, convidados: true })
+    // Sem poder cadastrar, quem não foi achado fica de fora.
+    assert.equal(p.itens[2].adicionar, false)
+    assert.deepEqual(contarNaoAchados(p), { cadastrar: 0, deFora: 1 })
+
+    // Opções: sem "Participou?" conta como participou; quem não foi achado vem marcado para Outras pessoas (grupo Outro).
+    const comOpcoes = prepararPlanilhaDaLista(base, { participaram: true, cadastrarNaoAchados: true })
     assert.deepEqual(comOpcoes.itens.map((i) => i.marcar ?? null), ['participou', 'nao_participou', 'participou', null, null, 'participou', 'outros'])
-    assert.equal(comOpcoes.itens[2].situacao, 'novo')
-    assert.equal(comOpcoes.itens[2].tipo, 'convidado')
+    assert.deepEqual([comOpcoes.itens[2].situacao, comOpcoes.itens[2].adicionar, comOpcoes.itens[2].grupo], ['naoEncontrado', true, 'Outro'])
+    assert.equal(contarGravacoesDaPlanilha(comOpcoes), 5)
+    assert.equal(marcacaoDoItem(comOpcoes.itens[2]), 'Participou')
+    // A escolha da linha (desmarcar, trocar o grupo) vale quando a prévia é refeita.
+    const desmarcado = prepararPlanilhaDaLista(base, { cadastrarNaoAchados: true, escolhas: new Map([[4, { adicionar: false, grupo: 'Diretoria' }]]) })
+    assert.deepEqual([desmarcado.itens[2].adicionar, desmarcado.itens[2].grupo], [false, 'Diretoria'])
+    assert.deepEqual(contarNaoAchados(desmarcado), { cadastrar: 0, deFora: 1 })
+  })
+
+  it('não achado marcado: cadastra em Outras pessoas e entra na lista', () => {
+    const registros = [registro(2, 'Breno Alves Dantas', 'Sim', 'Chegou com a família'), registro(3, 'Camila Oliveira')]
+    const escolhas = new Map([[2, { adicionar: true, grupo: 'Prestador de serviço' }], [3, { adicionar: false, grupo: 'Outro' }]])
+    const previa = prepararPlanilhaDaLista({ registros, colaboradores, eletricistas, presencas: [] }, { cadastrarNaoAchados: true, escolhas })
+    let n = 0
+    const ops = operacoesDaPlanilhaDaLista(previa, { listaId: 'l1', quem: 'Ivie', novoId: () => `o${++n}`, agora: () => 'AGORA' })
+    assert.deepEqual(ops.map((o) => [o.tipo, o.caminho]), [['definir', 'outrasPessoas/o1'], ['definir', 'listas/l1/presencas/outro_o1']])
+    assert.deepEqual(ops[0].dados, { nome: 'Breno Alves Dantas', grupo: 'Prestador de serviço', empresa: '', ativo: true, criadoEm: 'AGORA' })
+    assert.deepEqual(
+      [ops[1].dados.tipoPessoa, ops[1].dados.pessoaId, ops[1].dados.grupo, ops[1].dados.convocado, ops[1].dados.presente, ops[1].dados.observacao],
+      ['outro', 'o1', 'Prestador de serviço', true, true, 'Chegou com a família'],
+    )
+    assert.equal(contarGravacoesDaPlanilha(previa), 1)
   })
 
   it('grava quem entra como convocado e só muda o que a planilha diz em quem já está', () => {
@@ -85,16 +109,18 @@ describe('lista: importar planilha', () => {
       { id: 'colaborador_c2', tipoPessoa: 'colaborador', pessoaId: 'c2', nome: 'Bruno Lima', convocado: true, presente: true, horaCheckin: 'ANTES', checkinPor: 'Ana', status: 'participou', observacao: '' },
     ]
     const registros = [registro(2, 'Ana Exemplo Santos', 'Sim', 'Chegou cedo'), registro(3, 'Bruno Lima', 'Sim', ''), registro(4, 'Fulano de Tal', 'Não')]
-    const previa = prepararPlanilhaDaLista({ registros, colaboradores, eletricistas, presencas }, { convidados: true })
-    // Bruno já tem check-in e a planilha não muda nada nele: não grava.
-    assert.equal(contarGravacoesDaPlanilha(previa, 'Pessoa'), 2)
-    const ops = operacoesDaPlanilhaDaLista(previa, { listaId: 'l1', quem: 'Pessoa', novoId: () => 'novo1' })
-    assert.deepEqual(ops.map((o) => [o.tipo, o.caminho]), [['definir', 'listas/l1/presencas/colaborador_c1'], ['definir', 'listas/l1/presencas/novo1']])
+    const previa = prepararPlanilhaDaLista({ registros, colaboradores, eletricistas, presencas })
+    // Bruno já tem check-in e a planilha não muda nada nele: não grava. Fulano não foi achado e fica de fora.
+    assert.equal(contarGravacoesDaPlanilha(previa, 'Pessoa'), 1)
+    const ops = operacoesDaPlanilhaDaLista(previa, { listaId: 'l1', quem: 'Pessoa', novoId: () => 'novo1', agora: () => 'AGORA' })
+    assert.deepEqual(ops.map((o) => [o.tipo, o.caminho]), [['definir', 'listas/l1/presencas/colaborador_c1']])
     assert.deepEqual(
       [ops[0].dados.convocado, ops[0].dados.presente, ops[0].dados.status, ops[0].dados.horaCheckin, ops[0].dados.checkinPor, ops[0].dados.observacao, ops[0].dados.detalhe],
       [true, true, 'participou', null, 'Pessoa', 'Chegou cedo', 'Comercial · Aracaju'],
     )
-    assert.deepEqual([ops[1].dados.tipoPessoa, ops[1].dados.convocado, ops[1].dados.presente, ops[1].dados.status], ['convidado', true, false, 'nao_participou'])
+    // Convidado que já está na lista (achado pelo nome) recebe o que a planilha diz.
+    const comConvidado = prepararPlanilhaDaLista({ registros: [registro(2, 'Visita Exemplo', 'Não')], colaboradores, eletricistas, presencas: [{ id: 'v1', tipoPessoa: 'convidado', pessoaId: '', nome: 'Visita Exemplo', convocado: false, presente: false }] })
+    assert.deepEqual(operacoesDaPlanilhaDaLista(comConvidado, { listaId: 'l1', quem: 'Pessoa', novoId: () => 'x', agora: () => 'A' })[0].caminho, 'listas/l1/presencas/v1')
 
     // Bruno marcado como "Não" na planilha: perde o check-in; observação nova entra; vazia não apaga.
     const mudou = prepararPlanilhaDaLista({ registros: [registro(2, 'Bruno Lima', 'Não', 'Atestado')], colaboradores, eletricistas, presencas })

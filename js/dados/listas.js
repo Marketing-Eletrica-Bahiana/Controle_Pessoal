@@ -45,9 +45,10 @@ export async function adicionarConvocados(listaId, novas) {
 
 export const removerPresenca = (listaId, presencaId) => apagar(caminhoDaPresenca(listaId, presencaId))
 
-// "Importar planilha" em Convocados (regras em js/lib/planilhaDaLista.js). Só o admin chega aqui.
+// "Importar planilha" em Convocados e no Check-in (regras em js/lib/planilhaDaLista.js). Só o admin chega aqui. Quem
+// não estava em nenhum cadastro e ficou marcado também é gravado em outrasPessoas.
 export const importarPlanilhaNaLista = (listaId, previa, pessoa, aoAvancar) =>
-  gravarLote(operacoesDaPlanilhaDaLista(previa, { listaId, quem: pessoa.nome, novoId }), aoAvancar)
+  gravarLote(operacoesDaPlanilhaDaLista(previa, { listaId, quem: pessoa.nome, novoId, agora }), aoAvancar)
 
 // Check-in e desfazer. Não espera o servidor: com internet fraca, fica no aparelho e sobe depois. O status acompanha
 // (check-in = "participou"; desfazer volta a ficar sem marcação).

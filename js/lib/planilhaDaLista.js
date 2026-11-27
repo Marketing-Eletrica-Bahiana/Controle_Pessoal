@@ -5,6 +5,7 @@ import {
   idDaPresenca, limparObservacao, presencaDeColaborador, presencaDeConvidado, presencaDeEletricista, presencaDeOutraPessoa, rotuloDaSituacao,
   situacaoNoCheckin,
 } from './listas.js'
+import { GRUPOS_DE_OUTRAS_PESSOAS } from './outrasPessoas.js'
 import { combinaBusca, limparEspacos, normalizar } from './texto.js'
 
 export const CAMPOS_DA_PLANILHA_DA_LISTA = [
@@ -51,10 +52,12 @@ export function acharPessoaDaPlanilha(nome, { colaboradores = [], eletricistas =
   return null
 }
 
-// Prévia. opcoes: { participaram } (linha sem "Participou?" preenchido conta como participou) e { convidados } (quem
-// não está no cadastro entra como convidado, só com o nome). presencas: as que já estão na lista.
-// Situações: novo (entra na lista), existente (já está; recebe a situação e a observação), naoEncontrado, repetido,
-// ignorado (linha sem nome).
+// Prévia. opcoes: { participaram } (linha sem "Participou?" preenchido conta como participou), { cadastrarNaoAchados }
+// (quem não está em nenhum cadastro pode ser cadastrado em Outras pessoas e entrar na lista; pedido de 27/11/2026) e
+// { escolhas } (Map linha → { adicionar, grupo }, o que a pessoa marcou em cada linha; sem escolha, vem marcado com o
+// grupo "Outro"). presencas: as que já estão na lista.
+// Situações: novo (entra na lista), existente (já está; recebe a situação e a observação), naoEncontrado (com
+// "adicionar" e "grupo"), repetido, ignorado (linha sem nome).
 export function prepararPlanilhaDaLista({ registros, colaboradores = [], eletricistas = [], outrasPessoas = [], presencas = [] }, opcoes = {}) {
   const naLista = new Map(presencas.filter((p) => p.pessoaId).map((p) => [`${p.tipoPessoa}_${p.pessoaId}`, p]))
   const convidadosNaLista = new Map(presencas.filter((p) => p.tipoPessoa === 'convidado').map((p) => [normalizar(p.nome), p]))
@@ -83,10 +86,26 @@ export function prepararPlanilhaDaLista({ registros, colaboradores = [], eletric
     vistos.add(chave)
     const convidado = convidadosNaLista.get(normalizar(nome))
     if (convidado) return { linha, nome, situacao: 'existente', tipo: 'convidado', pessoa: null, presenca: convidado, marcar: situacao, observacao, avisos }
-    if (!opcoes.convidados) {
-      return { linha, nome, situacao: 'naoEncontrado', tipo: 'convidado', marcar: situacao, observacao, avisos: [...avisos, 'Não está no cadastro de colaboradores, eletricistas nem Outras pessoas. Confira o nome.'] }
+    const escolha = opcoes.escolhas?.get(linha)
+    const podeCadastrar = opcoes.cadastrarNaoAchados === true
+    return {
+      linha,
+      nome,
+      situacao: 'naoEncontrado',
+      tipo: 'outro',
+      pessoa: null,
+      presenca: null,
+      marcar: situacao,
+      observacao,
+      adicionar: podeCadastrar && (escolha?.adicionar ?? true),
+      grupo: GRUPOS_DE_OUTRAS_PESSOAS.includes(escolha?.grupo) ? escolha.grupo : 'Outro',
+      avisos: [
+        ...avisos,
+        podeCadastrar
+          ? 'Não está em nenhum cadastro.'
+          : 'Não está no cadastro de colaboradores, eletricistas nem Outras pessoas. Confira o nome.',
+      ],
     }
-    return { linha, nome, situacao: 'novo', tipo: 'convidado', pessoa: null, presenca: null, marcar: situacao, observacao, avisos: [...avisos, 'Entra como convidado, só com o nome.'] }
   })
   const conta = (s) => itens.filter((i) => i.situacao === s).length
   return {
@@ -114,12 +133,25 @@ const situacaoNova = (marcar, quem) =>
     ? { presente: true, status: 'participou', horaCheckin: null, checkinPor: quem }
     : { presente: false, status: marcar || '', horaCheckin: null, checkinPor: null }
 
-// Operações de gravação (gravarLote). Todo mundo da planilha entra como convocado.
-export function operacoesDaPlanilhaDaLista(previa, { listaId, quem, novoId }) {
+// Não achado marcado para cadastrar: entra em outras pessoas e na lista.
+const vaiCadastrar = (item) => item.situacao === 'naoEncontrado' && item.adicionar === true
+
+// Operações de gravação (gravarLote). Todo mundo da planilha entra como convocado. Quem não foi achado e ficou marcado
+// é cadastrado em outrasPessoas (nome e grupo) e entra na lista como essa outra pessoa.
+export function operacoesDaPlanilhaDaLista(previa, { listaId, quem, novoId, agora }) {
   const caminho = (id) => `listas/${listaId}/presencas/${id}`
   const operacoes = []
   for (const item of previa.itens) {
-    if (item.situacao === 'novo') {
+    if (vaiCadastrar(item)) {
+      const id = novoId('outrasPessoas')
+      const outra = { nome: item.nome, grupo: GRUPOS_DE_OUTRAS_PESSOAS.includes(item.grupo) ? item.grupo : 'Outro', empresa: '' }
+      operacoes.push({ tipo: 'definir', caminho: `outrasPessoas/${id}`, dados: { ...outra, ativo: true, criadoEm: agora() } })
+      operacoes.push({
+        tipo: 'definir',
+        caminho: caminho(idDaPresenca('outro', id)),
+        dados: { ...presencaDeOutraPessoa({ id, ...outra }, true), ...situacaoNova(item.marcar, quem), observacao: item.observacao },
+      })
+    } else if (item.situacao === 'novo') {
       const base =
         item.tipo === 'colaborador' ? presencaDeColaborador(item.pessoa, true)
         : item.tipo === 'eletricista' ? presencaDeEletricista(item.pessoa, true)
@@ -135,13 +167,23 @@ export function operacoesDaPlanilhaDaLista(previa, { listaId, quem, novoId }) {
   return operacoes
 }
 
-// Quantas gravações a importação faz: quem entra e quem já está e muda alguma coisa.
+// Quantas pessoas a importação grava: quem entra (inclusive quem vai ser cadastrado em Outras pessoas) e quem já está e
+// muda alguma coisa.
 export const contarGravacoesDaPlanilha = (previa, quem = '') =>
-  previa.itens.filter((i) => i.situacao === 'novo' || (i.situacao === 'existente' && Object.keys(mudancaNaPresenca(i, quem)).length)).length
+  previa.itens.filter((i) => i.situacao === 'novo' || vaiCadastrar(i) || (i.situacao === 'existente' && Object.keys(mudancaNaPresenca(i, quem)).length)).length
+
+// Quantos não achados ficaram marcados para cadastrar em Outras pessoas e quantos ficaram desmarcados.
+export const contarNaoAchados = (previa) => {
+  const naoAchados = previa.itens.filter((i) => i.situacao === 'naoEncontrado')
+  const cadastrar = naoAchados.filter(vaiCadastrar).length
+  return { cadastrar, deFora: naoAchados.length - cadastrar }
+}
 
 // Texto da coluna da prévia: com quem a linha combinou e o que vai ser marcado.
 export const noCadastro = (item) =>
   item.pessoa
     ? `${item.pessoa.nome}${item.tipo === 'eletricista' ? ' (eletricista)' : item.tipo === 'outro' ? ` (${item.pessoa.grupo || 'Outro'})` : ''}`
     : item.situacao === 'novo' || item.situacao === 'existente' ? 'Convidado' : ''
-export const marcacaoDoItem = (item) => ((item.situacao === 'novo' || item.situacao === 'existente') && item.marcar ? rotuloDaSituacao(item.marcar) : '')
+const vaiPraLista = (item) => item.situacao === 'novo' || item.situacao === 'existente' || item.situacao === 'naoEncontrado'
+export const marcacaoDoItem = (item) => (vaiPraLista(item) && item.marcar ? rotuloDaSituacao(item.marcar) : '')
+export const observacaoDoItem = (item) => (vaiPraLista(item) ? item.observacao ?? '' : '')
