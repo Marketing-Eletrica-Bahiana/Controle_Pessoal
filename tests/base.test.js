@@ -80,7 +80,8 @@ describe('papéis e permissões', () => {
   it('Usuários só aparece para admin', () => {
     assert.ok(abasDoPapel('admin').some((a) => a.id === 'usuarios'))
     assert.ok(!abasDoPapel('organizador').some((a) => a.id === 'usuarios'))
-    assert.equal(abasDoPapel('organizador').length, 7)
+    assert.equal(abasDoPapel('organizador').length, 8)
+    assert.ok(abasDoPapel('organizador').some((a) => a.id === 'outras-pessoas'))
   })
 
   it('Ramal aparece para todos os papéis', () => {

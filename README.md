@@ -15,6 +15,8 @@ App interno da Elétrica Bahiana para organizar, num lugar só:
 - **Fornecedores**: as marcas parceiras (Soprano, Legrand, Ledvance...), com os palestrantes, representantes e
   convidados de cada uma.
 - **Eletricistas do CAE**: cadastro dos eletricistas, com o vendedor de cada um.
+- **Outras pessoas**: a Diretoria, os prestadores de serviço e outras pessoas que não são colaboradores, mas entram
+  nas listas (como na festa de final de ano).
 - **Listas**: listas de presença com check-in pelo celular nos treinamentos, eventos e ações
   internas, com planilha para usar no sorteador.
 - **Ramal**: lugar reservado para a lista de ramais, que será preenchida no futuro.
@@ -66,6 +68,17 @@ gravar:
 
 Se a planilha é a lista de quem esteve na ação, deixe marcada **Quem está na planilha participou** (ela já vem marcada
 quando a data da lista passou).
+
+## Outras pessoas (Diretoria e prestadores de serviço)
+
+Na aba **Outras pessoas** ficam quem não é colaborador mas entra nas listas, como a Diretoria e os prestadores de
+serviço na festa de final de ano. Cada pessoa tem nome, **grupo** (Diretoria, Prestador de serviço ou Outro) e, se
+quiser, a empresa ou função. A Administração cadastra uma de cada vez em **Nova pessoa** ou sobe uma planilha em
+**Importar planilha** (colunas Nome, Grupo e Empresa ou função). Quem não vem mais pode ser **desativado**: sai das
+escolhas nas listas, mas o histórico fica guardado.
+
+Para esta aba funcionar, as regras do Firebase precisam ser publicadas de novo uma vez (ver "Como publicar novas
+regras do Firestore" mais abaixo). Até lá, a aba mostra esse aviso.
 
 ## Pessoas das marcas
 
@@ -249,6 +262,9 @@ entre no GitHub com uma conta que tenha acesso à organização Marketing-Eletri
 
 A mais recente primeiro. Cada alteração entra aqui no mesmo envio em que vai para o site.
 
+- **27/11/2026**: nova aba **Outras pessoas**, para cadastrar a Diretoria, os prestadores de serviço e outras pessoas
+  que não são colaboradores (com importação de planilha). As regras do Firebase mudaram (`firestore.rules`): é preciso
+  publicar de novo no console para a aba funcionar.
 - **27/11/2026**: em Aniversariantes, cada controle do mês ganhou os cartões **Participou**, **Não participou** e
   **Outros** (como os do Dashboard). "Outros" é quem não participou, ou ficou pendente, e tem observação; quem
   participou continua em Participou mesmo com observação. A tabela mostra "Outros" e a observação no status, e a tela

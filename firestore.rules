@@ -52,6 +52,12 @@ service cloud.firestore {
       allow write: if admin();
     }
 
+    // Outras pessoas (Diretoria, prestadores de serviço...): todos leem, só o admin grava.
+    match /outrasPessoas/{id} {
+      allow read: if ativo();
+      allow write: if admin();
+    }
+
     // O organizador cadastra eletricista novo (na hora do treinamento); só o admin edita e desativa.
     match /eletricistas/{id} {
       allow read: if ativo();
@@ -63,8 +69,9 @@ service cloud.firestore {
       allow read: if ativo();
       allow write: if admin();
 
-      // Check-in: o organizador marca presença (e o status do controle de aniversariantes) e
-      // acrescenta participantes não convocados, só em lista aberta. O admin faz tudo.
+      // Check-in: o organizador marca presença (e o status do controle de aniversariantes), se a
+      // pessoa entra no sorteio, e acrescenta participantes não convocados, só em lista aberta.
+      // O admin faz tudo.
       match /presencas/{id} {
         allow read: if ativo();
         allow create: if admin()
@@ -72,7 +79,7 @@ service cloud.firestore {
         allow update: if admin()
           || (organizador() && listaAberta(listaId)
               && request.resource.data.diff(resource.data).affectedKeys()
-                   .hasOnly(['presente', 'horaCheckin', 'checkinPor', 'status', 'observacao']));
+                   .hasOnly(['presente', 'horaCheckin', 'checkinPor', 'status', 'observacao', 'sorteio']));
         allow delete: if admin();
       }
     }

@@ -15,6 +15,7 @@ export const ABAS = [
   { id: 'aniversariantes', rotulo: 'Aniversariantes', icone: 'cake' },
   { id: 'fornecedores', rotulo: 'Fornecedores', icone: 'handshake' },
   { id: 'eletricistas', rotulo: 'Eletricistas do CAE', icone: 'zap' },
+  { id: 'outras-pessoas', rotulo: 'Outras pessoas', icone: 'briefcase' },
   { id: 'listas', rotulo: 'Listas', icone: 'clipboard-list' },
   { id: 'ramal', rotulo: 'Ramal', icone: 'phone' },
   { id: 'usuarios', rotulo: 'Usuários', icone: 'user-cog', soAdmin: true },

@@ -64,6 +64,13 @@ fornecedores, eletricistas do CAE, listas de presença com check-in pelo celular
 21. (Feita em 27/11/2026, a pedido: cartões como os do Dashboard "na quantidade de pessoas que não participaram dos
     aniversários, tendo 'Não participou' 'Participou' e uma 'Outros' que são os nomes que tem Observação") Cartões e
     "Outros" nos aniversariantes (ver "Aniversariantes").
+22. (Em andamento desde 27/11/2026, a pedido: "adicionar alguma parte da lista que seja outras pessoas, como diretoria
+    e prestadores de serviço, porque festa de final de ano contam com eles na lista de Check-In, e também a opção deles
+    não participarem do sorteio"; depois: "na hora do Check-in eu coloque se vai fazer parte do sorteio ou não, porque
+    quando eu baixar a lista, aí vai dizer se deve ou não participar") Em três partes: (a) aba "Outras pessoas" e
+    regras novas; (b) essas pessoas nas listas; (c) sorteio marcado no check-in e na planilha. Escolhas dela: cadastro
+    próprio (não só dentro da lista), sorteio só marcado e baixado (o sorteio é feito fora do site) e Diretoria e
+    prestadores começando fora do sorteio. Ver "Outras pessoas".
 
 A pessoa autorizou fazer as etapas 2 a 6 em sequência, sem pedir aprovação entre elas, depois de
 conferida a integração da Etapa 1.
@@ -140,6 +147,8 @@ Nomes exatos (as regras dependem deles):
   antiga não tem `pessoas`: o código trata como lista vazia.
 - `eletricistas/{id}`: `nome`, `whatsapp` (só números com DDD, 10 ou 11), `vendedorId`,
   `vendedorNome`, `consentimentoLgpd`, `dataConsentimento`, `dataCadastro` (Timestamps), `ativo`.
+- `outrasPessoas/{id}`: `nome`, `grupo` (`"Diretoria"`, `"Prestador de serviço"` ou `"Outro"`), `empresa` (empresa ou
+  função, pode ser vazio), `ativo`, `criadoEm`. Etapa 22; regra `read: ativo()`, `write: admin()`.
 - `listas/{id}`: `nome`, `tipo`, `data` (`"AAAA-MM-DD"`), `loja` (uma das lojas, `"Todas as lojas"` ou
   `"Outro local"`), `local`, `fornecedores` (IDs das marcas), `status` (`"aberta"` |
   `"encerrada"`), `criadoPor` (nome de quem criou), `criadoEm`.
@@ -460,6 +469,21 @@ filtro troca o tipo); a observação é a dos controles de aniversariantes (as o
 - "Baixar planilha" (quem pode `baixarListas`): abas com o tipo escolhido e "Aniversariantes" (observações juntas com
   " | ").
 
+## Outras pessoas (Etapa 22)
+
+- Aba `#/outras-pessoas` (ficha `#/outras-pessoas/{id}`), ícone `briefcase`, depois de Eletricistas do CAE; todos veem,
+  só o admin (`editarCadastros`) cadastra, edita, importa e desativa (não há excluir). Tela em
+  `js/telas/outrasPessoas.js` e `js/telas/outrasPessoas/formulario.js`; regras em `js/lib/outrasPessoas.js` (com
+  testes); gravação em `js/dados/outrasPessoas.js`.
+- Grupos `GRUPOS_DE_OUTRAS_PESSOAS` (Diretoria, Prestador de serviço, Outro). `validarOutraPessoa` pede confirmação
+  quando o nome já existe em Outras pessoas ou num colaborador ativo. Importação (`CAMPOS_DA_PLANILHA`: Nome, Grupo,
+  Empresa ou função; `lerGrupo` entende "Diretor", "Sócio", "Terceirizado"...; sem grupo, novo entra como Outro;
+  existente só muda os campos preenchidos). "Baixar lista" com as colunas que voltam na importação. Ficha com o
+  histórico de listas (`historicoDaPessoa` com tipo `outro`).
+- Regras: `outrasPessoas` só existe nas regras novas. Enquanto a pessoa não publica o `firestore.rules` no console, a
+  leitura dá `permission-denied` e a aba mostra `avisoDasRegras` (passo a passo do README). Demonstração:
+  `?semRegra=outrasPessoas` simula isso.
+
 ## Papéis
 
 - `admin`: cadastra, edita e apaga tudo e gerencia usuários.
@@ -561,6 +585,8 @@ Se a semente mudar aqui, a do outro computador continua a antiga, o que não atr
   `observacao` nas presenças, presença criada pelo organizador com `convocado: false`, leitura em
   grupo de `presencas`). Em 31/10/2026 a pessoa decidiu publicar este arquivo no console no lugar
   das regras antigas; falta ela confirmar que publicou.
+- Etapa 22 (27/11/2026): `firestore.rules` ganhou `outrasPessoas` e `sorteio` na lista do que o organizador muda na
+  presença. Falta a pessoa publicar no console; até lá a aba Outras pessoas mostra o aviso das regras.
 - Índice de `pessoaId` para grupos de coleção (README); sem ele, o histórico lê lista por lista.
 - Lista de ramais: a aba está vazia até a lista chegar (ver "Pais e mães e Ramal").
 - Arquivos da Klavika em `fontes/` quando chegarem.
