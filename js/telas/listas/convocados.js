@@ -68,7 +68,7 @@ export function montarConvocados(caixa, ctx) {
                 { rotulo: 'Tipo', celula: tipoDaPresenca },
                 { rotulo: 'Convocado', celula: (p) => (p.convocado ? 'Sim' : etiqueta('Não convocado', 'alerta')) },
                 { rotulo: 'Presente', celula: (p) => (p.presente ? etiqueta('Presente', 'forte') : 'Não') },
-                ctx.lista().temSorteio && { rotulo: 'Sorteio', celula: (p) => marcaDoSorteio(p, { listaId: ctx.lista().id, podeMarcar: admin }) },
+                { rotulo: 'Sorteio', celula: (p) => marcaDoSorteio(p, { listaId: ctx.lista().id, podeMarcar: admin }) },
                 admin && {
                   rotulo: 'Ações',
                   classe: 'tabela__acoes',

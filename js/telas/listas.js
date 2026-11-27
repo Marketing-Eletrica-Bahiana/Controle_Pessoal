@@ -205,7 +205,8 @@ function montarDetalhe(raiz, { pessoa, params }) {
   function desenharTopo(l) {
     const parte = parteAtual()
     const marcas = (l.fornecedores ?? []).map((f) => dados.fornecedores.find((x) => x.id === f)?.nome).filter(Boolean)
-    const comSorteio = { sorteio: l.temSorteio === true }
+    // Toda lista tem o sorteio marcado no check-in: as planilhas dizem quem participa.
+    const comSorteio = { sorteio: true }
     trocar(
       topo,
       cabecalhoPagina({ titulo: l.nome, icone: 'clipboard-list', voltar: { href: '#/listas', texto: 'Listas' } }),
@@ -217,14 +218,13 @@ function montarDetalhe(raiz, { pessoa, params }) {
         el('span', {}, icone('calendar'), formatarData(l.data)),
         ondeE(l) && el('span', {}, icone('map-pin'), ondeE(l)),
         marcas.length > 0 && el('span', {}, icone('handshake'), marcas.join(', ')),
-        l.temSorteio && el('span', {}, icone('trophy'), 'Com sorteio'),
       ),
       el(
         'div',
         { class: 'acoes acoes--esquerda lista-acoes' },
         botaoBaixar('Baixar presentes', 'presentes', () => [{ nome: 'Presentes', cabecalho: cabecalhoPresentes(comSorteio), linhas: linhasPresentes(ctx.presencas(), comSorteio) }]),
         botaoBaixar('Baixar lista completa', 'completa', () => [{ nome: 'Lista completa', cabecalho: cabecalhoCompleta(comSorteio), linhas: linhasCompleta(ctx.presencas(), comSorteio) }]),
-        l.temSorteio && botaoBaixar('Baixar lista do sorteio', 'sorteio', () => [{ nome: 'Sorteio', cabecalho: CABECALHO_SORTEIO, linhas: linhasDoSorteio(ctx.presencas()) }]),
+        botaoBaixar('Baixar lista do sorteio', 'sorteio', () => [{ nome: 'Sorteio', cabecalho: CABECALHO_SORTEIO, linhas: linhasDoSorteio(ctx.presencas()) }]),
         admin && botao({ texto: 'Editar', icone: 'pencil', classe: 'botao--pequeno', aoClicar: () => abrirFormularioLista({ lista: l, fornecedores: dados.fornecedores, pessoa }) }),
         admin &&
           (l.status === 'aberta'

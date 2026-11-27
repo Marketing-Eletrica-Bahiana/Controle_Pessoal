@@ -153,12 +153,12 @@ Nomes exatos (as regras dependem deles):
 - `outrasPessoas/{id}`: `nome`, `grupo` (`"Diretoria"`, `"Prestador de serviço"` ou `"Outro"`), `empresa` (empresa ou
   função, pode ser vazio), `ativo`, `criadoEm`. Etapa 22; regra `read: ativo()`, `write: admin()`.
 - `listas/{id}`: `nome`, `tipo`, `data` (`"AAAA-MM-DD"`), `loja` (uma das lojas, `"Todas as lojas"` ou
-  `"Outro local"`), `local`, `fornecedores` (IDs das marcas), `temSorteio` (lista antiga não tem: vale `false`), `status` (`"aberta"` |
+  `"Outro local"`), `local`, `fornecedores` (IDs das marcas), `status` (`"aberta"` |
   `"encerrada"`), `criadoPor` (nome de quem criou), `criadoEm`.
 - `listas/{id}/presencas/{id}`: `tipoPessoa` (`"colaborador"` | `"eletricista"` | `"fornecedor"` | `"outro"` |
   `"convidado"`), `pessoaId` (vazio para fornecedor e convidado), `nome`, `detalhe` (setor e loja;
   "Vendedor: Nome"; nome da marca; "Convidado"; empresa ou função), `grupo` (só em `"outro"`), `sorteio` (só depois
-  que alguém troca, na lista com sorteio), `fornecedorId`,
+  que alguém toca no botão Sorteio), `fornecedorId`,
   `convocado`, `presente`, `horaCheckin`, `checkinPor` (nome de quem fez o check-in). Colaborador, eletricista e outra
   pessoa usam o ID `colaborador_{id}`, `eletricista_{id}` e `outro_{id}`: a mesma pessoa nunca entra duas vezes.
 - O app só grava os campos acima (as regras publicadas podem conferir os nomes).
@@ -507,17 +507,21 @@ filtro troca o tipo); a observação é a dos controles de aniversariantes (as o
 - A tela da lista ouve `outrasPessoas` como fonte opcional (`ouvirFontes(..., { opcionais: ['outrasPessoas'] })`): se
   a leitura falhar, chega `[]` e `dados.indisponiveis` traz o nome; a lista abre e "Adicionar outras pessoas" mostra
   `avisoDasRegras`. Depois de publicar as regras, é preciso recarregar a página (a fonte guarda o erro).
-- Sorteio (parte c): `listas/{id}.temSorteio` (caixa "Esta lista tem sorteio" no formulário; `validarLista` grava
-  `true`/`false`). Presença `sorteio` (`true`/`false`, gravado só quando alguém troca; `marcarSorteio`, sem esperar o
+- Sorteio (parte c), em toda lista. No começo era só na lista com `temSorteio` (caixa "Esta lista tem sorteio" no
+  Editar); no mesmo dia ela não achou a opção no check-in e pediu "coloque um botão 'Sorteio' do lado do Check-in", e
+  a caixa saiu: o sorteio vale em toda lista e `temSorteio` (que pode existir em listas gravadas nesse intervalo) não
+  é mais lido. Presença `sorteio` (`true`/`false`, gravado só quando alguém troca; `marcarSorteio`, sem esperar o
   servidor). `participaDoSorteio(p)`: vale o campo; sem ele, todos participam menos `tipoPessoa: "outro"` (Diretoria,
-  prestadores e o grupo Outro começam fora, escolha dela). `marcaDoSorteio` (`js/telas/listas/sorteio.js`): etiqueta
-  "No sorteio" (`forte`, ícone `trophy`) ou "Fora do sorteio" (`alerta`, `circle-x`), botão para quem pode marcar a
-  situação no check-in (organizador na lista aberta, admin sempre; regra com `sorteio` nas chaves do organizador) e
-  para o admin na coluna Sorteio de Convocados. Check-in mostra "N presentes no sorteio"; Resumo tem a coluna Sorteio
-  nos presentes. Planilhas: `cabecalhoPresentes`/`linhasPresentes` e `cabecalhoCompleta`/`linhasCompleta` com
-  `{ sorteio: true }` ganham "Participa do sorteio" (Sim/Não) no fim; "Baixar lista do sorteio" (`CABECALHO_SORTEIO`,
-  `linhasDoSorteio`): presentes que participam, Nome na primeira coluna (o sorteador procura "Nome"). Lista sem
-  `temSorteio` não muda nada. O sorteio em si é feito fora do site (escolha dela).
+  prestadores e o grupo Outro começam fora, escolha dela). `js/telas/listas/sorteio.js`: `botaoDoSorteio` (check-in:
+  botão "Sorteio" em `.checkin__botoes-da-pessoa`, ao lado do Check-in ou do Desfazer; `--sim` azul com
+  `circle-check`, `--nao` vermelho com `circle-x` e texto riscado; no celular, um embaixo do outro) para quem pode
+  marcar a situação (organizador na lista aberta, admin sempre; regra com `sorteio` nas chaves do organizador); quem
+  não pode vê `marcaDoSorteio`, a etiqueta "No sorteio" / "Fora do sorteio", que também é a coluna Sorteio de
+  Convocados (o admin troca ali). Check-in mostra "N presentes no sorteio"; Resumo tem a coluna Sorteio nos
+  presentes. Planilhas: a tela pede `{ sorteio: true }` a `cabecalhoPresentes`/`linhasPresentes` e
+  `cabecalhoCompleta`/`linhasCompleta` ("Participa do sorteio", Sim/Não, no fim); "Baixar lista do sorteio"
+  (`CABECALHO_SORTEIO`, `linhasDoSorteio`): presentes que participam, Nome na primeira coluna (o sorteador procura
+  "Nome"). O sorteio em si é feito fora do site (escolha dela).
 
 ## Papéis
 

@@ -2336,7 +2336,58 @@ a.tabela__nome:hover {
   opacity: 0.6;
 }
 
-/* Lista com sorteio: "No sorteio" / "Fora do sorteio", um toque troca. */
+/* Botões de cada pessoa no check-in: Check-in (ou Desfazer) e Sorteio lado a lado; no celular, um embaixo do outro. */
+.checkin__botoes-da-pessoa {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Botão "Sorteio": azul com o visto quando participa; vermelho, com X e riscado, quando está fora. */
+.checkin__sorteio-botao {
+  min-height: 52px;
+  border-width: 2px;
+}
+
+.presente .checkin__sorteio-botao {
+  min-height: 32px;
+  padding: 4px 12px;
+  font-size: 0.875rem;
+}
+
+.checkin__sorteio-botao--sim {
+  background: var(--medio-10);
+  color: var(--marinho);
+  border-color: var(--brilhante);
+}
+
+.checkin__sorteio-botao--sim .icone {
+  color: var(--brilhante);
+}
+
+.checkin__sorteio-botao--nao {
+  background: var(--branco);
+  color: var(--vermelho);
+  border-color: var(--vermelho);
+}
+
+.checkin__sorteio-botao--nao span {
+  text-decoration: line-through;
+}
+
+@media (max-width: 760px) {
+  .checkin__botoes-da-pessoa {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .checkin__sorteio-botao {
+    min-height: 40px;
+  }
+}
+
+/* Etiqueta "No sorteio" / "Fora do sorteio" (Convocados e quem não pode marcar); um toque troca. */
 .checkin__sorteio {
   align-self: flex-start;
   min-height: 32px;

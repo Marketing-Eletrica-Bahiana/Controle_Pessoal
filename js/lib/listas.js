@@ -62,15 +62,13 @@ export function validarLista(entrada) {
   return {
     erros,
     valido: Object.keys(erros).length === 0,
-    dados: {
-      nome, tipo: entrada.tipo, data, loja: entrada.loja, local, fornecedores: [...new Set(entrada.fornecedores ?? [])], temSorteio: entrada.temSorteio === true,
-    },
+    dados: { nome, tipo: entrada.tipo, data, loja: entrada.loja, local, fornecedores: [...new Set(entrada.fornecedores ?? [])] },
   }
 }
 
-// Sorteio (pedido de 27/11/2026, festa de final de ano): na lista com "temSorteio", cada pessoa é marcada no check-in
-// como dentro ou fora do sorteio, e as planilhas dizem quem participa. Sem marcação, colaboradores e os demais
-// participam; quem vem de Outras pessoas (Diretoria, prestadores de serviço) começa fora.
+// Sorteio (pedido de 27/11/2026, festa de final de ano): em toda lista, o botão "Sorteio" ao lado do Check-in marca se a
+// pessoa participa, e as planilhas dizem quem participa. Sem marcação, colaboradores e os demais participam; quem vem
+// de Outras pessoas (Diretoria, prestadores de serviço) começa fora.
 export const participaDoSorteio = (p) => (typeof p?.sorteio === 'boolean' ? p.sorteio : p?.tipoPessoa !== 'outro')
 export const rotuloDoSorteio = (p) => (participaDoSorteio(p) ? 'No sorteio' : 'Fora do sorteio')
 
@@ -261,8 +259,8 @@ const tipoDe = tipoDaPresenca
 
 const simOuNao = (valor) => (valor ? 'Sim' : 'Não')
 
-// "Baixar presentes": a primeira coluna é "Nome" (o sorteador procura essa coluna). Com { sorteio: true } (lista com
-// sorteio), ganha a coluna "Participa do sorteio" no fim.
+// "Baixar presentes": a primeira coluna é "Nome" (o sorteador procura essa coluna). Com { sorteio: true } (a tela da
+// lista sempre pede), ganha a coluna "Participa do sorteio" no fim.
 export const CABECALHO_PRESENTES = ['Nome', 'Tipo', 'Detalhe', 'Hora do check-in']
 export const COLUNA_DO_SORTEIO = 'Participa do sorteio'
 export const cabecalhoPresentes = ({ sorteio = false } = {}) => (sorteio ? [...CABECALHO_PRESENTES, COLUNA_DO_SORTEIO] : CABECALHO_PRESENTES)

@@ -24,8 +24,7 @@ describe('listas: cadastro e filtros', () => {
   it('valida nome, tipo, data e local', () => {
     const r = validarLista({ nome: ' Treino ', tipo: 'Evento', data: '05/11/2026', loja: 'Aracaju', local: '', fornecedores: ['a', 'a'] })
     assert.ok(r.valido)
-    assert.deepEqual(r.dados, { nome: 'Treino', tipo: 'Evento', data: '2026-11-05', loja: 'Aracaju', local: '', fornecedores: ['a'], temSorteio: false })
-    assert.equal(validarLista({ nome: 'Festa', tipo: 'Evento', data: '18/12/2026', loja: 'Aracaju', local: '', temSorteio: true }).dados.temSorteio, true)
+    assert.deepEqual(r.dados, { nome: 'Treino', tipo: 'Evento', data: '2026-11-05', loja: 'Aracaju', local: '', fornecedores: ['a'] })
     const ruim = validarLista({ nome: '', tipo: 'Aniversariantes do mês', data: '31/02/2026', loja: 'Outro local', local: '' })
     assert.deepEqual(Object.keys(ruim.erros).sort(), ['data', 'local', 'nome', 'tipo'])
     assert.equal(validarLista({ nome: 'Treino', tipo: 'Evento', data: '05/11/2026', loja: 'Loja inventada', local: '' }).erros.loja, 'Escolha a loja, "Todas as lojas" ou "Outro local".')

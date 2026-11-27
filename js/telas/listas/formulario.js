@@ -40,8 +40,6 @@ export function abrirFormularioLista({ lista = null, fornecedores, pessoa, aoSal
     }).no,
   )
 
-  const sorteio = caixaDeMarcar({ rotulo: 'Esta lista tem sorteio', marcada: lista?.temSorteio === true })
-
   const caixaDeErro = el('div')
   const salvar = botao({ texto: nova ? 'Criar lista' : 'Salvar', icone: 'check', variante: 'principal', tipo: 'submit' })
   const formulario = el(
@@ -57,12 +55,6 @@ export function abrirFormularioLista({ lista = null, fornecedores, pessoa, aoSal
       marcas.length ? el('div', { class: 'opcoes opcoes--grade' }, caixasDeMarca) : el('p', { class: 'campo__ajuda' }, 'Nenhuma marca cadastrada na aba Fornecedores.'),
       el('p', { class: 'campo__ajuda' }, 'As marcas das pessoas de fornecedor adicionadas na lista entram aqui sozinhas.'),
     ),
-    el(
-      'div',
-      { class: 'campo' },
-      sorteio.no,
-      el('p', { class: 'campo__ajuda' }, 'No check-in, cada pessoa fica marcada como dentro ou fora do sorteio, e as planilhas baixadas dizem quem participa. Colaboradores começam no sorteio; a Diretoria e os prestadores de serviço começam fora.'),
-    ),
     caixaDeErro,
     el('div', { class: 'janela-modal__acoes' }, botao({ texto: 'Cancelar', aoClicar: () => janela.fechar() }), salvar),
   )
@@ -71,7 +63,7 @@ export function abrirFormularioLista({ lista = null, fornecedores, pessoa, aoSal
     evento.preventDefault()
     caixaDeErro.replaceChildren()
     const valores = Object.fromEntries(Object.entries(campos).map(([chave, c]) => [chave, c.entrada.value]))
-    const { erros, dados, valido } = validarLista({ ...valores, fornecedores: [...escolhidas], temSorteio: sorteio.entrada.checked })
+    const { erros, dados, valido } = validarLista({ ...valores, fornecedores: [...escolhidas] })
     if (!mostrarErros(campos, erros) || !valido) return
     await comOcupado(salvar, async () => {
       try {

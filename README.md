@@ -18,7 +18,7 @@ App interno da Elétrica Bahiana para organizar, num lugar só:
 - **Outras pessoas**: a Diretoria, os prestadores de serviço e outras pessoas que não são colaboradores, mas entram
   nas listas (como na festa de final de ano).
 - **Listas**: listas de presença com check-in pelo celular nos treinamentos, eventos e ações
-  internas, com planilha para usar no sorteador e, na lista com sorteio, quem participa ou não do sorteio.
+  internas, com planilha para usar no sorteador e o botão **Sorteio** para marcar quem participa ou não.
 - **Ramal**: lugar reservado para a lista de ramais, que será preenchida no futuro.
 - **Usuários** (só administração): quem pode entrar e com qual papel.
 
@@ -90,20 +90,16 @@ Na lista e nas planilhas baixadas, o tipo da pessoa aparece como o grupo (Direto
 
 ## Sorteio na lista (festa de final de ano)
 
-1. Abra a lista, toque em **Editar** e marque **Esta lista tem sorteio**. A lista ganha a marca "Com sorteio".
-2. No **check-in**, cada pessoa mostra **No sorteio** ou **Fora do sorteio**. Um toque troca. Colaboradores (e
+1. No **check-in** de qualquer lista, cada pessoa tem o botão **Sorteio** ao lado do **Check-in** (no celular, embaixo
+   dele). **Azul com o visto**: participa. **Vermelho, com X e riscado**: fica fora. Um toque troca. Colaboradores (e
    eletricistas, pessoas de fornecedor e convidados) começam no sorteio; a Diretoria e os prestadores de serviço
    começam fora. A Organização também pode trocar, com a lista aberta. Em Convocados, a coluna **Sorteio** faz o
    mesmo.
-3. Ao baixar, **Baixar presentes** e **Baixar lista completa** ganham a coluna **Participa do sorteio** (Sim ou Não).
+2. Ao baixar, **Baixar presentes** e **Baixar lista completa** trazem a coluna **Participa do sorteio** (Sim ou Não).
    **Baixar lista do sorteio** traz só quem está presente e participa, com o Nome na primeira coluna, pronto para o
    sorteador.
 
-O topo do check-in mostra quantos presentes estão no sorteio. Para o organizador trocar o sorteio, as regras novas do
-Firebase precisam estar publicadas (ver "Como publicar novas regras do Firestore").
-
-Para esta aba funcionar, as regras do Firebase precisam ser publicadas de novo uma vez (ver "Como publicar novas
-regras do Firestore" mais abaixo). Até lá, a aba mostra esse aviso.
+O topo do check-in mostra quantos presentes estão no sorteio.
 
 ## Pessoas das marcas
 
@@ -287,6 +283,9 @@ entre no GitHub com uma conta que tenha acesso à organização Marketing-Eletri
 
 A mais recente primeiro. Cada alteração entra aqui no mesmo envio em que vai para o site.
 
+- **27/11/2026**: no check-in, o botão **Sorteio** fica ao lado do **Check-in** de cada pessoa, em todas as listas
+  (azul = participa; vermelho riscado = fora). Saiu a opção "Esta lista tem sorteio" do Editar: o sorteio vale em toda
+  lista, e as planilhas sempre trazem a coluna "Participa do sorteio".
 - **27/11/2026**: na **Importar planilha** da lista, quem aparece como **Não achado** vem marcado em **Cadastrar**: ao
   gravar, é cadastrado em Outras pessoas (grupo escolhido na linha, Outro de início) e entra na lista. Desmarcado,
   fica de fora. Saiu a opção antiga "Incluir quem não está no cadastro como convidado".

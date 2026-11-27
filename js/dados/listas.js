@@ -1,6 +1,7 @@
 // Gravação de listas/{id} e da subcoleção presencas/{id}.
 // listas: nome, tipo, data ("AAAA-MM-DD"), loja (uma das lojas, "Todas as lojas" ou "Outro local"), local, fornecedores
-//   (IDs das marcas), temSorteio, status ("aberta" | "encerrada"), criadoPor (nome), criadoEm.
+//   (IDs das marcas), status ("aberta" | "encerrada"), criadoPor (nome), criadoEm. (temSorteio, gravado por pouco tempo
+//   em 27/11/2026, não é mais usado: o sorteio vale em toda lista.)
 // presencas: tipoPessoa, pessoaId, nome, detalhe, grupo (outra pessoa), fornecedorId, convocado, presente, horaCheckin,
 //   checkinPor (nome de quem fez o check-in), status ("participou", "nao_participou", "outros" ou "", marcado no
 //   check-in), observacao e sorteio (true/false; sem o campo vale participaDoSorteio). Colaborador, eletricista e outra
@@ -65,7 +66,7 @@ export function marcarPresenca(listaId, presencaId, presente, pessoa) {
 export const marcarSituacao = (listaId, presenca, situacao, observacao, pessoa) =>
   atualizar(caminhoDaPresenca(listaId, presenca.id), { ...mudancaDeSituacao(situacao, presenca, pessoa.nome, agora()), observacao: limparObservacao(observacao) })
 
-// Dentro ou fora do sorteio (lista com sorteio). Não espera o servidor, como o check-in.
+// Dentro ou fora do sorteio (botão "Sorteio" do check-in). Não espera o servidor, como o check-in.
 export const marcarSorteio = (listaId, presencaId, participa) => atualizar(caminhoDaPresenca(listaId, presencaId), { sorteio: participa })
 
 // Participante não convocado que chegou: entra já presente.

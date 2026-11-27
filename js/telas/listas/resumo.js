@@ -84,9 +84,9 @@ export function montarResumo(caixa, ctx) {
         {
           titulo: `Presentes (${formatarNumero(r.presentes.length)})`,
           icone: 'circle-check',
-          descricao: lista.temSorteio ? `${plural(r.presentes.filter(participaDoSorteio).length, 'presente', 'presentes')} no sorteio.` : '',
+          descricao: `${plural(r.presentes.filter(participaDoSorteio).length, 'presente', 'presentes')} no sorteio.`,
         },
-        tabelaDe(r.presentes, { comHora: true, comSorteio: lista.temSorteio === true }),
+        tabelaDe(r.presentes, { comHora: true, comSorteio: true }),
       ),
     )
   }
