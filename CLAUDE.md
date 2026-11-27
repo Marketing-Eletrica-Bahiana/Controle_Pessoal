@@ -59,6 +59,8 @@ fornecedores, eletricistas do CAE, listas de presença com check-in pelo celular
     um botão de outros e um campo de observação") Situação e observação no check-in (ver "Listas").
 19. (Feita em 27/11/2026, a pedido: "me dê a opção de subir o excel em listas") "Importar planilha" em Convocados
     (ver "Listas").
+20. (Feita em 27/11/2026, a pedido: "eu quero o botão de importar uma lista nesta parte aqui também", no Check-in)
+    "Importar planilha" também no Check-in (ver "Listas").
 
 A pessoa autorizou fazer as etapas 2 a 6 em sequência, sem pedir aprovação entre elas, depois de
 conferida a integração da Etapa 1.
@@ -235,7 +237,9 @@ Tela em `js/telas/listas.js` (visão geral e página da lista) com as partes em 
   opções, ajuda e texto de vazio) e de `colaboradoresDoGrupo` (`js/lib/listas.js`, com teste). Pais e mães: "Pais e
   mães" (`PAIS_E_MAES`, os dois), "Só os pais" ou "Só as mães", pelo `paiOuMae` do cadastro, só ativos, como em
   Colaboradores > Pais e mães. No celular os quatro botões ficam em duas linhas.
-- "Importar planilha" em Convocados (Etapa 19, só admin): `abrirPlanilhaNaLista` (`js/telas/listas/planilha.js`) usa o
+- "Importar planilha" em Convocados (Etapa 19, só admin) e no Check-in (Etapa 20, só admin, ao lado de "Adicionar
+  participante não convocado" em `.checkin__botoes`, que no celular vira coluna; aparece também na lista encerrada,
+  porque o admin pode mexer nela): `abrirPlanilhaNaLista` (`js/telas/listas/planilha.js`) usa o
   mesmo `abrirImportador` dos colaboradores, que ganhou `indicadores`, `situacoes`, `textoDoBotao` e `textoDoFim`
   opcionais. Colunas (`CAMPOS_DA_PLANILHA_DA_LISTA`): Nome (obrigatória), "Participou?" (Sim/X/1/Presente, Não/Faltou,
   Outros; `lerParticipou`) e Observação. Regras em `js/lib/planilhaDaLista.js` (com testes):

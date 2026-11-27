@@ -51,7 +51,8 @@ no banco de dados.
 
 ## Subir uma planilha do Excel na lista
 
-Em **Listas**, abra a lista e vá em **Convocados > Importar planilha**. A planilha precisa de uma coluna com o
+Em **Listas**, abra a lista e clique em **Importar planilha**: o botão fica no **Check-in** (ao lado de "Adicionar
+participante não convocado") e em **Convocados**, e só aparece para a Administração. A planilha precisa de uma coluna com o
 **nome** da pessoa; se tiver, também **Participou?** (Sim, Não ou Outros) e **Observação**. O app procura cada nome
 nos colaboradores (inclusive os desligados, para listas antigas) e nos eletricistas, e mostra uma prévia antes de
 gravar:
@@ -246,6 +247,8 @@ entre no GitHub com uma conta que tenha acesso à organização Marketing-Eletri
 
 A mais recente primeiro. Cada alteração entra aqui no mesmo envio em que vai para o site.
 
+- **27/11/2026**: o botão **Importar planilha** também fica no **Check-in** da lista, ao lado de "Adicionar participante
+  não convocado" (só para a Administração). É a mesma janela de Convocados.
 - **27/11/2026**: em Listas > Convocados, **Importar planilha**: sobe um Excel com os nomes (e, se tiver, se participou
   e a observação) direto na lista, com prévia antes de gravar.
 - **27/11/2026**: correção do erro "Algo deu errado" na aba Listas logo depois de uma atualização (o navegador juntava

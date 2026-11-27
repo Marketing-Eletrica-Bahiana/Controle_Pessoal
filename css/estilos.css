@@ -2342,6 +2342,26 @@ a.tabela__nome:hover {
   border-style: dashed;
 }
 
+/* "Adicionar participante não convocado" e "Importar planilha" lado a lado; no celular, um embaixo do outro. */
+.checkin__botoes {
+  display: flex;
+  gap: 12px;
+}
+
+.checkin__botoes[hidden] {
+  display: none;
+}
+
+.checkin__botoes > .botao:not([hidden]) {
+  flex: 1 1 0;
+}
+
+@media (max-width: 760px) {
+  .checkin__botoes {
+    flex-direction: column;
+  }
+}
+
 @media (max-width: 760px) {
   .checkin__topo {
     top: 0;

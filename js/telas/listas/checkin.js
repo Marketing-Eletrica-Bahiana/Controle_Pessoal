@@ -14,6 +14,7 @@ import {
 } from '../../ui/componentes.js'
 import { el, icone, trocar } from '../../ui/dom.js'
 import { abrirFormularioEletricista } from '../eletricistas/formulario.js'
+import { abrirPlanilhaNaLista } from './planilha.js'
 
 // ctx: { pessoa, lista(), presencas(), pendente(), dados() => { colaboradores, eletricistas } }
 export function montarCheckin(caixa, ctx) {
@@ -38,15 +39,25 @@ export function montarCheckin(caixa, ctx) {
     classe: 'botao--grande checkin__adicionar',
     aoClicar: () => abrirNaoConvocado(ctx),
   })
+  // Subir o Excel direto daqui (a mesma janela de Convocados). Só o admin: quem entra pela planilha vira convocado.
+  const admin = pode(ctx.pessoa, 'gerenciarListas')
+  const importar = admin && botao({
+    texto: 'Importar planilha',
+    icone: 'file-spreadsheet',
+    classe: 'botao--grande checkin__adicionar',
+    aoClicar: () => abrirPlanilhaNaLista(ctx),
+  })
+  const botoes = el('div', { class: 'checkin__botoes' }, adicionar, importar)
 
   caixa.replaceChildren(
-    el('section', { class: 'checkin' }, aviso_encerrada, el('div', { class: 'checkin__topo' }, contador, busca.no, filtrosCaixa), situacao, adicionar, lista),
+    el('section', { class: 'checkin' }, aviso_encerrada, el('div', { class: 'checkin__topo' }, contador, busca.no, filtrosCaixa), situacao, botoes, lista),
   )
 
   function desenhar() {
     const aberta = ctx.lista().status === 'aberta'
     const podeFazer = aberta && pode(ctx.pessoa, 'fazerCheckin')
     adicionar.hidden = !podeFazer
+    botoes.hidden = !podeFazer && !importar
     trocar(aviso_encerrada, !aberta && aviso('Lista encerrada: não aceita mais check-in.', { icone: 'lock', erro: true }))
     const presencas = ctx.presencas()
     const conta = contarPresencas(presencas)
@@ -94,7 +105,14 @@ export function montarCheckin(caixa, ctx) {
   function desenharLista(podeFazer = ctx.lista().status === 'aberta' && pode(ctx.pessoa, 'fazerCheckin')) {
     const itens = presencasParaCheckin(ctx.presencas(), estado)
     if (!ctx.presencas().length) {
-      return trocar(lista, el('li', { class: 'checkin__vazio' }, 'Ninguém na lista ainda.', podeFazer ? ' Use o botão acima para adicionar quem chegar.' : ''))
+      const dica = podeFazer && importar
+        ? ' Use os botões acima para adicionar quem chegar ou importar uma planilha.'
+        : podeFazer
+          ? ' Use o botão acima para adicionar quem chegar.'
+          : importar
+            ? ' Use o botão acima para importar uma planilha.'
+            : ''
+      return trocar(lista, el('li', { class: 'checkin__vazio' }, 'Ninguém na lista ainda.', dica))
     }
     if (!itens.length) return trocar(lista, el('li', { class: 'checkin__vazio' }, 'Ninguém encontrado.'))
     trocar(lista, itens.map((p) => linha(p, podeFazer)))
