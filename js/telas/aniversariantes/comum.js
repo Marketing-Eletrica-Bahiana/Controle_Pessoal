@@ -10,7 +10,7 @@ import { el } from '../../ui/dom.js'
 // Mês escolhido fica guardado enquanto a pessoa navega.
 export const periodo = { ...partesDeHoje() }
 
-export const VARIANTE_DO_STATUS = { participou: 'forte', nao_participou: 'alerta', pendente: '' }
+export const VARIANTE_DO_STATUS = { participou: 'forte', nao_participou: 'alerta', outros: 'marinho', pendente: '' }
 
 export const linkDaPessoa = (p) => el('a', { class: 'tabela__nome', href: endereco('colaboradores', 'ficha', p.pessoaId) }, p.nome)
 

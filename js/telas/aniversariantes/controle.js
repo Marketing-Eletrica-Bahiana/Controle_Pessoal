@@ -3,7 +3,7 @@
 import { marcarStatus, salvarObservacao } from '../../dados/aniversariantes.js'
 import { ouvirFontes } from '../../dados/fontes.js'
 import { definirStatusDaLista, excluirLista, ouvirPresencas } from '../../dados/listas.js'
-import { STATUS, STATUS_ANIVERSARIO, TIPO_EMPRESA, contarStatus, ehHoje, mesDoControle } from '../../lib/aniversariantes.js'
+import { STATUS, STATUS_ANIVERSARIO, TIPO_EMPRESA, categoriaDoAniversario, contarCategorias, ehHoje, mesDoControle } from '../../lib/aniversariantes.js'
 import { formatarDataHora, formatarDiaMes, partesDeHoje } from '../../lib/datas.js'
 import { mensagemDeErro } from '../../lib/erros.js'
 import { ehListaDeAniversario } from '../../lib/listas.js'
@@ -17,7 +17,8 @@ import { el, icone, trocar } from '../../ui/dom.js'
 import { baixarPlanilha } from '../../ui/planilha.js'
 import { periodo } from './comum.js'
 
-const ROTULOS_DOS_FILTROS = { todos: 'Todos', pendente: 'Pendentes', participou: 'Participou', nao_participou: 'Não participou' }
+// "Outros" (não participou ou pendente, com observação) sai de Pendentes e de Não participou, como nos cartões do mês.
+const ROTULOS_DOS_FILTROS = { todos: 'Todos', pendente: 'Pendentes', participou: 'Participou', nao_participou: 'Não participou', outros: 'Outros' }
 
 export function montarControle(raiz, { pessoa, id }) {
   const admin = pode(pessoa, 'gerenciarListas')
@@ -65,7 +66,7 @@ export function montarControle(raiz, { pessoa, id }) {
     }
     if (!area.contains(corpo)) trocar(area, topo, corpo)
     desenharTopo(l)
-    const conta = contarStatus(presencas)
+    const conta = contarCategorias(presencas)
     trocar(
       contador,
       !aberta() && aviso('Controle encerrado: não dá para mudar os status.', { icone: 'lock', erro: true }),
@@ -73,10 +74,11 @@ export function montarControle(raiz, { pessoa, id }) {
         [
           { rotulo: 'Pendentes', valor: formatarNumero(conta.pendente), detalhe: 'ainda faltam marcar' },
           { rotulo: 'Participou', valor: formatarNumero(conta.participou) },
-          { rotulo: 'Não participou', valor: formatarNumero(conta.nao_participou) },
+          { rotulo: 'Não participou', valor: formatarNumero(conta.nao_participou), detalhe: 'sem observação' },
+          { rotulo: 'Outros', valor: formatarNumero(conta.outros), detalhe: 'com observação' },
           { rotulo: 'No controle', valor: formatarNumero(presencas.length) },
         ],
-        { classe: 'indicadores--compactos' },
+        { classe: 'indicadores--compactos indicadores--cinco' },
       ),
     )
     trocar(
@@ -159,7 +161,7 @@ export function montarControle(raiz, { pessoa, id }) {
 
   function desenharLista() {
     if (!presencas) return
-    const visiveis = ordenadas().filter(({ p }) => (estado.filtro === 'todos' || (p.status ?? 'pendente') === estado.filtro) && combinaBusca(p.nome, estado.busca))
+    const visiveis = ordenadas().filter(({ p }) => (estado.filtro === 'todos' || categoriaDoAniversario(p) === estado.filtro) && combinaBusca(p.nome, estado.busca))
     if (!visiveis.length) {
       linhas.clear()
       return trocar(lista, el('li', { class: 'checkin__vazio' }, presencas.length ? 'Ninguém com esse filtro.' : 'Ninguém no controle.'))

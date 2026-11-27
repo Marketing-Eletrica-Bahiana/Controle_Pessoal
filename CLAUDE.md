@@ -61,6 +61,9 @@ fornecedores, eletricistas do CAE, listas de presença com check-in pelo celular
     (ver "Listas").
 20. (Feita em 27/11/2026, a pedido: "eu quero o botão de importar uma lista nesta parte aqui também", no Check-in)
     "Importar planilha" também no Check-in (ver "Listas").
+21. (Feita em 27/11/2026, a pedido: cartões como os do Dashboard "na quantidade de pessoas que não participaram dos
+    aniversários, tendo 'Não participou' 'Participou' e uma 'Outros' que são os nomes que tem Observação") Cartões e
+    "Outros" nos aniversariantes (ver "Aniversariantes").
 
 A pessoa autorizou fazer as etapas 2 a 6 em sequência, sem pedir aprovação entre elas, depois de
 conferida a integração da Etapa 1.
@@ -309,6 +312,14 @@ Telas em `js/telas/aniversariantes.js` (mês) e `js/telas/aniversariantes/` (`co
 - Status (admin e organizador, lista aberta): Pendente, Participou, Não participou. `presente`
   acompanha "Participou"; `horaCheckin` e `checkinPor` guardam quando e quem marcou. Observação até
   300 letras, salva ao sair do campo; o texto em edição não é apagado por mudanças que chegam.
+- "Outros" (Etapa 21) não é um status gravado: `categoriaDoAniversario` (`js/lib/aniversariantes.js`, com testes)
+  põe em "outros" quem não está como Participou e tem observação (Não participou ou Pendente); Participou com
+  observação continua Participou (decisão minha: "Outros" foi lido como o grupo de quem não participou com um motivo).
+  `contarCategorias` alimenta: na tela do mês, os cartões de cada controle (Participou com % do controle, Não
+  participou "sem observação", Outros "com observação" e Pendentes só quando > 0; `indicadores--tres` com três), a
+  etiqueta "N pendentes" e a coluna Status (etiqueta "Outros" `marinho` e a observação embaixo); na tela do
+  controle, os cinco cartões (`indicadores--cinco`) e o filtro "Outros". Histórico, rankings, Participação e a
+  planilha continuam pelo status gravado.
 - Histórico: por colaborador, os meses com o status (chips) e as observações, filtros de ano e tipo, e os rankings
   dos 10 que mais ficaram com "Participou" e com "Não participou", com as observações (ver "Participação").
 - Planilha do mês (`Aniversariantes Mês-AAAA.xlsx`): abas "Aniversariantes" e "Aniversário de

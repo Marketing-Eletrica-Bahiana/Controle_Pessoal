@@ -9,7 +9,9 @@ App interno da Elétrica Bahiana para organizar, num lugar só:
   mostra quem saiu, com a data de desligamento. A ficha de cada pessoa tem as **Informações Pessoais** (pet,
   família, sonhos, time e hobby) para as ações internas, e a parte **Participação** mostra o ranking de quem mais
   participou das ações e dos aniversariantes.
-- **Aniversariantes**: do mês (nascimento) e de empresa (tempo de casa), com o contato de cada pessoa.
+- **Aniversariantes**: do mês (nascimento) e de empresa (tempo de casa), com o contato de cada pessoa. Quando o
+  controle do mês existe, aparecem os cartões **Participou**, **Não participou** e **Outros** (quem não participou
+  e tem observação, como férias ou atestado), e a tabela mostra a observação embaixo do status.
 - **Fornecedores**: as marcas parceiras (Soprano, Legrand, Ledvance...), com os palestrantes, representantes e
   convidados de cada uma.
 - **Eletricistas do CAE**: cadastro dos eletricistas, com o vendedor de cada um.
@@ -247,6 +249,10 @@ entre no GitHub com uma conta que tenha acesso à organização Marketing-Eletri
 
 A mais recente primeiro. Cada alteração entra aqui no mesmo envio em que vai para o site.
 
+- **27/11/2026**: em Aniversariantes, cada controle do mês ganhou os cartões **Participou**, **Não participou** e
+  **Outros** (como os do Dashboard). "Outros" é quem não participou, ou ficou pendente, e tem observação; quem
+  participou continua em Participou mesmo com observação. A tabela mostra "Outros" e a observação no status, e a tela
+  do controle ganhou o cartão e o filtro "Outros".
 - **27/11/2026**: o botão **Importar planilha** também fica no **Check-in** da lista, ao lado de "Adicionar participante
   não convocado" (só para a Administração). É a mesma janela de Convocados.
 - **27/11/2026**: em Listas > Convocados, **Importar planilha**: sobe um Excel com os nomes (e, se tiver, se participou

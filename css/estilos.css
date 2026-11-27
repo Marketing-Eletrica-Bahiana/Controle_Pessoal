@@ -1834,6 +1834,17 @@ a.tabela__nome:hover {
   font-size: 1.75rem;
 }
 
+/* Controle de aniversariantes: Pendentes, Participou, Não participou, Outros e No controle numa linha só. */
+.indicadores--cinco {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+@media (max-width: 960px) {
+  .indicadores--cinco {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 760px) {
   .importador__campo {
     grid-template-columns: minmax(0, 1fr);

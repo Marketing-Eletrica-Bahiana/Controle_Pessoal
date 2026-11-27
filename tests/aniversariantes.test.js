@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
-  TIPO_EMPRESA, TIPO_MES, abasDoMes, aniversariantesDoMes, aniversariosDeEmpresa, contarStatus, ehHoje, faltandoNoControle,
+  TIPO_EMPRESA, TIPO_MES, abasDoMes, aniversariantesDoMes, aniversariosDeEmpresa, categoriaDoAniversario, contarCategorias, contarStatus,
+  ehHoje, faltandoNoControle,
   historicoDosAniversarios, idDoControle, listaDoControle, mesDoControle, mudancaDeStatus, nomeDoArquivoDoMes, nomeDoControle,
   observacoesDaPessoa, presencaDoAniversariante,
 } from '../js/lib/aniversariantes.js'
@@ -39,6 +40,19 @@ describe('aniversariantes', () => {
 
   it('status: conta, grava "presente" junto e acha quem falta no controle', () => {
     assert.deepEqual(contarStatus([{ status: 'participou' }, { status: 'nao_participou' }, {}]), { pendente: 1, participou: 1, nao_participou: 1 })
+    // Cartões: "Outros" é quem não participou (ou ficou pendente) com observação; quem participou fica em Participou.
+    assert.equal(categoriaDoAniversario({ status: 'participou', observacao: 'Postou foto' }), 'participou')
+    assert.equal(categoriaDoAniversario({ status: 'nao_participou', observacao: 'Férias' }), 'outros')
+    assert.equal(categoriaDoAniversario({ status: 'pendente', observacao: 'Atestado' }), 'outros')
+    assert.equal(categoriaDoAniversario({ status: 'nao_participou', observacao: '   ' }), 'nao_participou')
+    assert.equal(categoriaDoAniversario({}), 'pendente')
+    assert.deepEqual(
+      contarCategorias([
+        { status: 'participou' }, { status: 'participou', observacao: 'Ok' }, { status: 'nao_participou' },
+        { status: 'nao_participou', observacao: 'Férias' }, { status: 'pendente' },
+      ]),
+      { participou: 2, nao_participou: 1, outros: 1, pendente: 1 },
+    )
     assert.deepEqual(mudancaDeStatus('participou', 'Ana', 'AGORA'), { status: 'participou', presente: true, horaCheckin: 'AGORA', checkinPor: 'Ana' })
     assert.deepEqual(mudancaDeStatus('nao_participou', 'Ana', 'AGORA'), { status: 'nao_participou', presente: false, horaCheckin: 'AGORA', checkinPor: 'Ana' })
     assert.deepEqual(mudancaDeStatus('pendente', 'Ana', 'AGORA'), { status: 'pendente', presente: false, horaCheckin: null, checkinPor: null })

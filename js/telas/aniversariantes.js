@@ -4,16 +4,17 @@ import { gerarControle, incluirNoControle } from '../dados/aniversariantes.js'
 import { ouvirFontes } from '../dados/fontes.js'
 import { ouvirPresencas } from '../dados/listas.js'
 import {
-  TIPO_EMPRESA, TIPO_MES, STATUS_ANIVERSARIO, abasDoMes, aniversariantesDoMes, aniversariosDeEmpresa, contarStatus, ehHoje,
-  faltandoNoControle, idDoControle, nomeDoArquivoDoMes,
+  ROTULO_DA_CATEGORIA, TIPO_EMPRESA, TIPO_MES, abasDoMes, aniversariantesDoMes, aniversariosDeEmpresa, categoriaDoAniversario,
+  contarCategorias, ehHoje, faltandoNoControle, idDoControle, nomeDoArquivoDoMes, temObservacao,
 } from '../lib/aniversariantes.js'
 import { NOMES_MESES, formatarDiaMes, formatarMesAno, partesDeHoje } from '../lib/datas.js'
 import { mensagemDeErro } from '../lib/erros.js'
 import { pode } from '../lib/papeis.js'
 import { endereco } from '../lib/rotas.js'
-import { plural } from '../lib/texto.js'
+import { formatarNumero, plural } from '../lib/texto.js'
 import {
-  avisar, avisarErro, blocoDeErro, bloco, botao, botaoIcone, carregando, comOcupado, confirmar, etiqueta, link, selecao, tabela,
+  avisar, avisarErro, blocoDeErro, bloco, botao, botaoIcone, carregando, comOcupado, confirmar, etiqueta, indicadores, link, selecao,
+  tabela,
 } from '../ui/componentes.js'
 import { el, icone, trocar } from '../ui/dom.js'
 import { baixarPlanilha } from '../ui/planilha.js'
@@ -155,6 +156,7 @@ function montarMes(raiz, { pessoa }) {
     const empresa = tipo === TIPO_EMPRESA
     return bloco(
       { titulo, icone: nomeIcone, acoes: [areaDoControle(tipo, lista, daLista, itens)], descricao: plural(itens.length, empresa ? 'pessoa completa tempo de casa' : 'aniversariante', empresa ? 'pessoas completam tempo de casa' : 'aniversariantes') },
+      lista && daLista?.length > 0 && cartoesDoControle(daLista),
       itens.length
         ? tabela({
             itens,
@@ -179,7 +181,12 @@ function montarMes(raiz, { pessoa }) {
                 celula: (a) => {
                   const p = porPessoa.get(a.colaborador.id)
                   if (!daLista) return ''
-                  return p ? etiqueta(STATUS_ANIVERSARIO[p.status] ?? 'Pendente', VARIANTE_DO_STATUS[p.status] ?? '') : el('span', { class: 'texto-suave' }, 'Fora do controle')
+                  if (!p) return el('span', { class: 'texto-suave' }, 'Fora do controle')
+                  const categoria = categoriaDoAniversario(p)
+                  return [
+                    etiqueta(ROTULO_DA_CATEGORIA[categoria], VARIANTE_DO_STATUS[categoria]),
+                    temObservacao(p) && el('span', { class: 'tabela__detalhe' }, p.observacao.trim()),
+                  ]
                 },
               },
             ].filter(Boolean),
@@ -188,9 +195,23 @@ function montarMes(raiz, { pessoa }) {
     )
   }
 
+  // Cartões do controle (como os do Dashboard): Participou, Não participou e Outros (quem não participou e tem
+  // observação). Pendentes só aparecem enquanto ainda tem gente para marcar.
+  function cartoesDoControle(daLista) {
+    const conta = contarCategorias(daLista)
+    const total = daLista.length
+    const cartoes = [
+      { rotulo: 'Participou', valor: formatarNumero(conta.participou), detalhe: `${Math.round((conta.participou / total) * 100)}% do controle` },
+      { rotulo: 'Não participou', valor: formatarNumero(conta.nao_participou), detalhe: 'sem observação' },
+      { rotulo: 'Outros', valor: formatarNumero(conta.outros), detalhe: 'com observação' },
+      conta.pendente > 0 && { rotulo: 'Pendentes', valor: formatarNumero(conta.pendente), detalhe: 'ainda faltam marcar' },
+    ].filter(Boolean)
+    return indicadores(cartoes, { classe: cartoes.length === 3 ? 'indicadores--tres' : undefined })
+  }
+
   function areaDoControle(tipo, lista, daLista, itens) {
     if (lista) {
-      const conta = contarStatus(daLista ?? [])
+      const conta = contarCategorias(daLista ?? [])
       const faltam = daLista ? faltandoNoControle(itens, daLista) : []
       const incluir =
         admin &&
@@ -213,7 +234,7 @@ function montarMes(raiz, { pessoa }) {
       return el(
         'div',
         { class: 'controle-do-mes' },
-        lista.status === 'encerrada' ? etiqueta('Controle encerrado', 'marinho') : etiqueta(`${conta.pendente} pendentes`, conta.pendente ? 'alerta' : 'forte'),
+        lista.status === 'encerrada' ? etiqueta('Controle encerrado', 'marinho') : etiqueta(plural(conta.pendente, 'pendente', 'pendentes'), conta.pendente ? 'alerta' : 'forte'),
         incluir,
         link({ texto: 'Abrir controle', icone: 'list-checks', href: endereco('aniversariantes', 'controle', lista.id), variante: 'principal', classe: 'botao--pequeno' }),
       )

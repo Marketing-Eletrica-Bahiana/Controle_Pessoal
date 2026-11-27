@@ -69,6 +69,24 @@ export function contarStatus(presencas) {
   return conta
 }
 
+// Como a pessoa entra nos cartões do mês e do controle: "Outros" é quem não participou (ou ficou pendente) e tem
+// observação, como férias ou atestado. Quem participou continua em "Participou" mesmo com observação.
+export const CATEGORIAS = ['participou', 'nao_participou', 'outros', 'pendente']
+export const ROTULO_DA_CATEGORIA = { ...STATUS_ANIVERSARIO, outros: 'Outros' }
+export const temObservacao = (p) => Boolean(String(p?.observacao ?? '').trim())
+
+export function categoriaDoAniversario(p) {
+  if (p.status === 'participou') return 'participou'
+  if (temObservacao(p)) return 'outros'
+  return p.status === 'nao_participou' ? 'nao_participou' : 'pendente'
+}
+
+export function contarCategorias(presencas) {
+  const conta = { participou: 0, nao_participou: 0, outros: 0, pendente: 0 }
+  for (const p of presencas) conta[categoriaDoAniversario(p)]++
+  return conta
+}
+
 // Quem é aniversariante mas ainda não está no controle (cadastrado depois de gerar).
 export const faltandoNoControle = (aniversariantes, presencas) => {
   const ja = new Set(presencas.map((p) => p.pessoaId))
