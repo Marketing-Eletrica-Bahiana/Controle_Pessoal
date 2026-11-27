@@ -2499,6 +2499,22 @@ a.tabela__nome:hover {
   gap: 4px;
 }
 
+/* Observações dos controles de aniversariantes nos rankings e no histórico ("Nov/2026: Postou foto"). */
+.observacoes {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.observacoes strong {
+  color: var(--marinho);
+}
+
 @media (max-width: 760px) {
   .controle__pessoa {
     grid-template-columns: minmax(0, 1fr);

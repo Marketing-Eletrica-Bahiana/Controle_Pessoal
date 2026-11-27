@@ -82,7 +82,8 @@ export const mudancaDeStatus = (status, quem, agora) =>
     : { status, presente: status === 'participou', horaCheckin: agora, checkinPor: quem }
 
 // Histórico: listas de aniversário com as presenças de cada uma.
-// controles: [{ lista, presencas }]. Devolve { pessoas, ranking }.
+// controles: [{ lista, presencas }]. Devolve { pessoas, ranking, participaram }: ranking é quem mais deixou de
+// participar e participaram é quem mais participou.
 export function historicoDosAniversarios(controles) {
   const pessoas = new Map()
   for (const { lista, presencas } of controles) {
@@ -101,10 +102,20 @@ export function historicoDosAniversarios(controles) {
   const ranking = lista
     .filter((p) => p.conta.nao_participou > 0)
     .sort((a, b) => b.conta.nao_participou - a.conta.nao_participou || a.conta.participou - b.conta.participou || compararTexto(a.nome, b.nome))
-  return { pessoas: lista, ranking }
+  const participaram = lista
+    .filter((p) => p.conta.participou > 0)
+    .sort((a, b) => b.conta.participou - a.conta.participou || a.conta.nao_participou - b.conta.nao_participou || compararTexto(a.nome, b.nome))
+  return { pessoas: lista, ranking, participaram }
 }
 
 export const rotuloCurtoDoMes = (mes, ano) => `${nomeDoMes(mes).slice(0, 3)}/${ano}`
+
+// Observações escritas nos controles da pessoa (do histórico), as mais recentes primeiro: [{ rotulo, texto }],
+// com rótulo "Nov/2026" ou "Nov/2026 (empresa)".
+export const observacoesDaPessoa = (pessoa) =>
+  pessoa.registros
+    .filter((r) => String(r.observacao ?? '').trim())
+    .map((r) => ({ rotulo: `${rotuloCurtoDoMes(r.mes, r.ano)}${r.tipo === TIPO_EMPRESA ? ' (empresa)' : ''}`, texto: String(r.observacao).trim() }))
 
 // Planilha do mês: uma aba para cada tipo, com o status do controle (quando existe).
 export function abasDoMes({ mes, ano, doMes, deEmpresa, statusMes, statusEmpresa }) {

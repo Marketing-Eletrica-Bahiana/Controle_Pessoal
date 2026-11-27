@@ -7,7 +7,8 @@ App interno da Elétrica Bahiana para organizar, num lugar só:
 - **Colaboradores**: quem trabalha em cada setor e loja, com gerentes, coordenadores e supervisores.
   A parte **Pais e mães** mostra quem é pai ou mãe na empresa, com os contatos, e a parte **Desligados**
   mostra quem saiu, com a data de desligamento. A ficha de cada pessoa tem as **Informações Pessoais** (pet,
-  família, sonhos, time e hobby) para as ações internas.
+  família, sonhos, time e hobby) para as ações internas, e a parte **Participação** mostra o ranking de quem mais
+  participou das ações e dos aniversariantes.
 - **Aniversariantes**: do mês (nascimento) e de empresa (tempo de casa), com o contato de cada pessoa.
 - **Fornecedores**: as marcas parceiras (Soprano, Legrand, Ledvance...), com os palestrantes, representantes e
   convidados de cada uma.
@@ -78,6 +79,23 @@ sobre si para as nossas ações internas: **Pet**, **Família**, **Sonhos**, **T
 **Preencher** (ou **Editar**, se já houver algo) e escreva as respostas. Todos os espaços são opcionais, com até 300
 letras cada: deixe em branco o que a pessoa não quiser contar. Quem tem acesso ao app vê o quadro; só a administração
 preenche.
+
+## Participação (ranking)
+
+Em **Colaboradores > Participação** ficam dois rankings, só com colaboradores ativos:
+
+1. **Quem mais participou das ações**: conta em quantas listas do tipo **Ação de Endomarketing** cada pessoa fez
+   check-in (convocada ou não), em quantas foi convocada e em quantas faltou (convocada e sem check-in). Só contam as
+   listas que já aconteceram. O filtro **Tipo de lista** troca para Eventos, Treinamentos ou todas as listas.
+2. **Quem mais participou dos aniversariantes**: conta os meses marcados como "Participou" nos controles de
+   aniversariantes (do mês e de empresa), com as **observações** escritas em cada mês.
+
+Os números do topo mostram quantas listas entraram, quantos participaram e quantos ainda não participaram. O filtro
+**Ano** vale para os dois rankings, a busca acha a pessoa sem mudar a posição dela, e **Baixar planilha** gera os dois
+rankings em abas separadas.
+
+Em **Aniversariantes > Histórico** também estão os rankings de quem mais participou e de quem mais deixou de
+participar, com as observações, e a tabela "Por colaborador" mostra as observações de cada pessoa.
 
 ## Corrigir a lista de colaboradores sem duplicar
 
@@ -208,6 +226,9 @@ entre no GitHub com uma conta que tenha acesso à organização Marketing-Eletri
 
 A mais recente primeiro. Cada alteração entra aqui no mesmo envio em que vai para o site.
 
+- **27/11/2026**: em Colaboradores, a parte **Participação**, com o ranking de quem mais participou das ações de
+  endomarketing (ou de outro tipo de lista) e dos aniversariantes. Em Aniversariantes > Histórico, o ranking de quem
+  mais participou e as **observações** nos rankings e na tabela por colaborador.
 - **26/11/2026**: na ficha do colaborador, o quadro **Informações Pessoais** (Pet, Família, Sonhos, Time e Hobby),
   para as ações internas. Só a administração preenche.
 - **26/11/2026**: o site passa a ser editado em dois computadores. Criados este histórico e o passo a passo acima.

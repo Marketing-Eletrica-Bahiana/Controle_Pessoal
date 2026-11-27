@@ -3,7 +3,7 @@ import { describe, it } from 'node:test'
 import {
   TIPO_EMPRESA, TIPO_MES, abasDoMes, aniversariantesDoMes, aniversariosDeEmpresa, contarStatus, ehHoje, faltandoNoControle,
   historicoDosAniversarios, idDoControle, listaDoControle, mesDoControle, mudancaDeStatus, nomeDoArquivoDoMes, nomeDoControle,
-  presencaDoAniversariante,
+  observacoesDaPessoa, presencaDoAniversariante,
 } from '../js/lib/aniversariantes.js'
 
 const colaboradores = [
@@ -56,6 +56,19 @@ describe('aniversariantes', () => {
     assert.deepEqual(pessoas[0].registros.map((r) => `${r.mes}/${r.ano} ${r.status}`), ['11/2026 nao_participou', '10/2026 nao_participou'])
     assert.deepEqual(ranking.map((p) => [p.nome, p.conta.nao_participou]), [['Ana', 2], ['Bia', 1]])
     assert.equal(pessoas[2].conta.pendente, 1)
+  })
+
+  it('ranking de quem mais participou e as observações, as mais recentes primeiro', () => {
+    const { participaram, pessoas } = historicoDosAniversarios([
+      { lista: { id: 'm10', tipo: TIPO_MES, data: '2026-10-01' }, presencas: [{ pessoaId: 'a', nome: 'Ana', status: 'participou', observacao: ' Postou foto ' }, { pessoaId: 'b', nome: 'Bia', status: 'participou' }] },
+      { lista: { id: 'e11', tipo: TIPO_EMPRESA, data: '2026-11-01' }, presencas: [{ pessoaId: 'a', nome: 'Ana', status: 'participou', observacao: 'Mandou vídeo' }, { pessoaId: 'b', nome: 'Bia', status: 'nao_participou', observacao: '' }] },
+      { lista: { id: 'm11', tipo: TIPO_MES, data: '2026-11-01' }, presencas: [{ pessoaId: 'c', nome: 'Caio', status: 'participou' }, { pessoaId: 'd', nome: 'Davi', status: 'nao_participou', observacao: 'De férias' }] },
+    ])
+    // Ana 2; Bia e Caio 1 cada, mas Caio não deixou de participar nenhuma vez; Davi nunca participou.
+    assert.deepEqual(participaram.map((p) => [p.nome, p.conta.participou]), [['Ana', 2], ['Caio', 1], ['Bia', 1]])
+    assert.deepEqual(observacoesDaPessoa(participaram[0]), [{ rotulo: 'Nov/2026 (empresa)', texto: 'Mandou vídeo' }, { rotulo: 'Out/2026', texto: 'Postou foto' }])
+    assert.deepEqual(observacoesDaPessoa(pessoas.find((p) => p.nome === 'Bia')), [])
+    assert.deepEqual(observacoesDaPessoa(pessoas.find((p) => p.nome === 'Davi')), [{ rotulo: 'Nov/2026', texto: 'De férias' }])
   })
 
   it('planilha do mês com o status do controle', () => {

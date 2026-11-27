@@ -1,6 +1,6 @@
-// Aba Colaboradores: lista geral, visão por setor, setor aberto, pais e mães, desligados e ficha de cada pessoa.
-// Endereços: #/colaboradores, #/colaboradores/setores, #/colaboradores/setores/{id},
-// #/colaboradores/pais-e-maes, #/colaboradores/desligados, #/colaboradores/ficha/{id}
+// Aba Colaboradores: lista geral, visão por setor, setor aberto, pais e mães, participação, desligados e ficha de cada
+// pessoa. Endereços: #/colaboradores, #/colaboradores/setores, #/colaboradores/setores/{id},
+// #/colaboradores/pais-e-maes, #/colaboradores/participacao, #/colaboradores/desligados, #/colaboradores/ficha/{id}
 import { LOJAS } from '../config.js'
 import { excluirColaborador, reativarColaborador } from '../dados/colaboradores.js'
 import { ouvirFontes } from '../dados/fontes.js'
@@ -25,6 +25,7 @@ import {
 } from './colaboradores/formularios.js'
 import { blocoDeInformacoesPessoais } from './colaboradores/informacoes.js'
 import { liderancaDoSetor } from './colaboradores/lideranca.js'
+import { montarParticipacao } from './colaboradores/participacao.js'
 import { historicoDaPessoa } from './listas/historico.js'
 
 // Filtros ficam guardados enquanto a pessoa navega (ex.: abre uma ficha e volta).
@@ -44,6 +45,7 @@ export function montar(raiz, { pessoa, params }) {
     : parte === 'setores' ? 'setores'
     : parte === 'ficha' && id ? 'ficha'
     : parte === 'pais-e-maes' ? 'pais'
+    : parte === 'participacao' ? 'participacao'
     : parte === 'desligados' ? 'desligados'
     : 'lista'
   const area = el('div', { class: 'pagina' })
@@ -52,6 +54,7 @@ export function montar(raiz, { pessoa, params }) {
   // Partes que não podem ser redesenhadas a cada mudança (campo de busca com o foco).
   const fixos = {}
   let pararHistorico = null
+  let participacao = null
 
   function desenhar() {
     if (erro) return trocar(area, blocoDeErro(erro))
@@ -60,6 +63,7 @@ export function montar(raiz, { pessoa, params }) {
     else if (vista === 'setores') desenharSetores()
     else if (vista === 'setor') desenharSetor()
     else if (vista === 'pais') desenharPaisEMaes()
+    else if (vista === 'participacao') desenharParticipacao()
     else if (vista === 'desligados') desenharDesligados()
     else desenharFicha()
   }
@@ -88,6 +92,7 @@ export function montar(raiz, { pessoa, params }) {
         { rotulo: 'Todos', icone: 'users', href: '#/colaboradores', ativo: vista === 'lista' },
         { rotulo: 'Por setor', icone: 'building-2', href: '#/colaboradores/setores', ativo: vista === 'setores' },
         { rotulo: 'Pais e mães', icone: 'baby', href: '#/colaboradores/pais-e-maes', ativo: vista === 'pais' },
+        { rotulo: 'Participação', icone: 'trophy', href: '#/colaboradores/participacao', ativo: vista === 'participacao' },
         { rotulo: 'Desligados', icone: 'user-x', href: '#/colaboradores/desligados', ativo: vista === 'desligados' },
       ]),
     ]
@@ -356,6 +361,18 @@ export function montar(raiz, { pessoa, params }) {
     })
   }
 
+  // Participação: ranking das ações (ou de outro tipo de lista) e dos aniversariantes. Montada uma vez; quando o cadastro
+  // muda, só recebe os colaboradores novos (a busca não perde o foco).
+
+  function desenharParticipacao() {
+    if (!fixos.participacao || !area.contains(fixos.participacao)) {
+      fixos.participacao = el('div', { class: 'pagina' })
+      trocar(area, ...cabecalhoDaAba(), fixos.participacao)
+      participacao?.parar()
+      participacao = montarParticipacao(fixos.participacao, { colaboradores: dados.colaboradores, podeBaixar: pode(pessoa, 'baixarListas') })
+    } else participacao.colaboradores(dados.colaboradores)
+  }
+
   // Desligados: quem saiu da empresa (ativo: false), com a data de desligamento. Entra pelo botão Desligar ou pela
   // aba "Desligados" da lista oficial.
 
@@ -545,5 +562,6 @@ export function montar(raiz, { pessoa, params }) {
   return () => {
     parar()
     pararHistorico?.()
+    participacao?.parar()
   }
 }

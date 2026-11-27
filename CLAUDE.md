@@ -46,6 +46,8 @@ fornecedores, eletricistas do CAE, listas de presença com check-in pelo celular
     computador" no README, e a regra no topo deste arquivo.
 12. (Feita em 26/11/2026, a pedido) Quadro "Informações Pessoais" na ficha do colaborador (ver "Informações
     Pessoais").
+13. (Feita em 27/11/2026, a pedido) Parte "Participação" em Colaboradores e observações nos rankings dos
+    aniversariantes (ver "Participação").
 
 A pessoa autorizou fazer as etapas 2 a 6 em sequência, sem pedir aprovação entre elas, depois de
 conferida a integração da Etapa 1.
@@ -132,7 +134,8 @@ Tela em `js/telas/colaboradores.js` (janelas em `js/telas/colaboradores/formular
 
 - Endereços: `#/colaboradores` (lista geral), `#/colaboradores/setores` (cartões),
   `#/colaboradores/setores/{id}` (setor aberto; `__sem-setor` para quem não tem setor) e
-  `#/colaboradores/pais-e-maes`, `#/colaboradores/desligados` e `#/colaboradores/ficha/{id}`. Os filtros ficam
+  `#/colaboradores/pais-e-maes`, `#/colaboradores/participacao`, `#/colaboradores/desligados` e
+  `#/colaboradores/ficha/{id}`. Os filtros ficam
   guardados enquanto a pessoa navega.
 - Lista: busca por nome; filtros setor, loja, liderança e situação (ativos por padrão).
 - Setor do colaborador é texto; casa com `setores` pelo nome sem diferenciar maiúsculas e
@@ -251,8 +254,8 @@ Telas em `js/telas/aniversariantes.js` (mês) e `js/telas/aniversariantes/` (`co
 - Status (admin e organizador, lista aberta): Pendente, Participou, Não participou. `presente`
   acompanha "Participou"; `horaCheckin` e `checkinPor` guardam quando e quem marcou. Observação até
   300 letras, salva ao sair do campo; o texto em edição não é apagado por mudanças que chegam.
-- Histórico: por colaborador, os meses com o status (chips), filtros de ano e tipo, e o ranking dos
-  10 que mais ficaram com "Não participou".
+- Histórico: por colaborador, os meses com o status (chips) e as observações, filtros de ano e tipo, e os rankings
+  dos 10 que mais ficaram com "Participou" e com "Não participou", com as observações (ver "Participação").
 - Planilha do mês (`Aniversariantes Mês-AAAA.xlsx`): abas "Aniversariantes" e "Aniversário de
   empresa" com o status do controle ("Controle não gerado" quando não existe). O controle também
   tem "Baixar planilha" própria.
@@ -360,6 +363,34 @@ espaços Pet, Família, Sonhos, Time e Hobby (nomes e ordem como a pessoa pediu)
   "Preencher" (vazio) ou "Editar" só para admin, e a janela com cinco caixas de texto. Organizador só vê. A
   classe `bloco--informacoes-pessoais` mostra as quebras de linha.
 - Não entram na planilha "Baixar lista" nem na importação (não foi pedido).
+
+## Participação (Etapa 13)
+
+Pedido: uma aba em Colaboradores com o ranking de quem participou das listas que são ações, outra lista de quem mais
+participou dos aniversariantes, e a observação na lista. "Ações" foi lido como o tipo "Ação de Endomarketing" (o
+filtro troca o tipo); a observação é a dos controles de aniversariantes (as outras listas não têm observação).
+
+- `#/colaboradores/participacao`, quinta parte da aba Colaboradores, antes de Desligados (ícone `trophy`). Montada uma
+  vez por `montarParticipacao` (`js/telas/colaboradores/participacao.js`), que ouve `fonte('listas')` e recebe os
+  colaboradores novos pela função `colaboradores` (a busca não perde o foco). Filtros guardados ao navegar: busca, tipo
+  (`TIPO_PADRAO` "Ação de Endomarketing") e ano (vazio = todos).
+- Leitura: presenças com `tipoPessoa == "colaborador"` de cada lista escolhida (`lerPresencas` com filtro) e os
+  controles de aniversário do ano (`lerControles`). Só relê quando mudam os IDs das listas escolhidas; check-ins novos
+  aparecem ao reabrir a tela.
+- Regras em `js/lib/participacao.js` (com testes): `TIPOS_DA_PARTICIPACAO` (rótulo e frases de cada tipo; vazio = todas
+  menos os aniversários), `listasDaParticipacao` (tipo, ano e data até hoje), `controlesDaParticipacao`, `anosDasListas`,
+  `rankingDeParticipacao` (por colaborador ativo: participou = check-in, convocado ou não; convocado; faltou = convocado
+  sem check-in; última participação; ordem: participou, menos faltas, nome), `aniversariosDosAtivos`, e as planilhas
+  (`CABECALHO_DA_PARTICIPACAO`, `linhasDaParticipacao`, `CABECALHO_DOS_ANIVERSARIOS`, `linhasDosAniversarios`).
+- Só colaboradores ativos nos dois rankings da Participação (desligados e cadastros apagados ficam de fora). Em
+  Aniversariantes > Histórico os rankings continuam com todo mundo dos controles.
+- `historicoDosAniversarios` devolve também `participaram` (mais "Participou", depois menos "Não participou", nome);
+  `observacoesDaPessoa` (`js/lib/aniversariantes.js`) dá `[{ rotulo: "Nov/2026" ou "Nov/2026 (empresa)", texto }]`.
+- Tabela dos rankings de aniversário em `js/telas/aniversariantes/comum.js` (`tabelaDoRankingDeAniversarios`,
+  `listaDeObservacoes`, `linkDaPessoa`), usada no Histórico e na Participação. A posição vem do ranking inteiro, então
+  a busca não muda a posição. Classe `observacoes` no CSS.
+- "Baixar planilha" (quem pode `baixarListas`): abas com o tipo escolhido e "Aniversariantes" (observações juntas com
+  " | ").
 
 ## Papéis
 

@@ -1,15 +1,14 @@
 // Histórico dos controles de aniversariantes: por colaborador, em quais meses participou ou não da
-// ação, e o ranking de quem mais deixou de participar.
+// ação, os rankings de quem mais deixou de participar e de quem mais participou, e as observações.
 import { lerControles } from '../../dados/aniversariantes.js'
 import { fonte } from '../../dados/fontes.js'
 import { STATUS_ANIVERSARIO, TIPO_EMPRESA, TIPO_MES, historicoDosAniversarios, rotuloCurtoDoMes } from '../../lib/aniversariantes.js'
 import { mensagemDeErro } from '../../lib/erros.js'
 import { ehListaDeAniversario } from '../../lib/listas.js'
-import { endereco } from '../../lib/rotas.js'
-import { combinaBusca, formatarNumero } from '../../lib/texto.js'
+import { combinaBusca } from '../../lib/texto.js'
 import { aviso, bloco, campoBusca, carregando, etiqueta, filtroSelecao, tabela } from '../../ui/componentes.js'
 import { el, trocar } from '../../ui/dom.js'
-import { VARIANTE_DO_STATUS, cabecalhoDaAba } from './comum.js'
+import { VARIANTE_DO_STATUS, cabecalhoDaAba, linkDaPessoa, listaDeObservacoes, tabelaDoRankingDeAniversarios } from './comum.js'
 
 const filtros = { ano: '', tipo: '', busca: '' }
 
@@ -71,7 +70,7 @@ export function montarHistorico(raiz) {
     if (chave === chaveCarregada && historico) return desenharResultado()
     chaveCarregada = chave
     if (!escolhidos.length) {
-      historico = { pessoas: [], ranking: [] }
+      historico = { pessoas: [], ranking: [], participaram: [] }
       return desenharResultado()
     }
     trocar(conteudo, carregando('Lendo os controles...'))
@@ -94,27 +93,22 @@ export function montarHistorico(raiz) {
       return trocar(conteudo, aviso('Nenhum controle de aniversariantes gerado ainda. Gere o controle do mês na aba "Do mês".'))
     }
     const pessoas = historico.pessoas.filter((p) => combinaBusca(p.nome, filtros.busca))
-    const linkDaPessoa = (p) => el('a', { class: 'tabela__nome', href: endereco('colaboradores', 'ficha', p.pessoaId) }, p.nome)
     trocar(
       conteudo,
       bloco(
-        { titulo: 'Quem mais deixou de participar', icone: 'trophy', descricao: 'Contando os meses marcados como "Não participou".' },
+        { titulo: 'Quem mais participou', icone: 'trophy', descricao: 'Contando os meses marcados como "Participou", com as observações.' },
+        historico.participaram.length
+          ? tabelaDoRankingDeAniversarios(historico.participaram, { destaque: 'participou', itens: historico.participaram.slice(0, 10) })
+          : el('p', { class: 'texto-suave' }, 'Ninguém marcado como "Participou" no período.'),
+      ),
+      bloco(
+        { titulo: 'Quem mais deixou de participar', icone: 'circle-x', descricao: 'Contando os meses marcados como "Não participou", com as observações.' },
         historico.ranking.length
-          ? tabela({
-              itens: historico.ranking.slice(0, 10),
-              chave: (p) => p.pessoaId,
-              colunas: [
-                { rotulo: 'Posição', classe: 'numero', celula: (p) => `${historico.ranking.indexOf(p) + 1}º` },
-                { rotulo: 'Nome', principal: true, celula: linkDaPessoa },
-                { rotulo: 'Não participou', classe: 'numero', celula: (p) => etiqueta(formatarNumero(p.conta.nao_participou), 'alerta') },
-                { rotulo: 'Participou', classe: 'numero', celula: (p) => formatarNumero(p.conta.participou) },
-                { rotulo: 'Pendente', classe: 'numero', celula: (p) => formatarNumero(p.conta.pendente) },
-              ],
-            })
+          ? tabelaDoRankingDeAniversarios(historico.ranking, { destaque: 'nao_participou', itens: historico.ranking.slice(0, 10) })
           : el('p', { class: 'texto-suave' }, 'Ninguém marcado como "Não participou" no período.'),
       ),
       bloco(
-        { titulo: 'Por colaborador', icone: 'users', descricao: 'Mês a mês, o que ficou marcado em cada controle.' },
+        { titulo: 'Por colaborador', icone: 'users', descricao: 'Mês a mês, o que ficou marcado em cada controle, e as observações.' },
         pessoas.length
           ? tabela({
                 itens: pessoas,
@@ -123,6 +117,7 @@ export function montarHistorico(raiz) {
                 colunas: [
                   { rotulo: 'Nome', principal: true, celula: linkDaPessoa },
                   { rotulo: 'Meses', celula: (p) => el('div', { class: 'chips' }, p.registros.map(chip)) },
+                  { rotulo: 'Observações', ordenavel: false, celula: listaDeObservacoes },
                 ],
               })
           : el('p', { class: 'texto-suave' }, 'Ninguém encontrado.'),
