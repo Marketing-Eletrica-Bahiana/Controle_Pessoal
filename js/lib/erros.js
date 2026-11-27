@@ -28,8 +28,16 @@ export function erroDoApp(mensagem) {
   return erro
 }
 
+// Erro de arquivo do site depois de uma atualização: a página aberta tinha um arquivo da versão antiga e a tela nova
+// pede algo que ele não tem ("does not provide an export named", "import not found", "binding name"). O navegador
+// avisa como SyntaxError. Resolve recarregando a página.
+export const ehErroDeVersao = (erro) => erro?.name === 'SyntaxError' && /export|import|binding/i.test(String(erro?.message ?? ''))
+
+export const MENSAGEM_DE_VERSAO = 'O Controle Pessoal foi atualizado. Recarregue a página (Ctrl+F5 no computador; no celular, feche e abra de novo).'
+
 export function mensagemDeErro(erro) {
   if (erro?.doApp || erro?.code === 'app/pendente') return erro.message
+  if (ehErroDeVersao(erro)) return MENSAGEM_DE_VERSAO
   if (MENSAGENS[erro?.code]) return MENSAGENS[erro.code]
   if (erro?.code) return `Algo deu errado (${erro.code}). Tente de novo em instantes.`
   if (erro?.message && /[áéíóúãõç]/i.test(erro.message)) return erro.message

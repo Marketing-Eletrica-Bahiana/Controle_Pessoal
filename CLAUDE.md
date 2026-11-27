@@ -73,6 +73,14 @@ conferida a integração da Etapa 1.
 - Publicação por GitHub Actions (`.github/workflows/publicar.yml`): roda os testes, copia
   `index.html`, `404.html`, `.nojekyll`, `css/`, `js/`, `fontes/` e `marca/` para o site.
   `404.html` leva endereços sem `#` para a rota certa.
+- Versão nos endereços (27/11/2026): o GitHub Pages guarda cada arquivo 10 minutos no navegador, e uma página aberta
+  durante uma publicação juntou `js/lib/listas.js` antigo com a tela nova de Listas ("Algo deu errado"). Agora o
+  `publicar.yml` roda `.github/versionar.mjs`, que no `_site/index.html` (só na cópia publicada; o repositório não
+  muda) põe `?v=<commit>` no `app.js`, nos dois `.css` e, pelo import map, em todos os módulos de `js/`. Se o trecho
+  esperado não estiver no `index.html`, a publicação para. Mesmo assim, uma página aberta antes da publicação ainda pode
+  misturar versões ao abrir outra aba: `app.js` reconhece o erro (`ehErroDeVersao` em `js/lib/erros.js`, SyntaxError de
+  export/import) e recarrega a página uma vez (`recarregarPorVersao`: não repete em menos de 1 minuto e não recarrega
+  sem internet, por causa do check-in); senão mostra "O Controle Pessoal foi atualizado. Recarregue a página...".
 - Endereços com `#/` (`js/lib/rotas.js`). Cada aba carrega o próprio arquivo de `js/telas/` só
   quando é aberta (`TELAS` em `js/app.js`). Cada tela exporta `montar(raiz, { pessoa, params })`
   e devolve uma função que para os ouvintes ao sair da tela.

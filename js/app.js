@@ -2,7 +2,7 @@
 import { DOMINIO_EMPRESA, ehEmailDaEmpresa } from './config.js'
 import { entrarComGoogle, observarSessao, ouvirDocumento, retornoDoLogin, sair } from './dados/banco.js'
 import { pararFontes } from './dados/fontes.js'
-import { mensagemDeErro } from './lib/erros.js'
+import { ehErroDeVersao, mensagemDeErro } from './lib/erros.js'
 import { abasDoPapel, papelValido } from './lib/papeis.js'
 import { lerEndereco } from './lib/rotas.js'
 import { telaCarregando, telaLogin, telaSemAcesso } from './telas/entrada.js'
@@ -21,6 +21,22 @@ const TELAS = {
   listas: () => import('./telas/listas.js'),
   ramal: () => import('./telas/ramal.js'),
   usuarios: () => import('./telas/usuarios.js'),
+}
+
+// Depois de uma publicação, a página que já estava aberta pode juntar um arquivo antigo com uma tela nova, e a tela não
+// abre (ehErroDeVersao). Recarrega a página uma vez: o index.html novo traz todos os arquivos da versão nova. Se já
+// recarregou há menos de 1 minuto, ou se está sem internet (o check-in precisa da página aberta), só mostra o aviso.
+function recarregarPorVersao() {
+  if (!navigator.onLine) return false
+  try {
+    const ultima = Number(sessionStorage.getItem('recarregouPorVersao') ?? 0)
+    if (Date.now() - ultima < 60000) return false
+    sessionStorage.setItem('recarregouPorVersao', String(Date.now()))
+  } catch {
+    return false
+  }
+  window.location.reload()
+  return true
 }
 
 let erroDeLogin = ''
@@ -112,6 +128,7 @@ function abrirApp(pessoa) {
     } catch (erro) {
       if (minha !== versao) return
       console.error(erro)
+      if (ehErroDeVersao(erro) && recarregarPorVersao()) return
       conteudo.replaceChildren(blocoDeErro(mensagemDeErro(erro)))
     }
   }

@@ -5,7 +5,7 @@ import {
   formatarData, formatarDiaMes, formatarHora, formatarMesAno, hojeISO, lerData, lerDataDaPlanilha, lerDiaMes, mascararData,
   montarISO, serialExcelParaISO,
 } from '../js/lib/datas.js'
-import { mensagemDeErro, erroDoApp } from '../js/lib/erros.js'
+import { MENSAGEM_DE_VERSAO, ehErroDeVersao, mensagemDeErro, erroDoApp } from '../js/lib/erros.js'
 import { abasDoPapel, papelValido, pode, rotuloDoPapel } from '../js/lib/papeis.js'
 import { lerEndereco } from '../js/lib/rotas.js'
 import { combinaBusca, nomeDeArquivo, normalizar, paraId, primeiroNome, textoPorcentagem } from '../js/lib/texto.js'
@@ -143,5 +143,17 @@ describe('endereços e erros', () => {
     assert.equal(mensagemDeErro(erroDoApp('Essa pessoa já está cadastrada.')), 'Essa pessoa já está cadastrada.')
     assert.match(mensagemDeErro({ code: 'xyz' }), /Algo deu errado \(xyz\)/)
     assert.equal(mensagemDeErro(new Error('Failed to fetch')), 'Algo deu errado. Tente de novo em instantes.')
+    // Arquivo da versão antiga junto com a tela nova (Chrome, Firefox e Safari): pede para recarregar.
+    for (const texto of [
+      "The requested module '../../lib/listas.js' does not provide an export named 'SITUACOES_DO_CHECKIN'",
+      'import not found: SITUACOES_DO_CHECKIN',
+      "Importing binding name 'SITUACOES_DO_CHECKIN' is not found.",
+    ]) {
+      const erro = new SyntaxError(texto)
+      assert.ok(ehErroDeVersao(erro))
+      assert.equal(mensagemDeErro(erro), MENSAGEM_DE_VERSAO)
+    }
+    assert.ok(!ehErroDeVersao(new SyntaxError('Unexpected token')))
+    assert.ok(!ehErroDeVersao(new TypeError('Failed to fetch dynamically imported module')))
   })
 })
