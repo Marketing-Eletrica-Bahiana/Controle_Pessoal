@@ -314,7 +314,7 @@ Telas em `js/telas/aniversariantes.js` (mês) e `js/telas/aniversariantes/` (`co
   300 letras, salva ao sair do campo; o texto em edição não é apagado por mudanças que chegam.
 - "Outros" (Etapa 21) não é um status gravado: `categoriaDoAniversario` (`js/lib/aniversariantes.js`, com testes)
   põe em "outros" quem não está como Participou e tem observação (Não participou ou Pendente); Participou com
-  observação continua Participou (decisão minha: "Outros" foi lido como o grupo de quem não participou com um motivo).
+  observação continua Participou (confirmado pela pessoa em 27/11/2026: "Outros" é quem não participou com um motivo).
   `contarCategorias` alimenta: na tela do mês, os cartões de cada controle (Participou com % do controle, Não
   participou "sem observação", Outros "com observação" e Pendentes só quando > 0; `indicadores--tres` com três), a
   etiqueta "N pendentes" e a coluna Status (etiqueta "Outros" `marinho` e a observação embaixo); na tela do
