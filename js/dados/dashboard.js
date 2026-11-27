@@ -29,7 +29,8 @@ export async function comercialQueFaltou(lista, colaboradores) {
     if (lista.status === 'encerrada') guardadas.set(chave, ausentes)
   }
   const porId = new Map(colaboradores.map((c) => [c.id, c]))
-  return ausentes.filter((p) => p.tipoPessoa === 'colaborador' && ehSetorComercial(porId.get(p.pessoaId)?.setor ?? String(p.detalhe ?? '').split(' · ')[0]))
+  // "Outros" (marcado no check-in) não conta como falta.
+  return ausentes.filter((p) => p.tipoPessoa === 'colaborador' && p.status !== 'outros' && ehSetorComercial(porId.get(p.pessoaId)?.setor ?? String(p.detalhe ?? '').split(' · ')[0]))
 }
 
 export const contarEletricistasAtivos = () => contar('eletricistas', [['ativo', '==', true]])

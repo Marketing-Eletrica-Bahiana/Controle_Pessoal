@@ -1,9 +1,10 @@
-// Aba Resumo da lista: presentes, ausentes (convocados que não vieram) e não convocados que vieram.
-// No Treinamento Comercial, destaca quem do setor comercial foi convocado e faltou.
+// Aba Resumo da lista: presentes, ausentes (convocados que não vieram) e não convocados que vieram, com a situação
+// marcada no check-in (Não participou ou Outros) e a observação. No Treinamento Comercial, destaca quem do setor
+// comercial foi convocado e faltou.
 import { formatarHora } from '../../lib/datas.js'
-import { TIPOS_DE_PESSOA, nomeComFuncao, resumoDaLista } from '../../lib/listas.js'
+import { TIPOS_DE_PESSOA, nomeComFuncao, resumoDaLista, rotuloDaSituacao, situacaoNoCheckin } from '../../lib/listas.js'
 import { formatarNumero, plural } from '../../lib/texto.js'
-import { bloco, indicadores, tabela } from '../../ui/componentes.js'
+import { bloco, etiqueta, indicadores, tabela } from '../../ui/componentes.js'
 import { el, trocar } from '../../ui/dom.js'
 
 // ctx: { lista(), presencas(), dados() => { colaboradores } }
@@ -11,7 +12,8 @@ export function montarResumo(caixa, ctx) {
   const conteudo = el('div', { class: 'pagina' })
   caixa.replaceChildren(conteudo)
 
-  const tabelaDe = (pessoas, { comHora = false } = {}) =>
+  // Ausentes mostram a situação marcada; a observação aparece quando alguém da tabela tem.
+  const tabelaDe = (pessoas, { comHora = false, comSituacao = false } = {}) =>
     pessoas.length
       ? tabela({
           itens: pessoas,
@@ -21,6 +23,14 @@ export function montarResumo(caixa, ctx) {
             { rotulo: 'Tipo', celula: (p) => TIPOS_DE_PESSOA[p.tipoPessoa] ?? '' },
             { rotulo: 'Detalhe', celula: (p) => p.detalhe ?? '' },
             comHora && { rotulo: 'Check-in', classe: 'numero', celula: (p) => (p.horaCheckin ? formatarHora(p.horaCheckin) : '') },
+            comSituacao && {
+              rotulo: 'Situação',
+              celula: (p) => {
+                const s = situacaoNoCheckin(p)
+                return s ? etiqueta(rotuloDaSituacao(s), s === 'nao_participou' ? 'alerta' : 'marinho') : el('span', { class: 'texto-suave' }, 'Sem marcação')
+              },
+            },
+            pessoas.some((p) => p.observacao) && { rotulo: 'Observação', ordenavel: false, celula: (p) => p.observacao ?? '' },
           ].filter(Boolean),
         })
       : el('p', { class: 'texto-suave' }, 'Ninguém.')
@@ -45,14 +55,17 @@ export function montarResumo(caixa, ctx) {
             classe: r.comercialFaltou.length ? 'bloco--alerta' : 'bloco--destaque',
             descricao: 'Colaboradores do setor comercial que foram convocados e não fizeram check-in.',
           },
-          r.comercialFaltou.length > 0 && tabelaDe(r.comercialFaltou),
+          r.comercialFaltou.length > 0 && tabelaDe(r.comercialFaltou, { comSituacao: true }),
         ),
-      el(
-        'div',
-        { class: 'grade-duas' },
-        bloco({ titulo: `Ausentes (${formatarNumero(r.ausentes.length)})`, icone: 'user-x', descricao: 'Convocados que não fizeram check-in.' }, tabelaDe(r.ausentes)),
-        bloco({ titulo: `Não convocados que vieram (${formatarNumero(r.naoConvocados.length)})`, icone: 'user-plus' }, tabelaDe(r.naoConvocados, { comHora: true })),
+      bloco(
+        {
+          titulo: `Ausentes (${formatarNumero(r.ausentes.length)})`,
+          icone: 'user-x',
+          descricao: 'Convocados que não fizeram check-in, com o que foi marcado ao abrir o nome no check-in.',
+        },
+        tabelaDe(r.ausentes, { comSituacao: true }),
       ),
+      bloco({ titulo: `Não convocados que vieram (${formatarNumero(r.naoConvocados.length)})`, icone: 'user-plus' }, tabelaDe(r.naoConvocados, { comHora: true })),
       r.porMarca.size > 0 &&
         bloco(
           { titulo: 'Pessoas enviadas pelas marcas', icone: 'handshake' },
@@ -60,7 +73,7 @@ export function montarResumo(caixa, ctx) {
             'ul',
             { class: 'lista-simples' },
             [...r.porMarca].map(([marca, pessoas]) =>
-              el('li', {}, el('strong', {}, `${marca}: `), pessoas.map((p) => `${nomeComFuncao(p)}${p.presente ? '' : ' (não veio)'}`).join(', ')),
+              el('li', {}, el('strong', {}, `${marca}: `), pessoas.map((p) => `${nomeComFuncao(p)}${p.presente ? '' : ' (não participou)'}`).join(', ')),
             ),
           ),
         ),

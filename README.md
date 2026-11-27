@@ -38,6 +38,9 @@ no banco de dados.
 
 1. Abra a aba **Listas** no celular e toque em **Fazer check-in** na lista do dia.
 2. Busque o nome no campo grande do topo e toque em **Check-in**. Errou? Toque em **Desfazer**.
+   Toque no **nome da pessoa** para marcar a situação (**Participou**, **Não participou**, **Outros** ou **Sem
+   marcação**) e escrever uma **observação** (por exemplo, atestado ou férias). "Outros" não conta como falta. Depois
+   que a lista é encerrada, só a administração muda a situação.
 3. Chegou alguém que não estava na lista? **Adicionar participante não convocado**: busque o
    colaborador ou eletricista, cadastre um eletricista novo (com a autorização LGPD) ou anote um
    convidado só com o nome.
@@ -228,6 +231,10 @@ entre no GitHub com uma conta que tenha acesso à organização Marketing-Eletri
 
 A mais recente primeiro. Cada alteração entra aqui no mesmo envio em que vai para o site.
 
+- **27/11/2026**: no check-in, tocar no **nome da pessoa** abre a situação (**Participou**, **Não participou**,
+  **Outros** ou **Sem marcação**) e a **observação**. Quem não fez check-in na lista encerrada aparece como "Não
+  participou" (antes, "Não veio"). O resumo, a ficha da pessoa e a planilha completa mostram a situação e a
+  observação. "Outros" não conta como falta.
 - **27/11/2026**: os controles de **aniversariantes** (do mês e de empresa) passam a contar como **Ações de
   Endomarketing**: no filtro de tipo da aba Listas, no ranking de Colaboradores > Participação e no bloco Endomarketing
   e eventos do Dashboard.

@@ -15,6 +15,7 @@ const VARIANTES = {
   'Veio sem convite': 'forte',
   Faltou: 'alerta',
   'Não participou': 'alerta',
+  Outros: 'marinho',
 }
 
 const linkDaLista = (l) => el('a', { class: 'tabela__nome', href: endereco('listas', l.id) }, l.nome)
@@ -62,7 +63,7 @@ export function historicoDaPessoa(caixa, { tipo, id }) {
                 rotulo: 'Resultado',
                 celula: (h) => {
                   const r = resultadoNaLista(h.lista, h.presenca)
-                  return etiqueta(r, VARIANTES[r] ?? '')
+                  return [etiqueta(r, VARIANTES[r] ?? ''), h.presenca.observacao && el('span', { class: 'tabela__detalhe' }, h.presenca.observacao)]
                 },
               },
             ],

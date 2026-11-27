@@ -2,8 +2,9 @@
 // listas: nome, tipo, data ("AAAA-MM-DD"), loja (uma das lojas, "Todas as lojas" ou "Outro local"), local, fornecedores
 //   (IDs das marcas), status ("aberta" | "encerrada"), criadoPor (nome), criadoEm.
 // presencas: tipoPessoa, pessoaId, nome, detalhe, fornecedorId, convocado, presente, horaCheckin,
-//   checkinPor (nome de quem fez o check-in). Colaborador e eletricista usam o ID "tipo_pessoaId".
-import { idDaPresenca } from '../lib/listas.js'
+//   checkinPor (nome de quem fez o check-in), status ("participou", "nao_participou", "outros" ou "", marcado no
+//   check-in) e observacao. Colaborador e eletricista usam o ID "tipo_pessoaId".
+import { idDaPresenca, limparObservacao, mudancaDeSituacao } from '../lib/listas.js'
 import {
   agora, apagar, atualizar, definir, gravarLote, incluirNaLista, lerColecao, lerDocumento, lerGrupo, novoId, ouvirColecao,
 } from './banco.js'
@@ -42,14 +43,20 @@ export async function adicionarConvocados(listaId, novas) {
 
 export const removerPresenca = (listaId, presencaId) => apagar(caminhoDaPresenca(listaId, presencaId))
 
-// Check-in e desfazer. Não espera o servidor: com internet fraca, fica no aparelho e sobe depois.
+// Check-in e desfazer. Não espera o servidor: com internet fraca, fica no aparelho e sobe depois. O status acompanha
+// (check-in = "participou"; desfazer volta a ficar sem marcação).
 export function marcarPresenca(listaId, presencaId, presente, pessoa) {
   return atualizar(caminhoDaPresenca(listaId, presencaId), {
     presente,
     horaCheckin: presente ? agora() : null,
     checkinPor: presente ? pessoa.nome : null,
+    status: presente ? 'participou' : '',
   })
 }
+
+// Situação escolhida ao abrir o nome no check-in (Participou, Não participou, Outros ou sem marcação) e a observação.
+export const marcarSituacao = (listaId, presenca, situacao, observacao, pessoa) =>
+  atualizar(caminhoDaPresenca(listaId, presenca.id), { ...mudancaDeSituacao(situacao, presenca, pessoa.nome, agora()), observacao: limparObservacao(observacao) })
 
 // Participante não convocado que chegou: entra já presente.
 export function adicionarNaoConvocado(listaId, presenca, pessoa) {

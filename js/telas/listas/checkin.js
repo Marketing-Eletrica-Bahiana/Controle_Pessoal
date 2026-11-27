@@ -1,11 +1,11 @@
 // Check-in da lista, feito no celular durante o evento. Atualiza ao vivo (duas pessoas podem fazer
 // check-in ao mesmo tempo) e funciona com internet fraca: o que não subiu fica no aparelho.
-import { adicionarNaoConvocado, marcarPresenca } from '../../dados/listas.js'
+import { adicionarNaoConvocado, marcarPresenca, marcarSituacao } from '../../dados/listas.js'
 import { formatarHora } from '../../lib/datas.js'
 import { mensagemDeErro } from '../../lib/erros.js'
 import {
-  TIPOS_DE_PESSOA, contarPresencas, idDaPresenca, presencaDeColaborador, presencaDeConvidado, presencaDeEletricista,
-  presencasParaCheckin,
+  LIMITE_DA_OBSERVACAO, SITUACOES_DO_CHECKIN, TIPOS_DE_PESSOA, contarPresencas, idDaPresenca, limparObservacao, presencaDeColaborador,
+  presencaDeConvidado, presencaDeEletricista, presencasParaCheckin, rotuloDaSituacao, situacaoNoCheckin,
 } from '../../lib/listas.js'
 import { combinaBusca, compararTexto, formatarNumero, limparEspacos } from '../../lib/texto.js'
 import { pode } from '../../lib/papeis.js'
@@ -100,15 +100,29 @@ export function montarCheckin(caixa, ctx) {
     trocar(lista, itens.map((p) => linha(p, podeFazer)))
   }
 
+  // Abrir o nome (quem pode marcar): Participou, Não participou, Outros ou sem marcação, e a observação. Na lista
+  // encerrada, só o admin (as regras deixam o organizador mexer só na lista aberta).
+  const podeMarcarSituacao = (podeFazer) => podeFazer || pode(ctx.pessoa, 'gerenciarListas')
+
   function linha(p, podeFazer) {
+    const situacao = situacaoNoCheckin(p)
+    const nome = podeMarcarSituacao(podeFazer)
+      ? el(
+          'button',
+          { type: 'button', class: 'checkin__nome checkin__nome--botao', title: 'Marcar situação e observação', onClick: () => abrirSituacao(ctx, p.id) },
+          p.nome,
+          icone('pencil'),
+        )
+      : el('strong', { class: 'checkin__nome' }, p.nome)
     return el(
       'li',
       { class: ['checkin__pessoa', p.presente && 'presente'] },
       el(
         'div',
         { class: 'checkin__info' },
-        el('strong', { class: 'checkin__nome' }, p.nome),
+        nome,
         el('span', { class: 'checkin__detalhe' }, etiqueta(TIPOS_DE_PESSOA[p.tipoPessoa] ?? 'Pessoa'), !p.convocado && etiqueta('Não convocado', 'alerta'), p.detalhe),
+        p.observacao && el('span', { class: 'checkin__observacao' }, icone('message-circle'), p.observacao),
       ),
       el(
         'div',
@@ -118,9 +132,12 @@ export function montarCheckin(caixa, ctx) {
               el('span', { class: 'checkin__hora' }, icone('circle-check'), `Presente${p.horaCheckin ? ` ${formatarHora(p.horaCheckin)}` : ''}`),
               podeFazer && botao({ texto: 'Desfazer', icone: 'undo-2', classe: 'botao--pequeno', 'aria-label': `Desfazer check-in de ${p.nome}`, aoClicar: () => marcar(p, false) }),
             ]
-          : podeFazer
-            ? botao({ texto: 'Check-in', icone: 'check', variante: 'principal', classe: 'checkin__botao', 'aria-label': `Fazer check-in de ${p.nome}`, aoClicar: () => marcar(p, true) })
-            : el('span', { class: 'texto-suave' }, 'Não veio'),
+          : [
+              situacao && etiqueta(rotuloDaSituacao(situacao), situacao === 'nao_participou' ? 'alerta' : 'marinho'),
+              podeFazer
+                ? botao({ texto: 'Check-in', icone: 'check', variante: 'principal', classe: 'checkin__botao', 'aria-label': `Fazer check-in de ${p.nome}`, aoClicar: () => marcar(p, true) })
+                : !situacao && el('span', { class: 'texto-suave' }, 'Não participou'),
+            ],
       ),
     )
   }
@@ -138,6 +155,65 @@ export function montarCheckin(caixa, ctx) {
 
   desenhar()
   return { atualizar: desenhar }
+}
+
+// Janela aberta pelo nome da pessoa no check-in: situação (Participou, Não participou, Outros ou sem marcação) e
+// observação. Não espera o servidor, como o check-in.
+function abrirSituacao(ctx, presencaId) {
+  const atual = ctx.presencas().find((p) => p.id === presencaId)
+  if (!atual) return
+  const janela = abrirJanela({ titulo: atual.nome, largura: 560 })
+  let escolhida = situacaoNoCheckin(atual)
+  const botoes = SITUACOES_DO_CHECKIN.map((s) =>
+    el(
+      'button',
+      {
+        type: 'button',
+        class: ['segmentado__opcao', `status--${s.valor || 'pendente'}`],
+        'aria-pressed': 'false',
+        onClick: () => {
+          escolhida = s.valor
+          marcarBotoes()
+        },
+      },
+      icone(s.icone),
+      s.rotulo,
+    ),
+  )
+  const marcarBotoes = () =>
+    botoes.forEach((b, i) => {
+      const ativo = SITUACOES_DO_CHECKIN[i].valor === escolhida
+      b.classList.toggle('ativo', ativo)
+      b.setAttribute('aria-pressed', ativo ? 'true' : 'false')
+    })
+  marcarBotoes()
+  const observacao = el('textarea', {
+    rows: 3,
+    maxlength: LIMITE_DA_OBSERVACAO,
+    placeholder: 'Ex.: estava de férias, atestado médico, chegou atrasado',
+    value: atual.observacao ?? '',
+  })
+  const salvar = botao({ texto: 'Salvar', icone: 'check', variante: 'principal', tipo: 'submit' })
+  const formulario = el(
+    'form',
+    { class: 'formulario', novalidate: true },
+    el('p', { class: 'texto-suave' }, etiqueta(TIPOS_DE_PESSOA[atual.tipoPessoa] ?? 'Pessoa'), ' ', atual.detalhe ?? ''),
+    el('fieldset', { class: 'campo' }, el('legend', { class: 'campo__rotulo' }, 'Situação'), el('div', { class: 'segmentado controle__status', role: 'group', 'aria-label': 'Situação' }, botoes)),
+    campo({ rotulo: 'Observação', opcional: true, entrada: observacao, ajuda: `Até ${LIMITE_DA_OBSERVACAO} letras. Em "Outros", conte o motivo aqui.` }).no,
+    el('div', { class: 'janela-modal__acoes' }, botao({ texto: 'Cancelar', aoClicar: () => janela.fechar() }), salvar),
+  )
+  formulario.addEventListener('submit', (evento) => {
+    evento.preventDefault()
+    // Usa a presença mais recente (outra pessoa pode ter feito o check-in enquanto a janela estava aberta).
+    const agora = ctx.presencas().find((p) => p.id === presencaId) ?? atual
+    const texto = limparObservacao(observacao.value)
+    if (escolhida === situacaoNoCheckin(agora) && texto === (agora.observacao ?? '')) return janela.fechar()
+    marcarSituacao(ctx.lista().id, agora, escolhida, texto, ctx.pessoa).catch((e) => avisarErro(mensagemDeErro(e)))
+    avisar(`${agora.nome}: ${rotuloDaSituacao(escolhida) || 'sem marcação'}.`)
+    janela.fechar()
+  })
+  janela.corpo.append(formulario)
+  janela.focar()
 }
 
 // Janela "Adicionar participante não convocado": pessoa já cadastrada, eletricista novo ou convidado.

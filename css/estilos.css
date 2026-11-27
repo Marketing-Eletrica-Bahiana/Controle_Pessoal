@@ -2265,6 +2265,50 @@ a.tabela__nome:hover {
   color: var(--texto-suave);
 }
 
+/* Nome que abre a janela de situação e observação. */
+.checkin__nome--botao {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.checkin__nome--botao .icone {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--medio);
+}
+
+.checkin__nome--botao:hover,
+.checkin__nome--botao:focus-visible {
+  text-decoration: underline;
+}
+
+.checkin__observacao {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.875rem;
+  color: var(--marinho);
+  overflow-wrap: anywhere;
+}
+
+.checkin__observacao .icone {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: 2px;
+}
+
 .checkin__acao {
   display: flex;
   flex-shrink: 0;
@@ -2464,6 +2508,11 @@ a.tabela__nome:hover {
 
 .controle__status .status--pendente.ativo {
   background: var(--marinho);
+  box-shadow: none;
+}
+
+.controle__status .status--outros.ativo {
+  background: var(--medio);
   box-shadow: none;
 }
 

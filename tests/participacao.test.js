@@ -85,6 +85,17 @@ describe('participação: rankings', () => {
     assert.deepEqual(comAcao.ranking.map((r) => [r.colaborador.nome, r.participou, r.convocado, r.faltou]), [['Eva', 1, 2, 0], ['Bia', 1, 2, 1]])
   })
 
+  it('nas listas comuns, "Outros" marcado no check-in não é falta', () => {
+    const { ranking } = rankingDeParticipacao(
+      [
+        { lista: listas[0], presencas: [colaborador('a', true, true), { ...colaborador('b', true, false), status: 'outros', observacao: 'Atestado' }] },
+        { lista: listas[1], presencas: [colaborador('b', true, true), { ...colaborador('a', true, false), status: 'nao_participou' }] },
+      ],
+      colaboradores,
+    )
+    assert.deepEqual(ranking.map((r) => [r.colaborador.nome, r.participou, r.faltou]), [['Bia', 1, 0], ['Ana', 1, 1]])
+  })
+
   it('aniversariantes: só os ativos, com as observações na planilha', () => {
     const { participaram } = historicoDosAniversarios([
       { lista: { id: 'm10', tipo: TIPO_MES, data: '2026-10-01' }, presencas: [{ pessoaId: 'c', nome: 'Caio', status: 'participou' }, { pessoaId: 'b', nome: 'Bia', status: 'participou', observacao: 'Postou foto' }] },

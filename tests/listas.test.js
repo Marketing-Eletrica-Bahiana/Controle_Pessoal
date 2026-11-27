@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
   CABECALHO_COMPLETA, CABECALHO_PRESENTES, LOCAIS, PAIS_E_MAES, TODAS_AS_LOJAS, colaboradoresDoGrupo, contarPresencas, ehAcaoDeEndomarketing,
-  ehDaLoja, ehDoTipo, ehListaDeAniversario, filtrarListas, fornecedorJaNaLista, funcaoDaPresenca,
+  ehDaLoja, ehDoTipo, SITUACOES_DO_CHECKIN, contaComoFalta, limparObservacao, mudancaDeSituacao, situacaoDaPresenca, situacaoNoCheckin, ehListaDeAniversario, filtrarListas, fornecedorJaNaLista, funcaoDaPresenca,
   historicoDaPessoa, idDaPresenca, linhasCompleta, linhasPresentes, listasDaMarca, marcaDaPresenca, nomeComFuncao, nomeDoArquivoDaLista, ondeE,
   pessoasNaLista, presencaDeColaborador,
   presencaDeConvidado, presencaDeEletricista, presencaDeFornecedor, presencasParaCheckin, quandoE, resultadoNaLista,
@@ -107,6 +107,33 @@ describe('listas: presenças', () => {
     assert.equal(contarPresencas([]).taxa, null)
   })
 
+  it('situação marcada ao abrir o nome no check-in: participou, não participou, outros ou sem marcação', () => {
+    assert.deepEqual(SITUACOES_DO_CHECKIN.map((s) => s.rotulo), ['Participou', 'Não participou', 'Outros', 'Sem marcação'])
+    assert.equal(situacaoNoCheckin({ presente: true, status: 'nao_participou' }), 'participou')
+    assert.equal(situacaoNoCheckin({ presente: false, status: 'outros' }), 'outros')
+    assert.equal(situacaoNoCheckin({ presente: false, status: 'participou' }), '')
+    assert.equal(situacaoNoCheckin({ presente: false }), '')
+    const agora = new Date('2026-11-27T13:00:00Z')
+    const antes = new Date('2026-11-27T11:00:00Z')
+    assert.deepEqual(mudancaDeSituacao('participou', { presente: false }, 'Ana', agora), { presente: true, status: 'participou', horaCheckin: agora, checkinPor: 'Ana' })
+    assert.deepEqual(mudancaDeSituacao('participou', { presente: true, horaCheckin: antes, checkinPor: 'Bruno' }, 'Ana', agora), { presente: true, status: 'participou', horaCheckin: antes, checkinPor: 'Bruno' })
+    assert.deepEqual(mudancaDeSituacao('nao_participou', { presente: true }, 'Ana', agora), { presente: false, status: 'nao_participou', horaCheckin: null, checkinPor: null })
+    assert.deepEqual(mudancaDeSituacao('outros', {}, 'Ana', agora).status, 'outros')
+    assert.deepEqual(mudancaDeSituacao('', { presente: false, status: 'outros' }, 'Ana', agora).status, '')
+    assert.equal(limparObservacao(`  De   férias ${'x'.repeat(400)}`).length, 300)
+    // Resultado na ficha e falta no ranking.
+    const passada = { status: 'encerrada', data: '2026-11-05' }
+    assert.equal(resultadoNaLista(passada, { convocado: true, presente: false, status: 'nao_participou' }), 'Não participou')
+    assert.equal(resultadoNaLista(passada, { convocado: true, presente: false, status: 'outros' }), 'Outros')
+    assert.equal(resultadoNaLista(passada, { convocado: true, presente: false }), 'Faltou')
+    assert.ok(contaComoFalta(passada, { convocado: true, presente: false }))
+    assert.ok(contaComoFalta(passada, { convocado: true, presente: false, status: 'nao_participou' }))
+    assert.ok(!contaComoFalta(passada, { convocado: true, presente: false, status: 'outros' }))
+    assert.ok(!contaComoFalta({ tipo: 'Aniversariantes do mês' }, { convocado: true, status: 'pendente' }))
+    assert.ok(contaComoFalta({ tipo: 'Aniversariantes do mês' }, { convocado: true, status: 'nao_participou' }))
+    assert.equal(situacaoDaPresenca(passada, { presente: true }), 'participou')
+  })
+
   it('busca e filtra para o check-in', () => {
     assert.deepEqual(presencasParaCheckin(presencas, { filtro: 'faltam' }).map((p) => p.nome), ['Rui RH', 'Vítor Vendas'])
     assert.deepEqual(presencasParaCheckin(presencas, { busca: 'legrand' }).map((p) => p.nome), ['Pat Palestrante'])
@@ -118,6 +145,11 @@ describe('listas: presenças', () => {
     assert.deepEqual(r.ausentes.map((p) => p.nome), ['Rui RH', 'Vítor Vendas'])
     assert.deepEqual(r.naoConvocados.map((p) => p.nome), ['Eli Eletricista'])
     assert.deepEqual(r.comercialFaltou.map((p) => p.nome), ['Vítor Vendas'])
+    // Marcado como "Outros" no check-in (por exemplo, atestado): continua ausente, mas não é falta do comercial.
+    const comOutros = presencas.map((p) => (p.id === 'colaborador_c1' ? { ...p, status: 'outros', observacao: 'Atestado' } : p))
+    const r2 = resumoDaLista(lista, comOutros, [{ id: 'c1', setor: 'Comercial' }, { id: 'c3', setor: 'Recursos Humanos' }])
+    assert.deepEqual(r2.comercialFaltou, [])
+    assert.equal(r2.ausentes.length, 2)
     assert.deepEqual([...r.porMarca.keys()], ['Legrand'])
     assert.deepEqual(resumoDaLista({ ...lista, tipo: 'Evento' }, presencas).comercialFaltou, [])
   })
@@ -141,7 +173,10 @@ describe('listas: planilhas e histórico', () => {
       ['Pat Palestrante', 'Fornecedor', 'Legrand', '07:50'],
     ])
     assert.equal(CABECALHO_COMPLETA[4], 'Presente')
-    assert.deepEqual(linhasCompleta(presencas)[3], ['Rui RH', 'Colaborador', 'Recursos Humanos · Aracaju', 'Sim', 'Não', '', ''])
+    assert.deepEqual(linhasCompleta(presencas)[3], ['Rui RH', 'Colaborador', 'Recursos Humanos · Aracaju', 'Sim', 'Não', '', '', 'Sem marcação', ''])
+    assert.deepEqual(CABECALHO_COMPLETA.slice(-2), ['Situação', 'Observação'])
+    assert.deepEqual(linhasCompleta([{ ...presencas[0], status: 'outros', observacao: 'Atestado' }])[0].slice(-2), ['Outros', 'Atestado'])
+    assert.equal(linhasCompleta(presencas)[0][7], 'Participou')
     assert.equal(nomeDoArquivoDaLista(lista, 'presentes'), 'Treino: Legrand 05-11-2026 presentes')
   })
 

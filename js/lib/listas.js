@@ -93,6 +93,33 @@ export const idDaPresenca = (tipoPessoa, pessoaId) => (pessoaId && (tipoPessoa =
 
 const base = { fornecedorId: '', presente: false, horaCheckin: null, checkinPor: null }
 
+// Situação da pessoa numa lista comum, marcada ao abrir o nome no check-in (pedido de 27/11/2026). "Participou" é o
+// próprio check-in (presente); quem não fez check-in pode ficar com "Não participou", "Outros" ou sem marcação. A
+// observação (até 300 letras) vale para qualquer situação. Gravado em "status" e "observacao", os mesmos campos do
+// controle de aniversariantes (as regras do Firestore já deixam o organizador mexer neles na lista aberta).
+export const SITUACOES_DO_CHECKIN = [
+  { valor: 'participou', rotulo: 'Participou', icone: 'circle-check' },
+  { valor: 'nao_participou', rotulo: 'Não participou', icone: 'circle-x' },
+  { valor: 'outros', rotulo: 'Outros', icone: 'info' },
+  { valor: '', rotulo: 'Sem marcação', icone: 'circle-dashed' },
+]
+export const LIMITE_DA_OBSERVACAO = 300
+
+// Situação no check-in: o check-in vale mais que o status; sem nada marcado, ''.
+export const situacaoNoCheckin = (p) => (p.presente ? 'participou' : p.status === 'nao_participou' || p.status === 'outros' ? p.status : '')
+export const rotuloDaSituacao = (situacao) => SITUACOES_DO_CHECKIN.find((s) => s.valor === situacao)?.rotulo ?? ''
+
+// Dados gravados ao escolher a situação. Quem já tinha check-in e continua "Participou" mantém a hora e quem fez.
+export function mudancaDeSituacao(situacao, atual, quem, agora) {
+  if (situacao === 'participou') {
+    const ja = Boolean(atual?.presente)
+    return { presente: true, status: 'participou', horaCheckin: ja ? atual.horaCheckin ?? agora : agora, checkinPor: ja ? atual.checkinPor ?? quem : quem }
+  }
+  return { presente: false, status: situacao === 'nao_participou' || situacao === 'outros' ? situacao : '', horaCheckin: null, checkinPor: null }
+}
+
+export const limparObservacao = (texto) => limparEspacos(texto).slice(0, LIMITE_DA_OBSERVACAO)
+
 export const detalheDoColaborador = (c) => [c.setor || 'Sem setor', c.loja].filter(Boolean).join(' · ')
 export const detalheDoEletricista = (e) => (e.vendedorNome ? `Vendedor: ${e.vendedorNome}` : 'Sem vendedor')
 
@@ -187,7 +214,8 @@ export function resumoDaLista(lista, presencas, colaboradores = []) {
   let comercialFaltou = []
   if (lista?.tipo === 'Treinamento Comercial') {
     const porId = new Map(colaboradores.map((c) => [c.id, c]))
-    comercialFaltou = ausentes.filter((p) => p.tipoPessoa === 'colaborador' && ehSetorComercial(setorDaPresenca(p, porId)))
+    // "Outros" (marcado no check-in, por exemplo atestado) não conta como falta.
+    comercialFaltou = ausentes.filter((p) => p.tipoPessoa === 'colaborador' && situacaoNoCheckin(p) !== 'outros' && ehSetorComercial(setorDaPresenca(p, porId)))
   }
   const porMarca = new Map()
   for (const p of presencas.filter((x) => x.tipoPessoa === 'fornecedor')) {
@@ -214,11 +242,21 @@ export const linhasPresentes = (presencas) =>
     .sort((a, b) => compararTexto(a.nome, b.nome))
     .map((p) => [p.nome, tipoDe(p), p.detalhe ?? '', horaDe(p)])
 
-export const CABECALHO_COMPLETA = ['Nome', 'Tipo', 'Detalhe', 'Convocado', 'Presente', 'Hora do check-in', 'Check-in feito por']
+export const CABECALHO_COMPLETA = ['Nome', 'Tipo', 'Detalhe', 'Convocado', 'Presente', 'Hora do check-in', 'Check-in feito por', 'Situação', 'Observação']
 export const linhasCompleta = (presencas) =>
   [...presencas]
     .sort((a, b) => compararTexto(a.nome, b.nome))
-    .map((p) => [p.nome, tipoDe(p), p.detalhe ?? '', p.convocado ? 'Sim' : 'Não', p.presente ? 'Sim' : 'Não', horaDe(p), p.presente ? p.checkinPor ?? '' : ''])
+    .map((p) => [
+      p.nome,
+      tipoDe(p),
+      p.detalhe ?? '',
+      p.convocado ? 'Sim' : 'Não',
+      p.presente ? 'Sim' : 'Não',
+      horaDe(p),
+      p.presente ? p.checkinPor ?? '' : '',
+      rotuloDaSituacao(situacaoNoCheckin(p)) || 'Sem marcação',
+      p.observacao ?? '',
+    ])
 
 // Nome do arquivo: nome da lista + data.
 export const nomeDoArquivoDaLista = (lista, complemento = '') =>
@@ -241,12 +279,28 @@ export const STATUS_ANIVERSARIO = {
   nao_participou: 'Não participou',
 }
 
-// Resultado da pessoa numa lista: "Compareceu", "Faltou", "Veio sem convite" ou, no controle de
-// aniversariantes, o status marcado.
+// Resultado da pessoa numa lista: "Compareceu", "Veio sem convite", o que foi marcado no check-in ("Não participou" ou
+// "Outros"), "Ainda não chegou", "Faltou" ou, no controle de aniversariantes, o status marcado.
 export function resultadoNaLista(lista, presenca) {
   if (ehListaDeAniversario(lista)) return STATUS_ANIVERSARIO[presenca.status] ?? 'Pendente'
   if (presenca.presente) return presenca.convocado ? 'Compareceu' : 'Veio sem convite'
+  const marcada = situacaoNoCheckin(presenca)
+  if (marcada) return rotuloDaSituacao(marcada)
   return lista.status === 'aberta' && lista.data >= hojeISO() ? 'Ainda não chegou' : 'Faltou'
+}
+
+// Situação para as contas (ranking da Participação): 'participou', 'nao_participou', 'outros' ou 'pendente'. No controle
+// de aniversariantes vale o status; nas outras listas, o check-in e o que foi marcado ao abrir o nome.
+export function situacaoDaPresenca(lista, presenca) {
+  if (ehListaDeAniversario(lista)) return Object.hasOwn(STATUS_ANIVERSARIO, presenca.status) ? presenca.status : 'pendente'
+  return situacaoNoCheckin(presenca) || 'pendente'
+}
+
+// Conta como falta: "Não participou" marcado e, fora do controle de aniversariantes, o convocado sem check-in e sem
+// marcação. "Outros" e "Pendente" do controle não são falta.
+export function contaComoFalta(lista, presenca) {
+  const situacao = situacaoDaPresenca(lista, presenca)
+  return Boolean(presenca.convocado) && (situacao === 'nao_participou' || (situacao === 'pendente' && !ehListaDeAniversario(lista)))
 }
 
 export const listasDaMarca = (fornecedorId, listas) =>

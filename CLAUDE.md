@@ -55,6 +55,8 @@ fornecedores, eletricistas do CAE, listas de presença com check-in pelo celular
     aniversariantes contam como ações de endomarketing no filtro de tipo da aba Listas, na Participação e no bloco
     Endomarketing e eventos do Dashboard. O `tipo` gravado não muda (o controle depende dele): a regra é
     `ehAcaoDeEndomarketing` / `ehDoTipo` em `js/lib/listas.js` (com testes).
+18. (Feita em 27/11/2026, a pedido: "abrir o nome da pessoa e colocar que não participou, em vez de não veio, e também
+    um botão de outros e um campo de observação") Situação e observação no check-in (ver "Listas").
 
 A pessoa autorizou fazer as etapas 2 a 6 em sequência, sem pedir aprovação entre elas, depois de
 conferida a integração da Etapa 1.
@@ -234,6 +236,18 @@ Tela em `js/telas/listas.js` (visão geral e página da lista) com as partes em 
   Ao vivo por `onSnapshot`; não espera o servidor (cache do aparelho) e mostra "Enviando..."
   enquanto há gravação pendente. Após check-in pela busca, a busca é limpa. Lista encerrada não
   aceita check-in (tela e regras).
+- Situação no check-in (Etapa 18): o nome vira botão (com lápis) e abre `abrirSituacao` (`js/telas/listas/checkin.js`):
+  Participou, Não participou, Outros ou Sem marcação (`SITUACOES_DO_CHECKIN`) e observação até 300 letras. Grava em
+  `status` ("participou", "nao_participou", "outros" ou "") e `observacao`, com `marcarSituacao`
+  (`js/dados/listas.js`, `mudancaDeSituacao`: Participou = check-in, mantém a hora de quem já tinha; as outras tiram o
+  check-in). O botão Check-in e o Desfazer também gravam `status`. `situacaoNoCheckin`: o check-in vale mais que o
+  status. As regras já deixavam o organizador mudar `status` e `observacao` na lista aberta; na encerrada, só o admin
+  abre o nome (`gerenciarListas`). Lista encerrada sem marcação mostra "Não participou" (era "Não veio").
+- Onde aparece: etiqueta e observação na linha do check-in; Resumo (Ausentes com Situação e, se houver, Observação; as
+  marcas dizem "(não participou)"); ficha da pessoa (`resultadoNaLista` devolve "Não participou" ou "Outros", com a
+  observação embaixo); "Baixar lista completa" ganhou as colunas Situação e Observação (no fim; "Baixar presentes"
+  não muda, por causa do sorteador). "Outros" não é falta: `contaComoFalta` (ranking da Participação), "Do setor
+  comercial, faltou" do Resumo e do Dashboard. Os presentes continuam contados por `presente`.
 - "Adicionar participante não convocado": colaborador ou eletricista cadastrado (quem já está na
   lista só recebe o check-in), eletricista novo (formulário com LGPD) ou convidado só com o nome.
   Entra com `convocado: false` e já presente.

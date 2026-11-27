@@ -2,7 +2,7 @@
 // por padrão) e dos controles de aniversariantes. Regras puras; as presenças chegam já lidas.
 import { observacoesDaPessoa } from './aniversariantes.js'
 import { formatarData } from './datas.js'
-import { ehDoTipo, ehListaDeAniversario } from './listas.js'
+import { contaComoFalta, ehDoTipo, ehListaDeAniversario } from './listas.js'
 import { compararTexto } from './texto.js'
 
 export const TIPO_PADRAO = 'Ação de Endomarketing'
@@ -40,7 +40,8 @@ const ativosPorId = (colaboradores) => new Map(colaboradores.filter((c) => c.ati
 
 // lidas: [{ lista, presencas }]. Para cada colaborador ativo: em quantas listas fez check-in (convocado ou não), em
 // quantas foi convocado e em quantas faltou (convocado sem check-in). Desligados e cadastros apagados ficam de fora.
-// Nos controles de aniversariantes, "Participou" é o check-in e "Pendente" não conta como falta.
+// Nos controles de aniversariantes, "Participou" é o check-in e "Pendente" não conta como falta. Nas outras listas,
+// "Outros" (marcado ao abrir o nome no check-in) também não é falta (contaComoFalta).
 // O ranking só tem quem participou de pelo menos uma; semParticipar conta os ativos que ainda não participaram.
 export function rankingDeParticipacao(lidas, colaboradores) {
   const ativos = ativosPorId(colaboradores)
@@ -54,7 +55,7 @@ export function rankingDeParticipacao(lidas, colaboradores) {
       if (p.presente) {
         conta.participou++
         if (String(lista.data) > conta.ultima) conta.ultima = String(lista.data)
-      } else if (p.convocado && !(ehListaDeAniversario(lista) && p.status !== 'nao_participou')) conta.faltou++
+      } else if (contaComoFalta(lista, p)) conta.faltou++
     }
   }
   const ranking = [...contas.values()]
