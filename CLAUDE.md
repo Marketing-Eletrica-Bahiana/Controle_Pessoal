@@ -57,6 +57,8 @@ fornecedores, eletricistas do CAE, listas de presença com check-in pelo celular
     `ehAcaoDeEndomarketing` / `ehDoTipo` em `js/lib/listas.js` (com testes).
 18. (Feita em 27/11/2026, a pedido: "abrir o nome da pessoa e colocar que não participou, em vez de não veio, e também
     um botão de outros e um campo de observação") Situação e observação no check-in (ver "Listas").
+19. (Feita em 27/11/2026, a pedido: "me dê a opção de subir o excel em listas") "Importar planilha" em Convocados
+    (ver "Listas").
 
 A pessoa autorizou fazer as etapas 2 a 6 em sequência, sem pedir aprovação entre elas, depois de
 conferida a integração da Etapa 1.
@@ -233,6 +235,17 @@ Tela em `js/telas/listas.js` (visão geral e página da lista) com as partes em 
   opções, ajuda e texto de vazio) e de `colaboradoresDoGrupo` (`js/lib/listas.js`, com teste). Pais e mães: "Pais e
   mães" (`PAIS_E_MAES`, os dois), "Só os pais" ou "Só as mães", pelo `paiOuMae` do cadastro, só ativos, como em
   Colaboradores > Pais e mães. No celular os quatro botões ficam em duas linhas.
+- "Importar planilha" em Convocados (Etapa 19, só admin): `abrirPlanilhaNaLista` (`js/telas/listas/planilha.js`) usa o
+  mesmo `abrirImportador` dos colaboradores, que ganhou `indicadores`, `situacoes`, `textoDoBotao` e `textoDoFim`
+  opcionais. Colunas (`CAMPOS_DA_PLANILHA_DA_LISTA`): Nome (obrigatória), "Participou?" (Sim/X/1/Presente, Não/Faltou,
+  Outros; `lerParticipou`) e Observação. Regras em `js/lib/planilhaDaLista.js` (com testes):
+  `acharPessoaDaPlanilha` (nome igual em colaborador ativo, desligado, eletricista ativo ou desativado; senão um só
+  colaborador ou eletricista ativo com todas as palavras, com aviso "Nome parecido"), `prepararPlanilhaDaLista`
+  (situações novo, existente, naoEncontrado, repetido, ignorado), `operacoesDaPlanilhaDaLista` (gravadas em lote por
+  `importarPlanilhaNaLista`). Todo mundo entra como convocado; "Participou" grava `presente: true` sem hora (a planilha
+  não diz) e `checkinPor` = quem importou. Quem já está na lista só muda no que a planilha disser (vazio não apaga).
+  Opções: "Quem está na planilha participou" (marcada quando a data da lista já passou) e "Incluir quem não está no
+  cadastro como convidado" (desmarcada; senão a linha fica de fora como "Não achado").
 - Admin cria, edita, encerra, reabre e exclui (apaga as presenças junto, com confirmação). Nova
   lista abre direto em Convocados.
 - Convocados (admin): colaboradores um a um, setor inteiro ou loja inteira (só ativos e quem ainda

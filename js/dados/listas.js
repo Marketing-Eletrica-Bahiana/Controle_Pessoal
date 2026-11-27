@@ -5,6 +5,7 @@
 //   checkinPor (nome de quem fez o check-in), status ("participou", "nao_participou", "outros" ou "", marcado no
 //   check-in) e observacao. Colaborador e eletricista usam o ID "tipo_pessoaId".
 import { idDaPresenca, limparObservacao, mudancaDeSituacao } from '../lib/listas.js'
+import { operacoesDaPlanilhaDaLista } from '../lib/planilhaDaLista.js'
 import {
   agora, apagar, atualizar, definir, gravarLote, incluirNaLista, lerColecao, lerDocumento, lerGrupo, novoId, ouvirColecao,
 } from './banco.js'
@@ -42,6 +43,10 @@ export async function adicionarConvocados(listaId, novas) {
 }
 
 export const removerPresenca = (listaId, presencaId) => apagar(caminhoDaPresenca(listaId, presencaId))
+
+// "Importar planilha" em Convocados (regras em js/lib/planilhaDaLista.js). Só o admin chega aqui.
+export const importarPlanilhaNaLista = (listaId, previa, pessoa, aoAvancar) =>
+  gravarLote(operacoesDaPlanilhaDaLista(previa, { listaId, quem: pessoa.nome, novoId }), aoAvancar)
 
 // Check-in e desfazer. Não espera o servidor: com internet fraca, fica no aparelho e sobe depois. O status acompanha
 // (check-in = "participou"; desfazer volta a ficar sem marcação).

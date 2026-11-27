@@ -49,6 +49,21 @@ no banco de dados.
    app antes disso).
 5. No fim, **Baixar presentes** gera a planilha para o sorteador (a primeira coluna é "Nome").
 
+## Subir uma planilha do Excel na lista
+
+Em **Listas**, abra a lista e vá em **Convocados > Importar planilha**. A planilha precisa de uma coluna com o
+**nome** da pessoa; se tiver, também **Participou?** (Sim, Não ou Outros) e **Observação**. O app procura cada nome
+nos colaboradores (inclusive os desligados, para listas antigas) e nos eletricistas, e mostra uma prévia antes de
+gravar:
+
+- **Entra na lista**: achou a pessoa. Nome parecido (por exemplo "Ana Santos" para "Ana Exemplo Santos") aparece com aviso.
+- **Já está na lista**: recebe a situação e a observação da planilha (célula vazia não apaga nada).
+- **Não achado**: o nome não está no cadastro. Confira a grafia, ou marque **Incluir quem não está no cadastro como
+  convidado**.
+
+Se a planilha é a lista de quem esteve na ação, deixe marcada **Quem está na planilha participou** (ela já vem marcada
+quando a data da lista passou).
+
 ## Pessoas das marcas
 
 Na ficha de cada marca (aba **Fornecedores**, clique na marca), a parte **Pessoas da marca** guarda os
@@ -231,6 +246,8 @@ entre no GitHub com uma conta que tenha acesso à organização Marketing-Eletri
 
 A mais recente primeiro. Cada alteração entra aqui no mesmo envio em que vai para o site.
 
+- **27/11/2026**: em Listas > Convocados, **Importar planilha**: sobe um Excel com os nomes (e, se tiver, se participou
+  e a observação) direto na lista, com prévia antes de gravar.
 - **27/11/2026**: correção do erro "Algo deu errado" na aba Listas logo depois de uma atualização (o navegador juntava
   um arquivo antigo com um novo). Agora cada publicação tem a sua versão nos endereços dos arquivos, e se a página
   aberta perceber a mistura, ela se recarrega sozinha.

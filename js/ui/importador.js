@@ -10,6 +10,9 @@
 //   colunas: [{ rotulo, celula(item) }]                 colunas da tabela da prévia
 //   confirmar(previa, opcoes) => boolean | Promise       opcional: pergunta antes de gravar
 //   gravar(previa, opcoes, aoAvancar) => Promise
+//   indicadores(previa) => [{ rotulo, valor, detalhe }]  opcional: troca os números do topo da prévia
+//   situacoes: { chave: [rótulo, variante] }             opcional: situações a mais (além de novo, existente...)
+//   textoDoBotao(total), textoDoFim(total)               opcionais: "Importar N registros" e "N registros gravados"
 // }
 import { acharCabecalho, exemplosDaColuna, extrairRegistros, nomeDaColuna, sugerirMapeamento } from '../lib/importacao.js'
 import { formatarNumero, normalizar, plural } from '../lib/texto.js'
@@ -28,6 +31,7 @@ const SITUACOES = {
 }
 
 export function abrirImportador(config) {
+  const situacoes = { ...SITUACOES, ...config.situacoes }
   const janela = abrirJanela({ titulo: config.titulo, largura: 1000 })
   const area = el('div', { class: 'importador' })
   janela.corpo.append(area)
@@ -188,7 +192,7 @@ export function abrirImportador(config) {
 
     const total = config.contarGravacoes(previa, opcoes)
     const importar = botao({
-      texto: total ? `Importar ${plural(total, 'registro', 'registros')}` : 'Nada para importar',
+      texto: !total ? 'Nada para importar' : config.textoDoBotao ? config.textoDoBotao(total) : `Importar ${plural(total, 'registro', 'registros')}`,
       icone: 'check',
       variante: 'principal',
       disabled: !total,
@@ -204,7 +208,7 @@ export function abrirImportador(config) {
               el(
                 'div',
                 { class: 'formulario' },
-                aviso(`Importação concluída: ${plural(total, 'registro gravado', 'registros gravados')}.`, { icone: 'circle-check' }),
+                aviso(config.textoDoFim ? config.textoDoFim(total) : `Importação concluída: ${plural(total, 'registro gravado', 'registros gravados')}.`, { icone: 'circle-check' }),
                 el('div', { class: 'janela-modal__acoes' }, botao({ texto: 'Fechar', variante: 'principal', aoClicar: () => janela.fechar() })),
               ),
             )
@@ -221,7 +225,7 @@ export function abrirImportador(config) {
         'div',
         { class: 'formulario' },
         indicadores(
-          [
+          config.indicadores?.(previa) ?? [
             { rotulo: 'Novos', valor: formatarNumero(contagem.novos) },
             { rotulo: 'Já existem', valor: formatarNumero(contagem.existentes), detalhe: 'mesmo nome, sem diferenciar acentos' },
             { rotulo: 'Repetidos na planilha', valor: formatarNumero(contagem.repetidos) },
@@ -248,7 +252,7 @@ export function abrirImportador(config) {
                   i.avisos?.length > 0 && el('span', { class: 'importador__avisos texto-alerta texto-pequeno' }, i.avisos.join(' ')),
                 ],
               },
-              { rotulo: 'Situação', celula: (i) => etiqueta(...SITUACOES[i.situacao]) },
+              { rotulo: 'Situação', celula: (i) => etiqueta(...situacoes[i.situacao]) },
               ...colunasComDados,
             ],
           }),

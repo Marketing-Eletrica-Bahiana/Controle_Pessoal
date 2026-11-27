@@ -18,6 +18,7 @@ import {
 } from '../../ui/componentes.js'
 import { el, icone, trocar } from '../../ui/dom.js'
 import { campoEscolherPessoa } from '../../ui/escolherPessoa.js'
+import { abrirPlanilhaNaLista } from './planilha.js'
 
 const PLURAIS = {
   colaborador: ['colaborador', 'colaboradores'],
@@ -45,6 +46,7 @@ export function montarConvocados(caixa, ctx) {
           botao({ texto: 'Adicionar colaboradores', icone: 'users', variante: 'principal', aoClicar: () => abrirColaboradores(ctx) }),
           botao({ texto: 'Adicionar eletricistas', icone: 'zap', aoClicar: () => abrirEletricistas(ctx) }),
           botao({ texto: 'Adicionar pessoa de fornecedor', icone: 'handshake', aoClicar: () => abrirFornecedor(ctx) }),
+          botao({ texto: 'Importar planilha', icone: 'file-spreadsheet', aoClicar: () => abrirPlanilhaNaLista(ctx) }),
         ),
       el(
         'p',
@@ -68,7 +70,7 @@ export function montarConvocados(caixa, ctx) {
                 },
               ].filter(Boolean),
             })
-        : aviso(admin ? 'Ninguém convocado ainda. Use os botões acima para montar a lista.' : 'Ninguém convocado ainda.'),
+        : aviso(admin ? 'Ninguém convocado ainda. Use os botões acima para montar a lista ou importe uma planilha do Excel.' : 'Ninguém convocado ainda.'),
     )
   }
 
