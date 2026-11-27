@@ -38,8 +38,12 @@ export const TIPOS_DE_PESSOA = {
   colaborador: 'Colaborador',
   eletricista: 'Eletricista',
   fornecedor: 'Fornecedor',
+  outro: 'Outra pessoa',
   convidado: 'Convidado',
 }
+
+// Tipo mostrado nas telas e nas planilhas: para quem vem de Outras pessoas, o grupo (Diretoria, Prestador de serviço).
+export const tipoDaPresenca = (p) => (p?.tipoPessoa === 'outro' ? p.grupo || TIPOS_DE_PESSOA.outro : TIPOS_DE_PESSOA[p?.tipoPessoa] ?? 'Pessoa')
 
 // Lista
 
@@ -88,8 +92,9 @@ export function quandoE(data, hoje = hojeISO()) {
 
 // Presenças
 
-// Colaborador e eletricista têm ID previsível: a mesma pessoa nunca entra duas vezes na lista.
-export const idDaPresenca = (tipoPessoa, pessoaId) => (pessoaId && (tipoPessoa === 'colaborador' || tipoPessoa === 'eletricista') ? `${tipoPessoa}_${pessoaId}` : null)
+// Colaborador, eletricista e outra pessoa têm ID previsível: a mesma pessoa nunca entra duas vezes na lista.
+const COM_CADASTRO = ['colaborador', 'eletricista', 'outro']
+export const idDaPresenca = (tipoPessoa, pessoaId) => (pessoaId && COM_CADASTRO.includes(tipoPessoa) ? `${tipoPessoa}_${pessoaId}` : null)
 
 const base = { fornecedorId: '', presente: false, horaCheckin: null, checkinPor: null }
 
@@ -138,6 +143,18 @@ export const presencaDeEletricista = (e, convocado = true) => ({
   pessoaId: e.id,
   nome: e.nome,
   detalhe: detalheDoEletricista(e),
+  convocado,
+})
+
+// Pessoa da aba Outras pessoas (Diretoria, prestador de serviço...): o grupo fica em "grupo" e aparece como o tipo; o
+// detalhe é a empresa ou função.
+export const presencaDeOutraPessoa = (o, convocado = true) => ({
+  ...base,
+  tipoPessoa: 'outro',
+  pessoaId: o.id,
+  nome: o.nome,
+  grupo: o.grupo || 'Outro',
+  detalhe: o.empresa ?? '',
   convocado,
 })
 
@@ -232,7 +249,7 @@ export const comercialQueFaltou = (lista, presencas, colaboradores) => resumoDaL
 // Planilhas
 
 const horaDe = (p) => (p.horaCheckin instanceof Date ? formatarHora(p.horaCheckin) : '')
-const tipoDe = (p) => TIPOS_DE_PESSOA[p.tipoPessoa] ?? p.tipoPessoa
+const tipoDe = tipoDaPresenca
 
 // "Baixar presentes": a primeira coluna é "Nome" (o sorteador procura essa coluna).
 export const CABECALHO_PRESENTES = ['Nome', 'Tipo', 'Detalhe', 'Hora do check-in']

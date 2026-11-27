@@ -152,11 +152,11 @@ Nomes exatos (as regras dependem deles):
 - `listas/{id}`: `nome`, `tipo`, `data` (`"AAAA-MM-DD"`), `loja` (uma das lojas, `"Todas as lojas"` ou
   `"Outro local"`), `local`, `fornecedores` (IDs das marcas), `status` (`"aberta"` |
   `"encerrada"`), `criadoPor` (nome de quem criou), `criadoEm`.
-- `listas/{id}/presencas/{id}`: `tipoPessoa` (`"colaborador"` | `"eletricista"` | `"fornecedor"` |
+- `listas/{id}/presencas/{id}`: `tipoPessoa` (`"colaborador"` | `"eletricista"` | `"fornecedor"` | `"outro"` |
   `"convidado"`), `pessoaId` (vazio para fornecedor e convidado), `nome`, `detalhe` (setor e loja;
-  "Vendedor: Nome"; nome da marca; "Convidado"), `fornecedorId`, `convocado`, `presente`,
-  `horaCheckin`, `checkinPor` (nome de quem fez o check-in). Colaborador e eletricista usam o ID
-  `colaborador_{id}` e `eletricista_{id}`: a mesma pessoa nunca entra duas vezes na lista.
+  "Vendedor: Nome"; nome da marca; "Convidado"; empresa ou função), `grupo` (só em `"outro"`), `fornecedorId`,
+  `convocado`, `presente`, `horaCheckin`, `checkinPor` (nome de quem fez o check-in). Colaborador, eletricista e outra
+  pessoa usam o ID `colaborador_{id}`, `eletricista_{id}` e `outro_{id}`: a mesma pessoa nunca entra duas vezes.
 - O app só grava os campos acima (as regras publicadas podem conferir os nomes).
 
 ## Colaboradores (Etapa 2)
@@ -481,8 +481,17 @@ filtro troca o tipo); a observação é a dos controles de aniversariantes (as o
   existente só muda os campos preenchidos). "Baixar lista" com as colunas que voltam na importação. Ficha com o
   histórico de listas (`historicoDaPessoa` com tipo `outro`).
 - Regras: `outrasPessoas` só existe nas regras novas. Enquanto a pessoa não publica o `firestore.rules` no console, a
-  leitura dá `permission-denied` e a aba mostra `avisoDasRegras` (passo a passo do README). Demonstração:
-  `?semRegra=outrasPessoas` simula isso.
+  leitura dá `permission-denied` e a aba mostra `avisoDasRegras` (em `js/telas/outrasPessoas/formulario.js`, passo a
+  passo do README). Demonstração: `?semRegra=outrasPessoas` simula isso.
+- Nas listas (parte b): presença `tipoPessoa: "outro"`, ID `outro_{id}` (`idDaPresenca`), `grupo` gravado na presença e
+  `detalhe` = empresa ou função (`presencaDeOutraPessoa`). `tipoDaPresenca(p)` dá o grupo para "outro" e o rótulo de
+  `TIPOS_DE_PESSOA` para os demais; usado no check-in, Convocados, Resumo e nas planilhas (coluna Tipo). Convocados >
+  "Adicionar outras pessoas" (busca por nome ou empresa, filtro de grupo, "Marcar todos os mostrados"; só ativos). No
+  check-in, "Já cadastrado" busca também em Outras pessoas. `acharPessoaDaPlanilha` procura colaborador, eletricista e
+  outra pessoa, nessa ordem (iguais primeiro, depois um só parecido); `noCadastro` mostra "Nome (Diretoria)".
+- A tela da lista ouve `outrasPessoas` como fonte opcional (`ouvirFontes(..., { opcionais: ['outrasPessoas'] })`): se
+  a leitura falhar, chega `[]` e `dados.indisponiveis` traz o nome; a lista abre e "Adicionar outras pessoas" mostra
+  `avisoDasRegras`. Depois de publicar as regras, é preciso recarregar a página (a fonte guarda o erro).
 
 ## Papéis
 

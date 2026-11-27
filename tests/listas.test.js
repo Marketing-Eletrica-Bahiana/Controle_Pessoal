@@ -5,8 +5,8 @@ import {
   ehDaLoja, ehDoTipo, SITUACOES_DO_CHECKIN, contaComoFalta, limparObservacao, mudancaDeSituacao, situacaoDaPresenca, situacaoNoCheckin, ehListaDeAniversario, filtrarListas, fornecedorJaNaLista, funcaoDaPresenca,
   historicoDaPessoa, idDaPresenca, linhasCompleta, linhasPresentes, listasDaMarca, marcaDaPresenca, nomeComFuncao, nomeDoArquivoDaLista, ondeE,
   pessoasNaLista, presencaDeColaborador,
-  presencaDeConvidado, presencaDeEletricista, presencaDeFornecedor, presencasParaCheckin, quandoE, resultadoNaLista,
-  resumoDaLista, validarLista,
+  presencaDeConvidado, presencaDeEletricista, presencaDeFornecedor, presencaDeOutraPessoa, presencasParaCheckin, quandoE, resultadoNaLista,
+  resumoDaLista, tipoDaPresenca, validarLista,
 } from '../js/lib/listas.js'
 
 const hora = (h, m) => new Date(Date.UTC(2026, 10, 5, h + 3, m))
@@ -83,6 +83,17 @@ describe('listas: presenças', () => {
   it('monta cada tipo de pessoa com ID previsível para colaborador e eletricista', () => {
     assert.equal(idDaPresenca('colaborador', 'c1'), 'colaborador_c1')
     assert.equal(idDaPresenca('fornecedor', ''), null)
+    assert.equal(idDaPresenca('outro', 'o1'), 'outro_o1')
+    // Outras pessoas: o grupo vira o tipo mostrado; o detalhe é a empresa ou função.
+    const diretor = presencaDeOutraPessoa({ id: 'o1', nome: 'Diretor Exemplo', grupo: 'Diretoria', empresa: 'Comercial' })
+    assert.deepEqual(diretor, {
+      fornecedorId: '', presente: false, horaCheckin: null, checkinPor: null, tipoPessoa: 'outro', pessoaId: 'o1', nome: 'Diretor Exemplo', grupo: 'Diretoria', detalhe: 'Comercial', convocado: true,
+    })
+    assert.equal(tipoDaPresenca(diretor), 'Diretoria')
+    assert.equal(tipoDaPresenca({ tipoPessoa: 'outro' }), 'Outra pessoa')
+    assert.equal(tipoDaPresenca({ tipoPessoa: 'eletricista' }), 'Eletricista')
+    assert.equal(linhasPresentes([{ ...diretor, presente: true }])[0][1], 'Diretoria')
+    assert.ok(pessoasNaLista([diretor]).has('outro_o1'))
     assert.deepEqual(presencaDeColaborador({ id: 'c1', nome: 'Vítor', setor: 'Comercial', loja: 'Aracaju' }), {
       fornecedorId: '', presente: false, horaCheckin: null, checkinPor: null, tipoPessoa: 'colaborador', pessoaId: 'c1', nome: 'Vítor', detalhe: 'Comercial · Aracaju', convocado: true,
     })

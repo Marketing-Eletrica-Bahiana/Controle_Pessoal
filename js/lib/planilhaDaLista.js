@@ -1,8 +1,9 @@
 // "Importar planilha" em Convocados (pedido de 27/11/2026): cada linha é uma pessoa, com o nome e, se a planilha
 // tiver, se participou e a observação. O nome é procurado nos colaboradores (ativos primeiro, depois desligados, para
-// listas antigas) e nos eletricistas. Regras puras; a tela fica em js/telas/listas/planilha.js.
+// listas antigas), nos eletricistas e em Outras pessoas. Regras puras; a tela fica em js/telas/listas/planilha.js.
 import {
-  idDaPresenca, limparObservacao, presencaDeColaborador, presencaDeConvidado, presencaDeEletricista, rotuloDaSituacao, situacaoNoCheckin,
+  idDaPresenca, limparObservacao, presencaDeColaborador, presencaDeConvidado, presencaDeEletricista, presencaDeOutraPessoa, rotuloDaSituacao,
+  situacaoNoCheckin,
 } from './listas.js'
 import { combinaBusca, limparEspacos, normalizar } from './texto.js'
 
@@ -31,17 +32,19 @@ export function lerParticipou(valor) {
 }
 
 // Acha a pessoa pelo nome: igual (sem diferenciar maiúsculas e acentos) num colaborador ativo, num desligado, num
-// eletricista ativo ou num desativado; senão, um só colaborador ativo (ou eletricista ativo) com todas as palavras.
-export function acharPessoaDaPlanilha(nome, { colaboradores = [], eletricistas = [] }) {
+// eletricista (ativo ou desativado) ou em Outras pessoas (ativa ou desativada); senão, um só colaborador ativo (ou
+// eletricista ativo, ou outra pessoa ativa) com todas as palavras.
+export function acharPessoaDaPlanilha(nome, { colaboradores = [], eletricistas = [], outrasPessoas = [] }) {
   const alvo = normalizar(nome)
   if (!alvo) return null
   const igual = (lista) => lista.find((p) => normalizar(p.nome) === alvo)
   const ativos = (lista) => lista.filter((p) => p.ativo !== false)
-  const colaborador = igual(ativos(colaboradores)) ?? igual(colaboradores)
-  if (colaborador) return { tipo: 'colaborador', pessoa: colaborador, parecido: false }
-  const eletricista = igual(ativos(eletricistas)) ?? igual(eletricistas)
-  if (eletricista) return { tipo: 'eletricista', pessoa: eletricista, parecido: false }
-  for (const [tipo, lista] of [['colaborador', colaboradores], ['eletricista', eletricistas]]) {
+  const cadastros = [['colaborador', colaboradores], ['eletricista', eletricistas], ['outro', outrasPessoas]]
+  for (const [tipo, lista] of cadastros) {
+    const achada = igual(ativos(lista)) ?? igual(lista)
+    if (achada) return { tipo, pessoa: achada, parecido: false }
+  }
+  for (const [tipo, lista] of cadastros) {
     const parecidos = ativos(lista).filter((p) => combinaBusca(p.nome, nome))
     if (parecidos.length === 1) return { tipo, pessoa: parecidos[0], parecido: true }
   }
@@ -52,7 +55,7 @@ export function acharPessoaDaPlanilha(nome, { colaboradores = [], eletricistas =
 // não está no cadastro entra como convidado, só com o nome). presencas: as que já estão na lista.
 // Situações: novo (entra na lista), existente (já está; recebe a situação e a observação), naoEncontrado, repetido,
 // ignorado (linha sem nome).
-export function prepararPlanilhaDaLista({ registros, colaboradores = [], eletricistas = [], presencas = [] }, opcoes = {}) {
+export function prepararPlanilhaDaLista({ registros, colaboradores = [], eletricistas = [], outrasPessoas = [], presencas = [] }, opcoes = {}) {
   const naLista = new Map(presencas.filter((p) => p.pessoaId).map((p) => [`${p.tipoPessoa}_${p.pessoaId}`, p]))
   const convidadosNaLista = new Map(presencas.filter((p) => p.tipoPessoa === 'convidado').map((p) => [normalizar(p.nome), p]))
   const vistos = new Set()
@@ -64,13 +67,14 @@ export function prepararPlanilhaDaLista({ registros, colaboradores = [], eletric
     if (lida === null) avisos.push(`"Participou?" não entendido ("${limparEspacos(valores.participou)}"); use Sim, Não ou Outros.`)
     const situacao = lida || (opcoes.participaram ? 'participou' : '')
     const observacao = limparObservacao(valores.observacao)
-    const achada = acharPessoaDaPlanilha(nome, { colaboradores, eletricistas })
+    const achada = acharPessoaDaPlanilha(nome, { colaboradores, eletricistas, outrasPessoas })
     if (achada) {
       const chave = idDaPresenca(achada.tipo, achada.pessoa.id)
       if (vistos.has(chave)) return { linha, nome, situacao: 'repetido', avisos: ['A mesma pessoa aparece mais de uma vez; vale a primeira linha.'] }
       vistos.add(chave)
       if (achada.parecido) avisos.push(`Nome parecido: entra como ${achada.pessoa.nome}.`)
       if (achada.tipo === 'colaborador' && achada.pessoa.ativo === false) avisos.push('Está em Desligados.')
+      if (achada.tipo === 'outro' && achada.pessoa.ativo === false) avisos.push('Está desativada em Outras pessoas.')
       const atual = naLista.get(chave)
       return { linha, nome, situacao: atual ? 'existente' : 'novo', tipo: achada.tipo, pessoa: achada.pessoa, presenca: atual ?? null, marcar: situacao, observacao, avisos }
     }
@@ -80,7 +84,7 @@ export function prepararPlanilhaDaLista({ registros, colaboradores = [], eletric
     const convidado = convidadosNaLista.get(normalizar(nome))
     if (convidado) return { linha, nome, situacao: 'existente', tipo: 'convidado', pessoa: null, presenca: convidado, marcar: situacao, observacao, avisos }
     if (!opcoes.convidados) {
-      return { linha, nome, situacao: 'naoEncontrado', tipo: 'convidado', marcar: situacao, observacao, avisos: [...avisos, 'Não está no cadastro de colaboradores nem de eletricistas. Confira o nome.'] }
+      return { linha, nome, situacao: 'naoEncontrado', tipo: 'convidado', marcar: situacao, observacao, avisos: [...avisos, 'Não está no cadastro de colaboradores, eletricistas nem Outras pessoas. Confira o nome.'] }
     }
     return { linha, nome, situacao: 'novo', tipo: 'convidado', pessoa: null, presenca: null, marcar: situacao, observacao, avisos: [...avisos, 'Entra como convidado, só com o nome.'] }
   })
@@ -119,6 +123,7 @@ export function operacoesDaPlanilhaDaLista(previa, { listaId, quem, novoId }) {
       const base =
         item.tipo === 'colaborador' ? presencaDeColaborador(item.pessoa, true)
         : item.tipo === 'eletricista' ? presencaDeEletricista(item.pessoa, true)
+        : item.tipo === 'outro' ? presencaDeOutraPessoa(item.pessoa, true)
         : { ...presencaDeConvidado(item.nome), convocado: true }
       const id = idDaPresenca(item.tipo, item.pessoa?.id) ?? novoId(`listas/${listaId}/presencas`)
       operacoes.push({ tipo: 'definir', caminho: caminho(id), dados: { ...base, ...situacaoNova(item.marcar, quem), observacao: item.observacao } })
@@ -136,5 +141,7 @@ export const contarGravacoesDaPlanilha = (previa, quem = '') =>
 
 // Texto da coluna da prévia: com quem a linha combinou e o que vai ser marcado.
 export const noCadastro = (item) =>
-  item.pessoa ? `${item.pessoa.nome}${item.tipo === 'eletricista' ? ' (eletricista)' : ''}` : item.situacao === 'novo' || item.situacao === 'existente' ? 'Convidado' : ''
+  item.pessoa
+    ? `${item.pessoa.nome}${item.tipo === 'eletricista' ? ' (eletricista)' : item.tipo === 'outro' ? ` (${item.pessoa.grupo || 'Outro'})` : ''}`
+    : item.situacao === 'novo' || item.situacao === 'existente' ? 'Convidado' : ''
 export const marcacaoDoItem = (item) => ((item.situacao === 'novo' || item.situacao === 'existente') && item.marcar ? rotuloDaSituacao(item.marcar) : '')

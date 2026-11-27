@@ -4,8 +4,9 @@ import { adicionarNaoConvocado, marcarPresenca, marcarSituacao } from '../../dad
 import { formatarHora } from '../../lib/datas.js'
 import { mensagemDeErro } from '../../lib/erros.js'
 import {
-  LIMITE_DA_OBSERVACAO, SITUACOES_DO_CHECKIN, TIPOS_DE_PESSOA, contarPresencas, idDaPresenca, limparObservacao, presencaDeColaborador,
-  presencaDeConvidado, presencaDeEletricista, presencasParaCheckin, rotuloDaSituacao, situacaoNoCheckin,
+  LIMITE_DA_OBSERVACAO, SITUACOES_DO_CHECKIN, contarPresencas, idDaPresenca, limparObservacao, presencaDeColaborador,
+  presencaDeConvidado, presencaDeEletricista, presencaDeOutraPessoa, presencasParaCheckin, rotuloDaSituacao, situacaoNoCheckin,
+  tipoDaPresenca,
 } from '../../lib/listas.js'
 import { combinaBusca, compararTexto, formatarNumero, limparEspacos } from '../../lib/texto.js'
 import { pode } from '../../lib/papeis.js'
@@ -139,7 +140,7 @@ export function montarCheckin(caixa, ctx) {
         'div',
         { class: 'checkin__info' },
         nome,
-        el('span', { class: 'checkin__detalhe' }, etiqueta(TIPOS_DE_PESSOA[p.tipoPessoa] ?? 'Pessoa'), !p.convocado && etiqueta('Não convocado', 'alerta'), p.detalhe),
+        el('span', { class: 'checkin__detalhe' }, etiqueta(tipoDaPresenca(p)), !p.convocado && etiqueta('Não convocado', 'alerta'), p.detalhe),
         p.observacao && el('span', { class: 'checkin__observacao' }, icone('message-circle'), p.observacao),
       ),
       el(
@@ -215,7 +216,7 @@ function abrirSituacao(ctx, presencaId) {
   const formulario = el(
     'form',
     { class: 'formulario', novalidate: true },
-    el('p', { class: 'texto-suave' }, etiqueta(TIPOS_DE_PESSOA[atual.tipoPessoa] ?? 'Pessoa'), ' ', atual.detalhe ?? ''),
+    el('p', { class: 'texto-suave' }, etiqueta(tipoDaPresenca(atual)), ' ', atual.detalhe ?? ''),
     el('fieldset', { class: 'campo' }, el('legend', { class: 'campo__rotulo' }, 'Situação'), el('div', { class: 'segmentado controle__status', role: 'group', 'aria-label': 'Situação' }, botoes)),
     campo({ rotulo: 'Observação', opcional: true, entrada: observacao, ajuda: `Até ${LIMITE_DA_OBSERVACAO} letras. Em "Outros", conte o motivo aqui.` }).no,
     el('div', { class: 'janela-modal__acoes' }, botao({ texto: 'Cancelar', aoClicar: () => janela.fechar() }), salvar),
@@ -286,18 +287,19 @@ function abrirNaoConvocado(ctx) {
   function desenharCadastrado() {
     const resultado = el('ul', { class: 'escolha' })
     const busca = campoBusca({
-      rotulo: 'Buscar colaborador ou eletricista',
-      placeholder: 'Digite o nome do colaborador ou eletricista',
+      rotulo: 'Buscar colaborador, eletricista ou outra pessoa',
+      placeholder: 'Digite o nome (colaborador, eletricista, Diretoria...)',
       aoDigitar: (v) => mostrar(v),
     })
     busca.entrada.setAttribute('data-foco', '')
     function mostrar(texto) {
       if (limparEspacos(texto).length < 2) return trocar(resultado, el('li', { class: 'escolha__vazio' }, 'Digite pelo menos duas letras do nome.'))
-      const { colaboradores, eletricistas } = ctx.dados()
+      const { colaboradores, eletricistas, outrasPessoas = [] } = ctx.dados()
       const naLista = new Map(ctx.presencas().filter((p) => p.pessoaId).map((p) => [`${p.tipoPessoa}_${p.pessoaId}`, p]))
       const encontrados = [
         ...colaboradores.filter((c) => c.ativo !== false && combinaBusca(c.nome, texto)).map((c) => ({ tipo: 'colaborador', pessoa: c, presenca: presencaDeColaborador(c, false) })),
         ...eletricistas.filter((e) => e.ativo !== false && combinaBusca(e.nome, texto)).map((e) => ({ tipo: 'eletricista', pessoa: e, presenca: presencaDeEletricista(e, false) })),
+        ...outrasPessoas.filter((o) => o.ativo !== false && combinaBusca(o.nome, texto)).map((o) => ({ tipo: 'outro', pessoa: o, presenca: presencaDeOutraPessoa(o, false) })),
       ]
         .sort((a, b) => compararTexto(a.pessoa.nome, b.pessoa.nome))
         .slice(0, 30)
@@ -337,7 +339,7 @@ function abrirNaoConvocado(ctx) {
           return el(
             'li',
             { class: 'escolha__item' },
-            el('div', {}, el('strong', {}, pessoa.nome), el('span', { class: 'tabela__detalhe' }, etiqueta(TIPOS_DE_PESSOA[tipo]), ' ', presenca.detalhe, atual && !atual.presente ? ' · já convocado' : '')),
+            el('div', {}, el('strong', {}, pessoa.nome), el('span', { class: 'tabela__detalhe' }, etiqueta(tipoDaPresenca(presenca)), ' ', presenca.detalhe, atual && !atual.presente ? ' · já convocado' : '')),
             acao,
           )
         }),

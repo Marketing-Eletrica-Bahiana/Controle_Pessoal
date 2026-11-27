@@ -297,11 +297,12 @@ function montarDetalhe(raiz, { pessoa, params }) {
     }
   }
 
+  // outrasPessoas é opcional: antes de publicar as regras novas, a lista abre sem elas.
   const pararFontes = ouvirFontes(['listas', 'colaboradores', 'setores', 'eletricistas', 'fornecedores'], (novos, e) => {
     if (e) erro = e
     if (novos) dados = novos
     desenhar()
-  })
+  }, { opcionais: ['outrasPessoas'] })
   const pararPresencas = ouvirPresencas(
     id,
     (lista_, info) => {

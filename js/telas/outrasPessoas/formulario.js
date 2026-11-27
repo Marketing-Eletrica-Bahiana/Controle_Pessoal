@@ -2,9 +2,18 @@
 import { cadastrarOutraPessoa, editarOutraPessoa, importarOutrasPessoas } from '../../dados/outrasPessoas.js'
 import { mensagemDeErro } from '../../lib/erros.js'
 import { CAMPOS_DA_PLANILHA, GRUPOS_DE_OUTRAS_PESSOAS, prepararImportacao, validarOutraPessoa } from '../../lib/outrasPessoas.js'
-import { abrirJanela, aviso, avisar, botao, campo, comOcupado, confirmar, entradaTexto, mostrarErros, selecao } from '../../ui/componentes.js'
+import {
+  abrirJanela, aviso, avisar, blocoDeErro, botao, campo, comOcupado, confirmar, entradaTexto, mostrarErros, selecao,
+} from '../../ui/componentes.js'
 import { el } from '../../ui/dom.js'
 import { abrirImportador } from '../../ui/importador.js'
+
+// Antes de publicar as regras novas no Firebase, a coleção outrasPessoas nega a leitura: explica o que fazer. Sem erro
+// (por exemplo quando veio só a lista "indisponiveis" de ouvirFontes), mostra o mesmo aviso.
+export const avisoDasRegras = (erro) =>
+  !erro || erro.code === 'permission-denied'
+    ? aviso('Esta parte precisa das regras novas do Firebase. Abra o console do Firebase em Firestore Database > Regras, cole o conteúdo do arquivo firestore.rules, clique em Publicar e recarregue esta página (passo a passo no README, parte "Como publicar novas regras do Firestore").', { erro: true })
+    : blocoDeErro(erro)
 
 // dados(): { outrasPessoas, colaboradores }. grupo: grupo já escolhido para quem é novo.
 export function abrirFormularioOutraPessoa({ outra = null, dados, grupo = '' }) {

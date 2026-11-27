@@ -15,7 +15,7 @@ export function abrirPlanilhaNaLista(ctx) {
     titulo: `Importar planilha em ${lista.nome}`,
     ajuda:
       'A planilha precisa de uma coluna com o nome da pessoa. Se tiver, também: "Participou?" (Sim, Não ou Outros) e "Observação". ' +
-      'Os nomes são procurados nos colaboradores (inclusive desligados) e nos eletricistas; quem já está na lista recebe a situação e a observação da planilha.',
+      'Os nomes são procurados nos colaboradores (inclusive desligados), nos eletricistas e em Outras pessoas; quem já está na lista recebe a situação e a observação da planilha.',
     campos: CAMPOS_DA_PLANILHA_DA_LISTA,
     opcoes: [
       {
@@ -32,8 +32,8 @@ export function abrirPlanilhaNaLista(ctx) {
       },
     ],
     preparar: (registros, opcoes) => {
-      const { colaboradores, eletricistas = [] } = ctx.dados()
-      const previa = prepararPlanilhaDaLista({ registros, colaboradores, eletricistas, presencas: ctx.presencas() }, opcoes)
+      const { colaboradores, eletricistas = [], outrasPessoas = [] } = ctx.dados()
+      const previa = prepararPlanilhaDaLista({ registros, colaboradores, eletricistas, outrasPessoas, presencas: ctx.presencas() }, opcoes)
       const { naoEncontrados } = previa.contagem
       previa.extras = naoEncontrados
         ? [{ texto: `${plural(naoEncontrados, 'nome não foi achado', 'nomes não foram achados')} no cadastro e ${naoEncontrados === 1 ? 'fica' : 'ficam'} de fora. Confira a grafia ou marque a opção de incluir como convidado.`, erro: true }]

@@ -77,6 +77,15 @@ quiser, a empresa ou função. A Administração cadastra uma de cada vez em **N
 **Importar planilha** (colunas Nome, Grupo e Empresa ou função). Quem não vem mais pode ser **desativado**: sai das
 escolhas nas listas, mas o histórico fica guardado.
 
+Para pôr essas pessoas numa lista (por exemplo a festa de final de ano):
+
+- Em **Convocados > Adicionar outras pessoas**: filtre pelo grupo (Diretoria ou Prestador de serviço), toque em
+  **Marcar todos os mostrados** e em **Adicionar**.
+- No **check-in**, em **Adicionar participante não convocado > Já cadastrado**, a busca também acha essas pessoas.
+- Em **Importar planilha** na lista, os nomes também são procurados em Outras pessoas.
+
+Na lista e nas planilhas baixadas, o tipo da pessoa aparece como o grupo (Diretoria, Prestador de serviço).
+
 Para esta aba funcionar, as regras do Firebase precisam ser publicadas de novo uma vez (ver "Como publicar novas
 regras do Firestore" mais abaixo). Até lá, a aba mostra esse aviso.
 
@@ -262,6 +271,9 @@ entre no GitHub com uma conta que tenha acesso à organização Marketing-Eletri
 
 A mais recente primeiro. Cada alteração entra aqui no mesmo envio em que vai para o site.
 
+- **27/11/2026**: as pessoas da aba **Outras pessoas** entram nas listas: **Convocados > Adicionar outras pessoas**
+  (por grupo), a busca do check-in em "Adicionar participante não convocado" e a importação de planilha na lista. O
+  tipo mostrado é o grupo (Diretoria, Prestador de serviço). Sem as regras novas publicadas, a lista continua abrindo.
 - **27/11/2026**: nova aba **Outras pessoas**, para cadastrar a Diretoria, os prestadores de serviço e outras pessoas
   que não são colaboradores (com importação de planilha). As regras do Firebase mudaram (`firestore.rules`): é preciso
   publicar de novo no console para a aba funcionar.

@@ -8,8 +8,9 @@ import { vendedoresDosEletricistas } from '../../lib/eletricistas.js'
 import { FUNCOES_DO_FORNECEDOR, pessoasDoFornecedor } from '../../lib/fornecedores.js'
 import {
   PAIS_E_MAES, TIPOS_DE_PESSOA, TODAS_AS_LOJAS, colaboradoresDoGrupo, fornecedorJaNaLista, idDaPresenca, pessoasNaLista, presencaDeColaborador,
-  presencaDeEletricista, presencaDeFornecedor,
+  presencaDeEletricista, presencaDeFornecedor, presencaDeOutraPessoa, tipoDaPresenca,
 } from '../../lib/listas.js'
+import { GRUPOS_DE_OUTRAS_PESSOAS } from '../../lib/outrasPessoas.js'
 import { pode } from '../../lib/papeis.js'
 import { combinaBusca, compararTexto, limparEspacos, normalizar, plural } from '../../lib/texto.js'
 import {
@@ -18,12 +19,14 @@ import {
 } from '../../ui/componentes.js'
 import { el, icone, trocar } from '../../ui/dom.js'
 import { campoEscolherPessoa } from '../../ui/escolherPessoa.js'
+import { avisoDasRegras } from '../outrasPessoas/formulario.js'
 import { abrirPlanilhaNaLista } from './planilha.js'
 
 const PLURAIS = {
   colaborador: ['colaborador', 'colaboradores'],
   eletricista: ['eletricista', 'eletricistas'],
   fornecedor: ['pessoa de fornecedor', 'pessoas de fornecedor'],
+  outro: ['outra pessoa', 'outras pessoas'],
   convidado: ['convidado', 'convidados'],
 }
 
@@ -46,6 +49,7 @@ export function montarConvocados(caixa, ctx) {
           botao({ texto: 'Adicionar colaboradores', icone: 'users', variante: 'principal', aoClicar: () => abrirColaboradores(ctx) }),
           botao({ texto: 'Adicionar eletricistas', icone: 'zap', aoClicar: () => abrirEletricistas(ctx) }),
           botao({ texto: 'Adicionar pessoa de fornecedor', icone: 'handshake', aoClicar: () => abrirFornecedor(ctx) }),
+          botao({ texto: 'Adicionar outras pessoas', icone: 'briefcase', aoClicar: () => abrirOutrasPessoas(ctx) }),
           botao({ texto: 'Importar planilha', icone: 'file-spreadsheet', aoClicar: () => abrirPlanilhaNaLista(ctx) }),
         ),
       el(
@@ -60,7 +64,7 @@ export function montarConvocados(caixa, ctx) {
               limite: 200,
               colunas: [
                 { rotulo: 'Nome', principal: true, celula: (p) => [el('span', { class: 'tabela__nome' }, p.nome), el('span', { class: 'tabela__detalhe' }, p.detalhe)] },
-                { rotulo: 'Tipo', celula: (p) => TIPOS_DE_PESSOA[p.tipoPessoa] ?? '' },
+                { rotulo: 'Tipo', celula: tipoDaPresenca },
                 { rotulo: 'Convocado', celula: (p) => (p.convocado ? 'Sim' : etiqueta('Não convocado', 'alerta')) },
                 { rotulo: 'Presente', celula: (p) => (p.presente ? etiqueta('Presente', 'forte') : 'Não') },
                 admin && {
@@ -350,6 +354,108 @@ function abrirEletricistas(ctx) {
       'div',
       { class: 'formulario' },
       el('div', { class: 'filtros' }, busca.no, el('div', { class: 'campo campo--compacto' }, filtroVendedor)),
+      el('div', { class: 'acoes acoes--esquerda' }, todos),
+      resultado,
+      el('div', { class: 'janela-modal__acoes janela-modal__acoes--entre' }, total, el('div', { class: 'acoes' }, botao({ texto: 'Cancelar', aoClicar: () => janela.fechar() }), adicionar)),
+    ),
+  )
+  janela.focar()
+}
+
+// Outras pessoas (Diretoria, prestadores de serviço...): da aba Outras pessoas, por grupo ou uma a uma.
+function abrirOutrasPessoas(ctx) {
+  const janela = abrirJanela({ titulo: 'Adicionar outras pessoas', largura: 720 })
+  if (ctx.dados().indisponiveis?.includes('outrasPessoas')) {
+    janela.corpo.append(el('div', { class: 'formulario' }, avisoDasRegras(), el('div', { class: 'janela-modal__acoes' }, botao({ texto: 'Fechar', aoClicar: () => janela.fechar() }))))
+    return janela.focar()
+  }
+  const escolhidos = new Set()
+  let texto = ''
+  let grupo = ''
+  const ativas = () => ctx.dados().outrasPessoas.filter((o) => o.ativo !== false).sort((a, b) => compararTexto(a.nome, b.nome))
+  const jaNaLista = () => pessoasNaLista(ctx.presencas())
+  const resultado = el('div', { class: 'escolha escolha--rolavel' })
+  const total = el('span')
+  const adicionar = botao({ texto: 'Adicionar', icone: 'plus', variante: 'principal', aoClicar: () => gravar(ctx, ativas().filter((o) => escolhidos.has(o.id)).map((o) => presencaDeOutraPessoa(o)), janela, adicionar) })
+  const atualizarTotal = () => {
+    trocar(total, plural(escolhidos.size, 'escolhida', 'escolhidas'))
+    adicionar.disabled = !escolhidos.size
+  }
+  const visiveis = () =>
+    ativas()
+      .filter((o) => combinaBusca(`${o.nome} ${o.empresa ?? ''}`, texto))
+      .filter((o) => !grupo || (o.grupo || 'Outro') === grupo)
+      .filter((o) => !jaNaLista().has(idDaPresenca('outro', o.id)))
+
+  const busca = campoBusca({
+    placeholder: 'Buscar pelo nome ou empresa',
+    aoDigitar: (v) => {
+      texto = v
+      mostrar()
+    },
+  })
+  busca.entrada.setAttribute('data-foco', '')
+  const filtroGrupo = selecao([{ valor: '', rotulo: 'Todos os grupos' }, ...GRUPOS_DE_OUTRAS_PESSOAS], '', {
+    'aria-label': 'Grupo',
+    onChange: (e) => {
+      grupo = e.target.value
+      mostrar()
+    },
+  })
+  const todos = botao({
+    texto: 'Marcar todos os mostrados',
+    icone: 'list-checks',
+    classe: 'botao--pequeno',
+    aoClicar: () => {
+      visiveis().forEach((o) => escolhidos.add(o.id))
+      mostrar()
+      atualizarTotal()
+    },
+  })
+
+  function mostrar() {
+    const lista = visiveis()
+    trocar(
+      resultado,
+      lista.length
+        ? listaComLimite(lista, (itens) =>
+            el(
+              'div',
+              {},
+              itens.map((o) =>
+                el(
+                  'div',
+                  { class: 'escolha__item' },
+                  caixaDeMarcar({
+                    rotulo: o.nome,
+                    marcada: escolhidos.has(o.id),
+                    aoMudar: (marcada) => {
+                      if (marcada) escolhidos.add(o.id)
+                      else escolhidos.delete(o.id)
+                      atualizarTotal()
+                    },
+                  }).no,
+                  el('span', { class: 'tabela__detalhe' }, etiqueta(o.grupo || 'Outro', o.grupo === 'Diretoria' ? 'marinho' : ''), ' ', o.empresa ?? ''),
+                ),
+              ),
+            ),
+          { passo: 100 })
+        : el(
+            'p',
+            { class: 'texto-suave' },
+            ctx.dados().outrasPessoas.length
+              ? 'Ninguém para adicionar com esse filtro (quem já está na lista não aparece).'
+              : 'Ninguém cadastrado ainda. Cadastre a Diretoria e os prestadores de serviço na aba Outras pessoas.',
+          ),
+    )
+  }
+  mostrar()
+  atualizarTotal()
+  janela.corpo.append(
+    el(
+      'div',
+      { class: 'formulario' },
+      el('div', { class: 'filtros' }, busca.no, el('div', { class: 'campo campo--compacto' }, filtroGrupo)),
       el('div', { class: 'acoes acoes--esquerda' }, todos),
       resultado,
       el('div', { class: 'janela-modal__acoes janela-modal__acoes--entre' }, total, el('div', { class: 'acoes' }, botao({ texto: 'Cancelar', aoClicar: () => janela.fechar() }), adicionar)),

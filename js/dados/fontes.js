@@ -49,16 +49,20 @@ export function fonte(caminho) {
 }
 
 // Ouve várias coleções juntas. aoMudar(dados, erro): dados só chega quando todas carregaram,
-// como { colaboradores: [...], setores: [...] }.
-export function ouvirFontes(caminhos, aoMudar) {
+// como { colaboradores: [...], setores: [...] }. opcionais: coleções que podem falhar sem derrubar a tela (por exemplo
+// outrasPessoas antes de publicar as regras novas); se falharem, chegam como [] e o nome vai em dados.indisponiveis.
+export function ouvirFontes(caminhos, aoMudar, { opcionais = [] } = {}) {
   const dados = {}
   const erros = {}
-  const cancelar = caminhos.map((caminho) =>
+  const cancelar = [...caminhos, ...opcionais].map((caminho) =>
     fonte(caminho).ouvir((lista, e) => {
       dados[caminho] = lista
       erros[caminho] = e
       const erro = caminhos.map((c) => erros[c]).find(Boolean) ?? null
-      aoMudar(!erro && caminhos.every((c) => dados[c]) ? { ...dados } : null, erro)
+      const prontos = caminhos.every((c) => dados[c]) && opcionais.every((c) => dados[c] || erros[c])
+      if (erro || !prontos) return aoMudar(null, erro)
+      const extras = Object.fromEntries(opcionais.map((c) => [c, dados[c] ?? []]))
+      aoMudar(opcionais.length ? { ...dados, ...extras, indisponiveis: opcionais.filter((c) => erros[c]) } : { ...dados }, null)
     }),
   )
   return () => cancelar.forEach((parar) => parar())

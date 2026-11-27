@@ -9,22 +9,16 @@ import { pode } from '../lib/papeis.js'
 import { endereco } from '../lib/rotas.js'
 import { nomeDeArquivo, plural } from '../lib/texto.js'
 import {
-  aviso, avisar, avisarErro, bloco, blocoDeErro, botao, botaoIcone, cabecalhoPagina, campoBusca, carregando, comOcupado, confirmar,
+  aviso, avisar, avisarErro, bloco, botao, botaoIcone, cabecalhoPagina, campoBusca, carregando, comOcupado, confirmar,
   estadoVazio, etiqueta, ficha, filtroSelecao, tabela,
 } from '../ui/componentes.js'
 import { el, trocar } from '../ui/dom.js'
 import { baixarPlanilha } from '../ui/planilha.js'
 import { historicoDaPessoa } from './listas/historico.js'
-import { abrirFormularioOutraPessoa, abrirImportacaoOutrasPessoas } from './outrasPessoas/formulario.js'
+import { abrirFormularioOutraPessoa, abrirImportacaoOutrasPessoas, avisoDasRegras } from './outrasPessoas/formulario.js'
 
 const TITULO = 'Outras pessoas'
 const filtros = { busca: '', grupo: '', situacao: 'ativos' }
-
-// Antes de publicar as regras novas no Firebase, a coleção nega a leitura: explica o que fazer.
-export const avisoDasRegras = (erro) =>
-  erro?.code === 'permission-denied'
-    ? aviso('Esta parte precisa das regras novas do Firebase. Abra o console do Firebase em Firestore Database > Regras, cole o conteúdo do arquivo firestore.rules e clique em Publicar (passo a passo no README, parte "Como publicar novas regras do Firestore").', { erro: true })
-    : blocoDeErro(erro)
 
 export function montar(raiz, { pessoa, params }) {
   const [id] = params

@@ -2,7 +2,7 @@
 // marcada no check-in (Não participou ou Outros) e a observação. No Treinamento Comercial, destaca quem do setor
 // comercial foi convocado e faltou.
 import { formatarHora } from '../../lib/datas.js'
-import { TIPOS_DE_PESSOA, nomeComFuncao, resumoDaLista, rotuloDaSituacao, situacaoNoCheckin } from '../../lib/listas.js'
+import { nomeComFuncao, resumoDaLista, rotuloDaSituacao, situacaoNoCheckin, tipoDaPresenca } from '../../lib/listas.js'
 import { formatarNumero, plural } from '../../lib/texto.js'
 import { bloco, etiqueta, indicadores, tabela } from '../../ui/componentes.js'
 import { el, trocar } from '../../ui/dom.js'
@@ -20,7 +20,7 @@ export function montarResumo(caixa, ctx) {
           classe: 'tabela--compacta',
           colunas: [
             { rotulo: 'Nome', principal: true, celula: (p) => el('span', { class: 'tabela__nome' }, p.nome) },
-            { rotulo: 'Tipo', celula: (p) => TIPOS_DE_PESSOA[p.tipoPessoa] ?? '' },
+            { rotulo: 'Tipo', celula: tipoDaPresenca },
             { rotulo: 'Detalhe', celula: (p) => p.detalhe ?? '' },
             comHora && { rotulo: 'Check-in', classe: 'numero', celula: (p) => (p.horaCheckin ? formatarHora(p.horaCheckin) : '') },
             comSituacao && {

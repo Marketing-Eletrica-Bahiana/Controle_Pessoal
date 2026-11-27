@@ -35,6 +35,23 @@ describe('lista: importar planilha', () => {
     assert.equal(acharPessoaDaPlanilha('Fulano de Tal', dados), null)
   })
 
+  it('acha também em Outras pessoas (Diretoria, prestadores) e grava com o grupo', () => {
+    const outrasPessoas = [
+      { id: 'o1', nome: 'Diretor Exemplo', grupo: 'Diretoria', empresa: '', ativo: true },
+      { id: 'o2', nome: 'Prestador Antigo', grupo: 'Prestador de serviço', empresa: 'Segurança', ativo: false },
+    ]
+    const dados = { colaboradores, eletricistas, outrasPessoas }
+    assert.deepEqual([acharPessoaDaPlanilha('diretor exemplo', dados).tipo, acharPessoaDaPlanilha('diretor exemplo', dados).pessoa.id], ['outro', 'o1'])
+    assert.equal(acharPessoaDaPlanilha('Prestador Antigo', dados).pessoa.id, 'o2')
+    assert.equal(acharPessoaDaPlanilha('Diretor', dados).parecido, true)
+    const previa = prepararPlanilhaDaLista({ registros: [registro(2, 'Diretor Exemplo', 'Sim'), registro(3, 'Prestador Antigo')], ...dados, presencas: [] })
+    assert.equal(noCadastro(previa.itens[0]), 'Diretor Exemplo (Diretoria)')
+    assert.ok(previa.itens[1].avisos.includes('Está desativada em Outras pessoas.'))
+    const [operacao] = operacoesDaPlanilhaDaLista(previa, { listaId: 'l1', quem: 'Ivie', novoId: () => 'x' })
+    assert.equal(operacao.caminho, 'listas/l1/presencas/outro_o1')
+    assert.deepEqual([operacao.dados.tipoPessoa, operacao.dados.grupo, operacao.dados.presente, operacao.dados.convocado], ['outro', 'Diretoria', true, true])
+  })
+
   it('prévia: entra, já está, não encontrado, repetido e sem nome', () => {
     const presencas = [{ id: 'colaborador_c2', tipoPessoa: 'colaborador', pessoaId: 'c2', nome: 'Bruno Lima', convocado: true, presente: false }]
     const registros = [
