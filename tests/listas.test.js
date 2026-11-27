@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
-  CABECALHO_COMPLETA, CABECALHO_PRESENTES, LOCAIS, TODAS_AS_LOJAS, contarPresencas, ehDaLoja, ehListaDeAniversario, filtrarListas, fornecedorJaNaLista, funcaoDaPresenca,
+  CABECALHO_COMPLETA, CABECALHO_PRESENTES, LOCAIS, PAIS_E_MAES, TODAS_AS_LOJAS, colaboradoresDoGrupo, contarPresencas, ehDaLoja, ehListaDeAniversario, filtrarListas, fornecedorJaNaLista, funcaoDaPresenca,
   historicoDaPessoa, idDaPresenca, linhasCompleta, linhasPresentes, listasDaMarca, marcaDaPresenca, nomeComFuncao, nomeDoArquivoDaLista, ondeE,
   pessoasNaLista, presencaDeColaborador,
   presencaDeConvidado, presencaDeEletricista, presencaDeFornecedor, presencasParaCheckin, quandoE, resultadoNaLista,
@@ -38,6 +38,23 @@ describe('listas: cadastro e filtros', () => {
     assert.ok(ehDaLoja({ loja: '' }, TODAS_AS_LOJAS))
     assert.ok(ehDaLoja({ loja: 'Aracaju' }, 'Aracaju'))
     assert.ok(!ehDaLoja({ loja: 'Aracaju' }, 'Lauro de Freitas'))
+  })
+
+  it('grupos de "Adicionar colaboradores": setor, loja e pais e mães', () => {
+    const ativos = [
+      { id: 'a', setor: 'Comercial', loja: 'Aracaju', paiOuMae: 'Mãe' },
+      { id: 'b', setor: 'comercial', loja: 'Lauro de Freitas', paiOuMae: 'Pai' },
+      { id: 'c', setor: 'RH', loja: 'Aracaju', paiOuMae: '' },
+      { id: 'd', setor: 'RH', loja: '' },
+    ]
+    const ids = (tipo, valor) => colaboradoresDoGrupo(ativos, tipo, valor).map((c) => c.id)
+    assert.deepEqual(ids('setor', 'Comercial'), ['a', 'b'])
+    assert.deepEqual(ids('loja', 'Aracaju'), ['a', 'c'])
+    assert.deepEqual(ids('loja', TODAS_AS_LOJAS), ['a', 'b', 'c', 'd'])
+    assert.deepEqual(ids('pais', PAIS_E_MAES), ['a', 'b'])
+    assert.deepEqual(ids('pais', 'Pai'), ['b'])
+    assert.deepEqual(ids('pais', 'Mãe'), ['a'])
+    assert.deepEqual(ids('pais', ''), [])
   })
 
   it('filtra por tipo, situação, ano e busca, mais recentes primeiro', () => {

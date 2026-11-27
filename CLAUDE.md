@@ -50,6 +50,7 @@ fornecedores, eletricistas do CAE, listas de presença com check-in pelo celular
     aniversariantes (ver "Participação").
 14. (Feita em 27/11/2026, a pedido) Bloco "Endomarketing e eventos" no Dashboard (ver "Dashboard").
 15. (Feita em 27/11/2026, a pedido) Opção "Todas as lojas" na loja da lista e em "Loja inteira" (ver "Listas").
+16. (Feita em 27/11/2026, a pedido) "Pais e mães" em Adicionar colaboradores dos convocados (ver "Listas").
 
 A pessoa autorizou fazer as etapas 2 a 6 em sequência, sem pedir aprovação entre elas, depois de
 conferida a integração da Etapa 1.
@@ -213,6 +214,11 @@ Tela em `js/telas/listas.js` (visão geral e página da lista) com as partes em 
   para ações e eventos das três lojas juntas; o local continua opcional) e "Outro local". As regras do Firestore não
   conferem esse campo. "Loja inteira" em Convocados também tem "Todas as lojas", que traz todos os colaboradores
   ativos, até quem está sem loja (`ehDaLoja`).
+- "Adicionar colaboradores" tem quatro modos: Um a um, Setor inteiro, Loja inteira e Pais e mães (Etapa 16, a pedido:
+  "puxar a lista de pais e mães"). Os três por grupo saem de `GRUPOS` em `js/telas/listas/convocados.js` (rótulo,
+  opções, ajuda e texto de vazio) e de `colaboradoresDoGrupo` (`js/lib/listas.js`, com teste). Pais e mães: "Pais e
+  mães" (`PAIS_E_MAES`, os dois), "Só os pais" ou "Só as mães", pelo `paiOuMae` do cadastro, só ativos, como em
+  Colaboradores > Pais e mães. No celular os quatro botões ficam em duas linhas.
 - Admin cria, edita, encerra, reabre e exclui (apaga as presenças junto, com confirmação). Nova
   lista abre direto em Convocados.
 - Convocados (admin): colaboradores um a um, setor inteiro ou loja inteira (só ativos e quem ainda

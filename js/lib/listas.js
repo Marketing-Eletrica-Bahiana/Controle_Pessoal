@@ -14,6 +14,16 @@ export const LOCAIS = [...LOJAS, TODAS_AS_LOJAS, OUTRO_LOCAL]
 // Colaborador da loja escolhida em "Adicionar loja inteira"; "Todas as lojas" traz todo mundo (até quem está sem loja).
 export const ehDaLoja = (colaborador, loja) => loja === TODAS_AS_LOJAS || colaborador.loja === loja
 
+// "Adicionar colaboradores" por grupo. tipo: 'setor' (nome do setor), 'loja' (uma loja ou "Todas as lojas") ou 'pais'
+// ("Pais e mães" para os dois, "Pai" ou "Mãe", como no cadastro). ativos: só os colaboradores ativos.
+export const PAIS_E_MAES = 'Pais e mães'
+export function colaboradoresDoGrupo(ativos, tipo, valor) {
+  if (!valor) return []
+  if (tipo === 'setor') return ativos.filter((c) => normalizar(c.setor) === normalizar(valor))
+  if (tipo === 'pais') return ativos.filter((c) => (valor === PAIS_E_MAES ? Boolean(c.paiOuMae) : c.paiOuMae === valor))
+  return ativos.filter((c) => ehDaLoja(c, valor))
+}
+
 export const ehListaDeAniversario = (lista) => TIPOS_DE_ANIVERSARIO.includes(lista?.tipo)
 
 export const TIPOS_DE_PESSOA = {

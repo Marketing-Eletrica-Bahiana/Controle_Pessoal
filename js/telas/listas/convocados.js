@@ -7,8 +7,8 @@ import { mensagemDeErro } from '../../lib/erros.js'
 import { vendedoresDosEletricistas } from '../../lib/eletricistas.js'
 import { FUNCOES_DO_FORNECEDOR, pessoasDoFornecedor } from '../../lib/fornecedores.js'
 import {
-  TIPOS_DE_PESSOA, TODAS_AS_LOJAS, ehDaLoja, fornecedorJaNaLista, idDaPresenca, pessoasNaLista, presencaDeColaborador, presencaDeEletricista,
-  presencaDeFornecedor,
+  PAIS_E_MAES, TIPOS_DE_PESSOA, TODAS_AS_LOJAS, colaboradoresDoGrupo, fornecedorJaNaLista, idDaPresenca, pessoasNaLista, presencaDeColaborador,
+  presencaDeEletricista, presencaDeFornecedor,
 } from '../../lib/listas.js'
 import { pode } from '../../lib/papeis.js'
 import { combinaBusca, compararTexto, limparEspacos, normalizar, plural } from '../../lib/texto.js'
@@ -125,6 +125,7 @@ function abrirColaboradores(ctx) {
         ['individual', 'Um a um', 'user-round'],
         ['setor', 'Setor inteiro', 'building-2'],
         ['loja', 'Loja inteira', 'store'],
+        ['pais', 'Pais e mães', 'baby'],
       ].map(([valor, rotulo, nomeIcone]) =>
         el(
           'button',
@@ -197,18 +198,44 @@ function abrirColaboradores(ctx) {
     return [busca.no, resultado, el('div', { class: 'janela-modal__acoes janela-modal__acoes--entre' }, total, el('div', { class: 'acoes' }, botao({ texto: 'Cancelar', aoClicar: () => janela.fechar() }), adicionar))]
   }
 
+  // Setor inteiro, loja inteira e pais e mães: escolhe o grupo, vê quem vem e adiciona todo mundo de uma vez.
+  const GRUPOS = {
+    setor: {
+      rotulo: 'Setor',
+      escolha: 'Escolha o setor',
+      opcoes: () => [...ctx.dados().setores].sort((a, b) => compararTexto(a.nome, b.nome)).map((s) => ({ valor: s.nome, rotulo: s.nome })),
+      ajuda: 'Uma lista pode misturar pessoas de vários setores e lojas: dá para adicionar mais depois.',
+      vazio: 'Nenhum colaborador ativo aqui.',
+    },
+    loja: {
+      rotulo: 'Loja',
+      escolha: 'Escolha a loja',
+      opcoes: () => [...LOJAS, TODAS_AS_LOJAS].map((l) => ({ valor: l, rotulo: l })),
+      ajuda: 'Uma lista pode misturar pessoas de vários setores e lojas: dá para adicionar mais depois.',
+      vazio: 'Nenhum colaborador ativo aqui.',
+    },
+    pais: {
+      rotulo: 'Pais e mães',
+      escolha: 'Escolha quem',
+      opcoes: () => [
+        { valor: PAIS_E_MAES, rotulo: 'Pais e mães' },
+        { valor: 'Pai', rotulo: 'Só os pais' },
+        { valor: 'Mãe', rotulo: 'Só as mães' },
+      ],
+      ajuda: 'Vem quem está ativo e marcado como pai ou mãe no cadastro (o mesmo de Colaboradores > Pais e mães).',
+      vazio: 'Ninguém ativo marcado assim no cadastro. Marque em Colaboradores, editando a pessoa ou importando a lista oficial.',
+    },
+  }
+
   function grupo(tipo) {
-    const opcoes =
-      tipo === 'setor'
-        ? [...ctx.dados().setores].sort((a, b) => compararTexto(a.nome, b.nome)).map((s) => ({ valor: s.nome, rotulo: s.nome }))
-        : [...LOJAS, TODAS_AS_LOJAS].map((l) => ({ valor: l, rotulo: l }))
-    const escolha = selecao([{ valor: '', rotulo: tipo === 'setor' ? 'Escolha o setor' : 'Escolha a loja' }, ...opcoes], '', { 'data-foco': true })
+    const config = GRUPOS[tipo]
+    const escolha = selecao([{ valor: '', rotulo: config.escolha }, ...config.opcoes()], '', { 'data-foco': true })
     const previa = el('div')
     const adicionar = botao({ texto: 'Adicionar', icone: 'plus', variante: 'principal', disabled: true })
     let pessoas = []
     escolha.addEventListener('change', () => {
       const valor = escolha.value
-      const todos = valor ? ativos().filter((c) => (tipo === 'setor' ? normalizar(c.setor) === normalizar(valor) : ehDaLoja(c, valor))) : []
+      const todos = colaboradoresDoGrupo(ativos(), tipo, valor)
       pessoas = todos.filter(fora)
       adicionar.disabled = !pessoas.length
       trocar(adicionar, icone('plus'), el('span', {}, pessoas.length ? `Adicionar ${plural(pessoas.length, 'pessoa', 'pessoas')}` : 'Adicionar'))
@@ -222,13 +249,13 @@ function abrirColaboradores(ctx) {
                 aviso(`${plural(todos.length, 'colaborador ativo', 'colaboradores ativos')}${todos.length - pessoas.length ? `, ${plural(todos.length - pessoas.length, 'já está', 'já estão')} na lista` : ''}.`),
                 pessoas.length > 0 && el('p', { class: 'texto-suave texto-pequeno' }, pessoas.map((c) => c.nome).join(', ')),
               )
-            : aviso('Nenhum colaborador ativo aqui.', { erro: true })),
+            : aviso(config.vazio, { erro: true })),
       )
     })
     adicionar.addEventListener('click', () => gravar(ctx, pessoas.map((c) => presencaDeColaborador(c)), janela, adicionar))
     return [
-      campo({ rotulo: tipo === 'setor' ? 'Setor' : 'Loja', entrada: escolha }).no,
-      el('p', { class: 'campo__ajuda' }, 'Uma lista pode misturar pessoas de vários setores e lojas: dá para adicionar mais depois.'),
+      campo({ rotulo: config.rotulo, entrada: escolha }).no,
+      el('p', { class: 'campo__ajuda' }, config.ajuda),
       previa,
       el('div', { class: 'janela-modal__acoes' }, botao({ texto: 'Cancelar', aoClicar: () => janela.fechar() }), adicionar),
     ]

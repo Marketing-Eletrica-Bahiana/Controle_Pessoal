@@ -226,6 +226,8 @@ entre no GitHub com uma conta que tenha acesso à organização Marketing-Eletri
 
 A mais recente primeiro. Cada alteração entra aqui no mesmo envio em que vai para o site.
 
+- **27/11/2026**: em Convocados > Adicionar colaboradores, a opção **Pais e mães** puxa de uma vez quem está marcado
+  como pai ou mãe no cadastro: os dois, só os pais ou só as mães.
 - **27/11/2026**: na lista de presença, a loja pode ser **Todas as lojas** (para ações e eventos das três lojas). Em
   Convocados > Adicionar colaboradores > Loja inteira, **Todas as lojas** convoca todos os colaboradores ativos de uma
   vez.
