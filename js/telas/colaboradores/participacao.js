@@ -1,5 +1,6 @@
 // Parte "Participação" da aba Colaboradores (#/colaboradores/participacao): quem mais participou das ações de
-// endomarketing (ou de outro tipo de lista, pelo filtro) e dos controles de aniversariantes, com as observações.
+// endomarketing (com os controles de aniversariantes, que também são ações; ou de outro tipo de lista, pelo filtro) e
+// dos controles de aniversariantes, com as observações.
 // Só colaboradores ativos e só listas que já aconteceram. Regras em js/lib/participacao.js.
 import { lerControles } from '../../dados/aniversariantes.js'
 import { fonte } from '../../dados/fontes.js'
@@ -7,6 +8,7 @@ import { lerPresencas } from '../../dados/listas.js'
 import { historicoDosAniversarios } from '../../lib/aniversariantes.js'
 import { formatarData, hojeISO } from '../../lib/datas.js'
 import { mensagemDeErro } from '../../lib/erros.js'
+import { ehListaDeAniversario } from '../../lib/listas.js'
 import {
   CABECALHO_DA_PARTICIPACAO, CABECALHO_DOS_ANIVERSARIOS, TIPOS_DA_PARTICIPACAO, anosDasListas, aniversariosDosAtivos, controlesDaParticipacao,
   linhasDaParticipacao, linhasDosAniversarios, listasDaParticipacao, rankingDeParticipacao, tipoDaParticipacao, TIPO_PADRAO,
@@ -93,6 +95,7 @@ export function montarParticipacao(caixa, { colaboradores, podeBaixar }) {
     const noAno = filtros.ano ? ` em ${filtros.ano}` : ''
     const daBusca = (nome) => combinaBusca(nome, filtros.busca)
     const aniversariosDaBusca = aniversarios.filter((p) => daBusca(p.nome))
+    const comAniversarios = lidas.acoes.some(({ lista }) => ehListaDeAniversario(lista))
     trocar(
       conteudo,
       indicadores([
@@ -112,7 +115,9 @@ export function montarParticipacao(caixa, { colaboradores, podeBaixar }) {
           titulo: `Quem mais participou: ${tipo.rotulo}`,
           icone: 'trophy',
           descricao: lidas.acoes.length
-            ? `Em ${plural(lidas.acoes.length, tipo.um, tipo.varios)}${noAno}. Conta quem fez check-in, convocado ou não. "Faltou" é quem foi convocado e não fez check-in.`
+            ? `Em ${plural(lidas.acoes.length, tipo.um, tipo.varios)}${noAno}. Conta quem fez check-in, convocado ou não. "Faltou" é quem foi convocado e não fez check-in.${
+                comAniversarios ? ' Os controles de aniversariantes também contam: "Participou" vale como check-in e "Pendente" não é falta.' : ''
+              }`
             : '',
         },
         !lidas.acoes.length

@@ -2,12 +2,13 @@
 // por padrão) e dos controles de aniversariantes. Regras puras; as presenças chegam já lidas.
 import { observacoesDaPessoa } from './aniversariantes.js'
 import { formatarData } from './datas.js'
-import { ehListaDeAniversario } from './listas.js'
+import { ehDoTipo, ehListaDeAniversario } from './listas.js'
 import { compararTexto } from './texto.js'
 
 export const TIPO_PADRAO = 'Ação de Endomarketing'
 
-// Filtro de tipo e frases da tela ("Em 5 ações de endomarketing"). Valor vazio = todas as listas, sem os aniversários.
+// Filtro de tipo e frases da tela ("Em 5 ações de endomarketing"). Valor vazio = todas as listas. As ações de
+// endomarketing (e "todas") incluem os controles de aniversariantes (ehDoTipo).
 export const TIPOS_DA_PARTICIPACAO = [
   { valor: 'Ação de Endomarketing', rotulo: 'Ações de Endomarketing', um: 'ação de endomarketing', varios: 'ações de endomarketing' },
   { valor: 'Evento', rotulo: 'Eventos', um: 'evento', varios: 'eventos' },
@@ -19,10 +20,11 @@ export const TIPOS_DA_PARTICIPACAO = [
 
 export const tipoDaParticipacao = (valor) => TIPOS_DA_PARTICIPACAO.find((t) => t.valor === valor) ?? TIPOS_DA_PARTICIPACAO[0]
 
-// Listas do tipo e do ano escolhidos que já aconteceram (data até hoje), as mais recentes primeiro.
+// Listas do tipo e do ano escolhidos que já aconteceram (data até hoje; o controle de aniversariantes tem o dia 1 do
+// mês), as mais recentes primeiro.
 export function listasDaParticipacao(listas, { tipo = TIPO_PADRAO, ano = '' } = {}, hoje) {
   return listas
-    .filter((l) => !ehListaDeAniversario(l) && (!tipo || l.tipo === tipo) && (!ano || String(l.data).startsWith(ano)) && String(l.data) <= hoje)
+    .filter((l) => ehDoTipo(l, tipo) && (!ano || String(l.data).startsWith(ano)) && String(l.data) <= hoje)
     .sort((a, b) => String(b.data).localeCompare(String(a.data)))
 }
 
@@ -38,6 +40,7 @@ const ativosPorId = (colaboradores) => new Map(colaboradores.filter((c) => c.ati
 
 // lidas: [{ lista, presencas }]. Para cada colaborador ativo: em quantas listas fez check-in (convocado ou não), em
 // quantas foi convocado e em quantas faltou (convocado sem check-in). Desligados e cadastros apagados ficam de fora.
+// Nos controles de aniversariantes, "Participou" é o check-in e "Pendente" não conta como falta.
 // O ranking só tem quem participou de pelo menos uma; semParticipar conta os ativos que ainda não participaram.
 export function rankingDeParticipacao(lidas, colaboradores) {
   const ativos = ativosPorId(colaboradores)
@@ -51,7 +54,7 @@ export function rankingDeParticipacao(lidas, colaboradores) {
       if (p.presente) {
         conta.participou++
         if (String(lista.data) > conta.ultima) conta.ultima = String(lista.data)
-      } else if (p.convocado) conta.faltou++
+      } else if (p.convocado && !(ehListaDeAniversario(lista) && p.status !== 'nao_participou')) conta.faltou++
     }
   }
   const ranking = [...contas.values()]

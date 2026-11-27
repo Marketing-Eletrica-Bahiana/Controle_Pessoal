@@ -35,11 +35,11 @@ describe('participação: listas do ranking', () => {
     assert.equal(tipoDaParticipacao('não existe').valor, TIPO_PADRAO)
   })
 
-  it('escolhe as listas do tipo e do ano que já aconteceram, sem os aniversários', () => {
+  it('escolhe as listas do tipo e do ano que já aconteceram; os aniversariantes contam como ações', () => {
     const hoje = '2026-11-27'
-    assert.deepEqual(listasDaParticipacao(listas, {}, hoje).map((l) => l.id), ['acao2', 'acao1', 'antiga'])
-    assert.deepEqual(listasDaParticipacao(listas, { ano: '2026' }, hoje).map((l) => l.id), ['acao2', 'acao1'])
-    assert.deepEqual(listasDaParticipacao(listas, { tipo: '', ano: '2026' }, hoje).map((l) => l.id), ['acao2', 'evento', 'acao1'])
+    assert.deepEqual(listasDaParticipacao(listas, {}, hoje).map((l) => l.id), ['acao2', 'aniv', 'acao1', 'antiga', 'emp'])
+    assert.deepEqual(listasDaParticipacao(listas, { ano: '2026' }, hoje).map((l) => l.id), ['acao2', 'aniv', 'acao1'])
+    assert.deepEqual(listasDaParticipacao(listas, { tipo: '', ano: '2026' }, hoje).map((l) => l.id), ['acao2', 'evento', 'aniv', 'acao1'])
     assert.deepEqual(listasDaParticipacao(listas, { tipo: 'Evento' }, hoje).map((l) => l.id), ['evento'])
     assert.deepEqual(controlesDaParticipacao(listas).map((l) => l.id), ['aniv', 'emp'])
     assert.deepEqual(controlesDaParticipacao(listas, { ano: '2026' }).map((l) => l.id), ['aniv'])
@@ -65,6 +65,24 @@ describe('participação: rankings', () => {
     assert.deepEqual(rankingDeParticipacao([], colaboradores), { ranking: [], participacoes: 0, semParticipar: 4 })
     assert.equal(CABECALHO_DA_PARTICIPACAO[0], 'Posição')
     assert.deepEqual(linhasDaParticipacao(ranking)[2], [3, 'Bia', 'RH', 'Salvador (Matriz)', 1, 2, 1, '20/11/2026'])
+  })
+
+  it('no controle de aniversariantes, "Participou" conta e "Pendente" não é falta', () => {
+    const status = (pessoaId, s) => ({ ...colaborador(pessoaId, true, s === 'participou'), status: s })
+    const { ranking } = rankingDeParticipacao(
+      [{ lista: listas[5], presencas: [status('a', 'participou'), status('b', 'nao_participou'), status('e', 'pendente')] }],
+      colaboradores,
+    )
+    assert.deepEqual(ranking.map((r) => [r.colaborador.nome, r.participou, r.faltou]), [['Ana', 1, 0]])
+    const comAcao = rankingDeParticipacao(
+      [
+        { lista: listas[5], presencas: [status('b', 'nao_participou'), status('e', 'pendente')] },
+        { lista: listas[0], presencas: [colaborador('b', true, true), colaborador('e', true, true)] },
+      ],
+      colaboradores,
+    )
+    // Bia deixou de participar do aniversário (falta); Eva está pendente (não é falta).
+    assert.deepEqual(comAcao.ranking.map((r) => [r.colaborador.nome, r.participou, r.convocado, r.faltou]), [['Eva', 1, 2, 0], ['Bia', 1, 2, 1]])
   })
 
   it('aniversariantes: só os ativos, com as observações na planilha', () => {

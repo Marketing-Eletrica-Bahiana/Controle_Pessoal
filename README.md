@@ -85,8 +85,10 @@ preenche.
 Em **Colaboradores > Participação** ficam dois rankings, só com colaboradores ativos:
 
 1. **Quem mais participou das ações**: conta em quantas listas do tipo **Ação de Endomarketing** cada pessoa fez
-   check-in (convocada ou não), em quantas foi convocada e em quantas faltou (convocada e sem check-in). Só contam as
-   listas que já aconteceram. O filtro **Tipo de lista** troca para Eventos, Treinamentos ou todas as listas.
+   check-in (convocada ou não), em quantas foi convocada e em quantas faltou (convocada e sem check-in). Os controles
+   de aniversariantes também são ações: "Participou" conta como check-in, "Não participou" como falta e "Pendente" não
+   conta. Só contam as listas que já aconteceram. O filtro **Tipo de lista** troca para Eventos, Treinamentos ou todas
+   as listas.
 2. **Quem mais participou dos aniversariantes**: conta os meses marcados como "Participou" nos controles de
    aniversariantes (do mês e de empresa), com as **observações** escritas em cada mês.
 
@@ -226,6 +228,9 @@ entre no GitHub com uma conta que tenha acesso à organização Marketing-Eletri
 
 A mais recente primeiro. Cada alteração entra aqui no mesmo envio em que vai para o site.
 
+- **27/11/2026**: os controles de **aniversariantes** (do mês e de empresa) passam a contar como **Ações de
+  Endomarketing**: no filtro de tipo da aba Listas, no ranking de Colaboradores > Participação e no bloco Endomarketing
+  e eventos do Dashboard.
 - **27/11/2026**: em Convocados > Adicionar colaboradores, a opção **Pais e mães** puxa de uma vez quem está marcado
   como pai ou mãe no cadastro: os dois, só os pais ou só as mães.
 - **27/11/2026**: na lista de presença, a loja pode ser **Todas as lojas** (para ações e eventos das três lojas). Em

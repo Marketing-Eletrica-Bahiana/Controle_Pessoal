@@ -5,12 +5,12 @@ import { ouvirFontes } from '../dados/fontes.js'
 import { TIPO_EMPRESA, TIPO_MES, aniversariantesDoMes, aniversariosDeEmpresa, idDoControle } from '../lib/aniversariantes.js'
 import { resumoDosSetores } from '../lib/colaboradores.js'
 import {
-  TIPOS_DO_ENDOMARKETING, anosDisponiveis, descricaoDoPeriodo, listasAbertas, listasDoPeriodo, numerosGerais, rankingDeFornecedores,
+  anosDisponiveis, descricaoDoPeriodo, ehDoEndomarketing, listasAbertas, listasDoPeriodo, numerosGerais, rankingDeFornecedores,
   resumoDoEndomarketing, resumoDosTreinamentos,
 } from '../lib/dashboard.js'
 import { NOMES_MESES, formatarData, formatarDiaMes, formatarMesAno, hojeISO, partesDeHoje } from '../lib/datas.js'
 import { mensagemDeErro } from '../lib/erros.js'
-import { ondeE, quandoE } from '../lib/listas.js'
+import { ehListaDeAniversario, ondeE, quandoE } from '../lib/listas.js'
 import { pode } from '../lib/papeis.js'
 import { endereco } from '../lib/rotas.js'
 import { formatarNumero, plural, primeiroNome } from '../lib/texto.js'
@@ -244,7 +244,14 @@ export function montar(raiz, { pessoa }) {
   async function desenharPeriodo() {
     const hoje = hojeISO()
     const doPeriodo = listasDoPeriodo(dados.listas, periodo, hoje)
-    const chave = JSON.stringify([periodo, doPeriodo.map((l) => [l.id, l.status, l.fornecedores]), dados.fornecedores.length, dados.colaboradores.length])
+    // Endomarketing e eventos: os controles de aniversariantes também são ações.
+    const endomarketing = listasDoPeriodo(dados.listas, periodo, hoje, { comAniversarios: true }).filter(ehDoEndomarketing)
+    const chave = JSON.stringify([
+      periodo,
+      [...doPeriodo, ...endomarketing.filter(ehListaDeAniversario)].map((l) => [l.id, l.status, l.fornecedores]),
+      dados.fornecedores.length,
+      dados.colaboradores.length,
+    ])
     if (chave === chaveDoPeriodo) return
     chaveDoPeriodo = chave
     const minha = ++versaoDoPeriodo
@@ -255,7 +262,6 @@ export function montar(raiz, { pessoa }) {
 
     const cae = doPeriodo.filter((l) => l.tipo === 'Treinamento CAE')
     const comercial = doPeriodo.filter((l) => l.tipo === 'Treinamento Comercial')
-    const endomarketing = doPeriodo.filter((l) => TIPOS_DO_ENDOMARKETING.includes(l.tipo))
     trocar(caixas.cae, bloco({ titulo: 'CAE', icone: 'zap' }, carregando('Contando as presenças...')))
     trocar(caixas.comercial, bloco({ titulo: 'Treinamentos do Comercial', icone: 'briefcase' }, carregando('Contando as presenças...')))
     trocar(caixas.endomarketing, bloco({ titulo: TITULO_DO_ENDOMARKETING, icone: 'party-popper' }, carregando('Contando as presenças...')))
@@ -395,7 +401,11 @@ export function montar(raiz, { pessoa }) {
     )
   }
 
-  // Ações de Endomarketing e Eventos do período: quantos participaram (convocados ou não) e a presença dos convocados.
+  // Ações de Endomarketing (com os controles de aniversariantes) e Eventos do período: quantos participaram (convocados
+  // ou não) e a presença dos convocados. No controle de aniversariantes, presente é quem ficou "Participou".
+  const TIPO_NA_TABELA = { 'Ação de Endomarketing': 'Endomarketing', 'Aniversariantes do mês': 'Aniversariantes', 'Aniversário de empresa': 'Tempo de casa' }
+  const enderecoDaLista = (l) => (ehListaDeAniversario(l) ? endereco('aniversariantes', 'controle', l.id) : endereco('listas', l.id, 'resumo'))
+
   function desenharEndomarketing(r, texto) {
     const ultimos = [...r.treinamentos].slice(0, 8).reverse()
     const g = ultimos.length
@@ -418,12 +428,16 @@ export function montar(raiz, { pessoa }) {
         {
           titulo: TITULO_DO_ENDOMARKETING,
           icone: 'party-popper',
-          descricao: `Ações de Endomarketing e Eventos no ${texto}.`,
+          descricao: `Ações de Endomarketing (os controles de aniversariantes também contam) e Eventos no ${texto}.`,
           acoes: [link({ texto: 'Quem mais participou', href: '#/colaboradores/participacao', classe: 'botao--pequeno' })],
         },
         indicadores(
           [
-            { rotulo: 'Ações e eventos', valor: formatarNumero(r.treinamentos.length), detalhe: `${plural(r.acoes, 'ação', 'ações')} e ${plural(r.eventos, 'evento', 'eventos')}` },
+            {
+              rotulo: 'Ações e eventos',
+              valor: formatarNumero(r.treinamentos.length),
+              detalhe: `${plural(r.acoes, 'ação', 'ações')}${r.aniversarios ? ` (${formatarNumero(r.aniversarios)} de aniversariantes)` : ''} e ${plural(r.eventos, 'evento', 'eventos')}`,
+            },
             { rotulo: 'Participantes', valor: formatarNumero(r.presentes), detalhe: r.mediaDePresentes === null ? '' : `média de ${r.mediaDePresentes} por lista` },
             { rotulo: 'Presença média', valor: r.mediaDaTaxa === null ? 'Sem dados' : `${r.mediaDaTaxa}%`, detalhe: 'dos convocados' },
           ],
@@ -436,8 +450,8 @@ export function montar(raiz, { pessoa }) {
               chave: (t) => t.lista.id,
               classe: 'tabela--compacta',
               colunas: [
-                { rotulo: 'Ação ou evento', principal: true, celula: (x) => el('a', { class: 'tabela__nome', href: endereco('listas', x.lista.id, 'resumo') }, x.lista.nome) },
-                { rotulo: 'Tipo', celula: (x) => etiqueta(x.lista.tipo === 'Evento' ? 'Evento' : 'Endomarketing', x.lista.tipo === 'Evento' ? '' : 'marinho') },
+                { rotulo: 'Ação ou evento', principal: true, celula: (x) => el('a', { class: 'tabela__nome', href: enderecoDaLista(x.lista) }, x.lista.nome) },
+                { rotulo: 'Tipo', celula: (x) => etiqueta(TIPO_NA_TABELA[x.lista.tipo] ?? x.lista.tipo, x.lista.tipo === 'Evento' ? '' : 'marinho') },
                 { rotulo: 'Data', classe: 'numero', celula: (x) => formatarData(x.lista.data) },
                 { rotulo: 'Participantes', classe: 'numero', ordem: (x) => x.presentes, celula: (x) => formatarNumero(x.presentes) },
                 { rotulo: 'Presentes / convocados', classe: 'numero', celula: (x) => `${formatarNumero(x.presentesConvocados)} / ${formatarNumero(x.convocados)}` },

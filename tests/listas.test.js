@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
-  CABECALHO_COMPLETA, CABECALHO_PRESENTES, LOCAIS, PAIS_E_MAES, TODAS_AS_LOJAS, colaboradoresDoGrupo, contarPresencas, ehDaLoja, ehListaDeAniversario, filtrarListas, fornecedorJaNaLista, funcaoDaPresenca,
+  CABECALHO_COMPLETA, CABECALHO_PRESENTES, LOCAIS, PAIS_E_MAES, TODAS_AS_LOJAS, colaboradoresDoGrupo, contarPresencas, ehAcaoDeEndomarketing,
+  ehDaLoja, ehDoTipo, ehListaDeAniversario, filtrarListas, fornecedorJaNaLista, funcaoDaPresenca,
   historicoDaPessoa, idDaPresenca, linhasCompleta, linhasPresentes, listasDaMarca, marcaDaPresenca, nomeComFuncao, nomeDoArquivoDaLista, ondeE,
   pessoasNaLista, presencaDeColaborador,
   presencaDeConvidado, presencaDeEletricista, presencaDeFornecedor, presencasParaCheckin, quandoE, resultadoNaLista,
@@ -63,6 +64,13 @@ describe('listas: cadastro e filtros', () => {
     assert.deepEqual(filtrarListas(listas, { situacao: 'encerrada', ano: '2026' }).map((l) => l.id), ['l1'])
     assert.deepEqual(filtrarListas(listas, { tipo: 'Treinamento CAE' }).map((l) => l.id), ['l2'])
     assert.deepEqual(filtrarListas(listas, { busca: 'legrand' }).map((l) => l.id), ['l1'])
+    // Os controles de aniversariantes também são ações de endomarketing.
+    const comAcoes = [...listas, { id: 'a1', nome: 'Café', tipo: 'Ação de Endomarketing', data: '2026-11-20' }, { id: 'aniv', nome: 'Aniversariantes', tipo: 'Aniversariantes do mês', data: '2026-11-01' }]
+    assert.deepEqual(filtrarListas(comAcoes, { tipo: 'Ação de Endomarketing' }).map((l) => l.id), ['a1', 'aniv'])
+    assert.deepEqual(filtrarListas(comAcoes, { tipo: 'Aniversariantes do mês' }).map((l) => l.id), ['aniv'])
+    assert.ok(ehAcaoDeEndomarketing({ tipo: 'Aniversário de empresa' }))
+    assert.ok(!ehAcaoDeEndomarketing({ tipo: 'Evento' }))
+    assert.ok(ehDoTipo({ tipo: 'Evento' }, ''))
     assert.ok(ehListaDeAniversario({ tipo: 'Aniversário de empresa' }))
     assert.equal(ondeE({ loja: 'Outro local', local: 'Hotel' }), 'Hotel')
     assert.equal(ondeE({ loja: 'Aracaju', local: 'Auditório' }), 'Aracaju · Auditório')

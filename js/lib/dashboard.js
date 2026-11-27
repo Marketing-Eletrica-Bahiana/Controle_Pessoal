@@ -2,7 +2,7 @@
 // contagem no banco), aqui só se junta e se ordena.
 import { LOJAS } from '../config.js'
 import { nomeDoMes } from './datas.js'
-import { ehListaDeAniversario } from './listas.js'
+import { ehAcaoDeEndomarketing, ehListaDeAniversario } from './listas.js'
 import { compararTexto } from './texto.js'
 
 export function numerosGerais({ colaboradores, fornecedores, listas, eletricistasAtivos, hoje }) {
@@ -20,11 +20,12 @@ export function numerosGerais({ colaboradores, fornecedores, listas, eletricista
   }
 }
 
-// Período: { ano, mes } com mes 0 = ano inteiro. Só listas que já aconteceram (até hoje).
-export function listasDoPeriodo(listas, { ano, mes }, hoje) {
+// Período: { ano, mes } com mes 0 = ano inteiro. Só listas que já aconteceram (até hoje). Os controles de
+// aniversariantes só entram com comAniversarios (bloco Endomarketing e eventos).
+export function listasDoPeriodo(listas, { ano, mes }, hoje, { comAniversarios = false } = {}) {
   const prefixo = mes ? `${ano}-${String(mes).padStart(2, '0')}` : String(ano)
   return listas
-    .filter((l) => !ehListaDeAniversario(l) && String(l.data).startsWith(prefixo) && l.data <= hoje)
+    .filter((l) => (comAniversarios || !ehListaDeAniversario(l)) && String(l.data).startsWith(prefixo) && l.data <= hoje)
     .sort((a, b) => String(a.data).localeCompare(String(b.data)))
 }
 
@@ -56,16 +57,19 @@ export function resumoDosTreinamentos(listas, contagens) {
   }
 }
 
-// Bloco "Endomarketing e eventos": as ações de endomarketing e os eventos do período.
-export const TIPOS_DO_ENDOMARKETING = ['Ação de Endomarketing', 'Evento']
+// Bloco "Endomarketing e eventos": as ações de endomarketing (com os controles de aniversariantes, que também são
+// ações) e os eventos do período.
+export const ehDoEndomarketing = (lista) => ehAcaoDeEndomarketing(lista) || lista?.tipo === 'Evento'
 
-// Mesmo resumo dos treinamentos, mais o total de presentes (convocados ou não) e quantas ações e eventos.
+// Mesmo resumo dos treinamentos, mais o total de presentes (convocados ou não), quantas ações (e quantas delas são de
+// aniversariantes) e quantos eventos.
 export function resumoDoEndomarketing(listas, contagens) {
-  const r = resumoDosTreinamentos(listas.filter((l) => TIPOS_DO_ENDOMARKETING.includes(l.tipo)), contagens)
+  const r = resumoDosTreinamentos(listas.filter(ehDoEndomarketing), contagens)
   return {
     ...r,
     presentes: r.treinamentos.reduce((soma, t) => soma + (t.presentes ?? 0), 0),
-    acoes: r.treinamentos.filter((t) => t.lista.tipo === 'Ação de Endomarketing').length,
+    acoes: r.treinamentos.filter((t) => ehAcaoDeEndomarketing(t.lista)).length,
+    aniversarios: r.treinamentos.filter((t) => ehListaDeAniversario(t.lista)).length,
     eventos: r.treinamentos.filter((t) => t.lista.tipo === 'Evento').length,
   }
 }

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
-  TIPOS_DO_ENDOMARKETING, anosDisponiveis, descricaoDoPeriodo, listasAbertas, listasDoPeriodo, numerosGerais, rankingDeFornecedores,
+  anosDisponiveis, descricaoDoPeriodo, ehDoEndomarketing, listasAbertas, listasDoPeriodo, numerosGerais, rankingDeFornecedores,
   resumoDoEndomarketing, resumoDosTreinamentos,
 } from '../js/lib/dashboard.js'
 
@@ -53,22 +53,28 @@ describe('dashboard', () => {
     assert.equal(resumoDosTreinamentos([], new Map()).mediaDaTaxa, null)
   })
 
-  it('endomarketing e eventos: só esses dois tipos, com o total de presentes', () => {
-    const doPeriodo = [
+  it('endomarketing e eventos: ações (com os aniversariantes) e eventos, com o total de presentes', () => {
+    const todas = [
       { id: 'acao', tipo: 'Ação de Endomarketing', data: '2026-11-25' },
       { id: 'evento', tipo: 'Evento', data: '2026-11-05' },
       { id: 'cae', tipo: 'Treinamento CAE', data: '2026-11-10' },
       { id: 'sem', tipo: 'Ação de Endomarketing', data: '2026-10-01' },
+      { id: 'aniversariantes-2026-11', tipo: 'Aniversariantes do mês', data: '2026-11-01' },
+      { id: 'aniversariantes-2026-12', tipo: 'Aniversariantes do mês', data: '2026-12-01' },
     ]
+    const hoje = '2026-11-27'
+    assert.deepEqual(listasDoPeriodo(todas, { ano: 2026, mes: 11 }, hoje).map((l) => l.id), ['evento', 'cae', 'acao'])
+    const doPeriodo = listasDoPeriodo(todas, { ano: 2026, mes: 0 }, hoje, { comAniversarios: true })
+    assert.deepEqual(doPeriodo.filter(ehDoEndomarketing).map((l) => l.id), ['sem', 'aniversariantes-2026-11', 'evento', 'acao'])
     const contagens = new Map([
       ['acao', { convocados: 10, presentesConvocados: 8, presentes: 12 }],
       ['evento', { convocados: 0, presentesConvocados: 0, presentes: 30 }],
       ['cae', { convocados: 5, presentesConvocados: 5, presentes: 5 }],
+      ['aniversariantes-2026-11', { convocados: 4, presentesConvocados: 2, presentes: 2 }],
     ])
     const r = resumoDoEndomarketing(doPeriodo, contagens)
-    assert.deepEqual(r.treinamentos.map((t) => [t.lista.id, t.taxa]), [['acao', 80], ['evento', null], ['sem', null]])
-    assert.deepEqual([r.presentes, r.acoes, r.eventos, r.mediaDaTaxa], [42, 2, 1, 80])
-    assert.deepEqual(TIPOS_DO_ENDOMARKETING, ['Ação de Endomarketing', 'Evento'])
+    assert.deepEqual(r.treinamentos.map((t) => [t.lista.id, t.taxa]), [['acao', 80], ['evento', null], ['aniversariantes-2026-11', 50], ['sem', null]])
+    assert.deepEqual([r.presentes, r.acoes, r.aniversarios, r.eventos, r.mediaDaTaxa], [44, 3, 1, 1, 65])
   })
 
   it('listas abertas: as próximas primeiro', () => {

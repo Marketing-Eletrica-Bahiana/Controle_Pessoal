@@ -26,6 +26,14 @@ export function colaboradoresDoGrupo(ativos, tipo, valor) {
 
 export const ehListaDeAniversario = (lista) => TIPOS_DE_ANIVERSARIO.includes(lista?.tipo)
 
+// Os controles de aniversariantes (do mês e de empresa) também são ações de endomarketing (pedido de 27/11/2026).
+// O tipo gravado continua o de aniversário; só as contas e os filtros os tratam como ação.
+export const TIPO_ACAO = 'Ação de Endomarketing'
+export const ehAcaoDeEndomarketing = (lista) => lista?.tipo === TIPO_ACAO || ehListaDeAniversario(lista)
+
+// Filtro por tipo: vazio = todos; "Ação de Endomarketing" também traz os controles de aniversariantes.
+export const ehDoTipo = (lista, tipo) => !tipo || (tipo === TIPO_ACAO ? ehAcaoDeEndomarketing(lista) : lista?.tipo === tipo)
+
 export const TIPOS_DE_PESSOA = {
   colaborador: 'Colaborador',
   eletricista: 'Eletricista',
@@ -56,7 +64,7 @@ export function validarLista(entrada) {
 
 export function filtrarListas(listas, { busca = '', tipo = '', situacao = '', ano = '' } = {}) {
   return listas
-    .filter((l) => !tipo || l.tipo === tipo)
+    .filter((l) => ehDoTipo(l, tipo))
     .filter((l) => !situacao || l.status === situacao)
     .filter((l) => !ano || String(l.data ?? '').startsWith(String(ano)))
     .filter((l) => combinaBusca(`${l.nome} ${l.local ?? ''}`, busca))

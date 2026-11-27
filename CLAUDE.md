@@ -51,6 +51,10 @@ fornecedores, eletricistas do CAE, listas de presença com check-in pelo celular
 14. (Feita em 27/11/2026, a pedido) Bloco "Endomarketing e eventos" no Dashboard (ver "Dashboard").
 15. (Feita em 27/11/2026, a pedido) Opção "Todas as lojas" na loja da lista e em "Loja inteira" (ver "Listas").
 16. (Feita em 27/11/2026, a pedido) "Pais e mães" em Adicionar colaboradores dos convocados (ver "Listas").
+17. (Feita em 27/11/2026, a pedido: "todas as listas de aniversariantes são Ações de Endomarketing") Os controles de
+    aniversariantes contam como ações de endomarketing no filtro de tipo da aba Listas, na Participação e no bloco
+    Endomarketing e eventos do Dashboard. O `tipo` gravado não muda (o controle depende dele): a regra é
+    `ehAcaoDeEndomarketing` / `ehDoTipo` em `js/lib/listas.js` (com testes).
 
 A pessoa autorizou fazer as etapas 2 a 6 em sequência, sem pedir aprovação entre elas, depois de
 conferida a integração da Etapa 1.
@@ -390,9 +394,11 @@ filtro troca o tipo); a observação é a dos controles de aniversariantes (as o
   controles de aniversário do ano (`lerControles`). Só relê quando mudam os IDs das listas escolhidas; check-ins novos
   aparecem ao reabrir a tela.
 - Regras em `js/lib/participacao.js` (com testes): `TIPOS_DA_PARTICIPACAO` (rótulo e frases de cada tipo; vazio = todas
-  menos os aniversários), `listasDaParticipacao` (tipo, ano e data até hoje), `controlesDaParticipacao`, `anosDasListas`,
+  as listas), `listasDaParticipacao` (tipo por `ehDoTipo`, ano e data até hoje; as ações e "todas" trazem os controles
+  de aniversariantes, Etapa 17), `controlesDaParticipacao`, `anosDasListas`,
   `rankingDeParticipacao` (por colaborador ativo: participou = check-in, convocado ou não; convocado; faltou = convocado
-  sem check-in; última participação; ordem: participou, menos faltas, nome), `aniversariosDosAtivos`, e as planilhas
+  sem check-in, e no controle só "Não participou", nunca "Pendente"; última participação; ordem: participou, menos
+  faltas, nome), `aniversariosDosAtivos`, e as planilhas
   (`CABECALHO_DA_PARTICIPACAO`, `linhasDaParticipacao`, `CABECALHO_DOS_ANIVERSARIOS`, `linhasDosAniversarios`).
 - Só colaboradores ativos nos dois rankings da Participação (desligados e cadastros apagados ficam de fora). Em
   Aniversariantes > Histórico os rankings continuam com todo mundo dos controles.
@@ -449,11 +455,14 @@ carregado só aqui, só cores da paleta, sem animação com `prefers-reduced-mot
   - Treinamentos do Comercial: presença média, faltas do comercial (soma), gráfico da taxa e tabela
     com quantos do comercial faltaram em cada um.
   - Endomarketing e eventos (Etapa 14, a pedido: "só tem CAE, Treinamento de Fornecedor e Comercial"): bloco largo
-    abaixo de CAE e Comercial com as listas dos tipos `TIPOS_DO_ENDOMARKETING` ("Ação de Endomarketing" e "Evento";
-    o pedido falou em "Eventos do Endomarketing", e Evento não aparecia em lugar nenhum do Dashboard). Indicadores:
-    ações e eventos (quantos de cada), participantes (soma dos presentes, convocados ou não, e a média por lista) e
-    presença média dos convocados. Gráfico convocados x participantes das 8 últimas e tabela com tipo, data,
-    participantes, presentes/convocados e presença. Contagens de `contagensDaLista`; resumo em
+    abaixo de CAE e Comercial com as ações de endomarketing (com os controles de aniversariantes, Etapa 17) e os
+    eventos (`ehDoEndomarketing`; o pedido falou em "Eventos do Endomarketing", e Evento não aparecia em lugar nenhum
+    do Dashboard). As listas saem de `listasDoPeriodo(..., { comAniversarios: true })`, e os controles entram na chave
+    do período. Indicadores: ações (quantas de aniversariantes) e eventos, participantes (soma dos presentes,
+    convocados ou não, e a média por lista) e presença média dos convocados (no controle: "Participou" sobre todos os
+    aniversariantes, pendentes inclusive). Gráfico convocados x participantes das 8 últimas e tabela com tipo
+    (Endomarketing, Aniversariantes, Tempo de casa ou Evento), data, participantes, presentes/convocados e presença; o
+    nome do controle abre `#/aniversariantes/controle/{id}`. Contagens de `contagensDaLista`; resumo em
     `resumoDoEndomarketing` (`js/lib/dashboard.js`, com teste). Atalho "Quem mais participou" para a Participação.
 - Só entram listas que já aconteceram (data até hoje).
 
