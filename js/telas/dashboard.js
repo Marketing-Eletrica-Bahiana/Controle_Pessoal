@@ -5,7 +5,8 @@ import { ouvirFontes } from '../dados/fontes.js'
 import { TIPO_EMPRESA, TIPO_MES, aniversariantesDoMes, aniversariosDeEmpresa, idDoControle } from '../lib/aniversariantes.js'
 import { resumoDosSetores } from '../lib/colaboradores.js'
 import {
-  anosDisponiveis, descricaoDoPeriodo, listasAbertas, listasDoPeriodo, numerosGerais, rankingDeFornecedores, resumoDosTreinamentos,
+  TIPOS_DO_ENDOMARKETING, anosDisponiveis, descricaoDoPeriodo, listasAbertas, listasDoPeriodo, numerosGerais, rankingDeFornecedores,
+  resumoDoEndomarketing, resumoDosTreinamentos,
 } from '../lib/dashboard.js'
 import { NOMES_MESES, formatarData, formatarDiaMes, formatarMesAno, hojeISO, partesDeHoje } from '../lib/datas.js'
 import { mensagemDeErro } from '../lib/erros.js'
@@ -19,6 +20,7 @@ import { CORES, grafico } from '../ui/grafico.js'
 import { liderancaDoSetor } from './colaboradores/lideranca.js'
 
 const periodo = { ano: partesDeHoje().ano, mes: 0 }
+const TITULO_DO_ENDOMARKETING = 'Endomarketing e eventos'
 
 export function montar(raiz, { pessoa }) {
   let dados = null
@@ -38,6 +40,7 @@ export function montar(raiz, { pessoa }) {
     fornecedores: el('div'),
     cae: el('div'),
     comercial: el('div'),
+    endomarketing: el('div'),
   }
   raiz.replaceChildren(
     el(
@@ -50,11 +53,17 @@ export function montar(raiz, { pessoa }) {
       el(
         'section',
         { class: 'periodo' },
-        el('div', {}, el('h2', { class: 'bloco__titulo' }, icone('calendar-days'), 'Período'), el('p', { class: 'texto-suave texto-pequeno' }, 'Vale para Fornecedores, CAE e Treinamentos do Comercial.')),
+        el(
+          'div',
+          {},
+          el('h2', { class: 'bloco__titulo' }, icone('calendar-days'), 'Período'),
+          el('p', { class: 'texto-suave texto-pequeno' }, 'Vale para Fornecedores, CAE, Treinamentos do Comercial e Endomarketing e eventos.'),
+        ),
         caixas.filtro,
       ),
       caixas.fornecedores,
       el('div', { class: 'grade-duas' }, caixas.cae, caixas.comercial),
+      caixas.endomarketing,
     ),
   )
 
@@ -246,18 +255,22 @@ export function montar(raiz, { pessoa }) {
 
     const cae = doPeriodo.filter((l) => l.tipo === 'Treinamento CAE')
     const comercial = doPeriodo.filter((l) => l.tipo === 'Treinamento Comercial')
+    const endomarketing = doPeriodo.filter((l) => TIPOS_DO_ENDOMARKETING.includes(l.tipo))
     trocar(caixas.cae, bloco({ titulo: 'CAE', icone: 'zap' }, carregando('Contando as presenças...')))
     trocar(caixas.comercial, bloco({ titulo: 'Treinamentos do Comercial', icone: 'briefcase' }, carregando('Contando as presenças...')))
+    trocar(caixas.endomarketing, bloco({ titulo: TITULO_DO_ENDOMARKETING, icone: 'party-popper' }, carregando('Contando as presenças...')))
     try {
-      const contagens = new Map(await Promise.all([...cae, ...comercial].map(async (l) => [l.id, await contagensDaLista(l)])))
+      const contagens = new Map(await Promise.all([...cae, ...comercial, ...endomarketing].map(async (l) => [l.id, await contagensDaLista(l)])))
       const faltas = new Map(await Promise.all(comercial.map(async (l) => [l.id, await comercialQueFaltou(l, dados.colaboradores)])))
       if (!ativo || minha !== versaoDoPeriodo) return
       desenharCAE(resumoDosTreinamentos(cae, contagens), texto)
       desenharComercial(resumoDosTreinamentos(comercial, contagens), faltas, texto)
+      desenharEndomarketing(resumoDoEndomarketing(endomarketing, contagens), texto)
     } catch (e) {
       if (!ativo || minha !== versaoDoPeriodo) return
       trocar(caixas.cae, bloco({ titulo: 'CAE', icone: 'zap' }, aviso(mensagemDeErro(e), { erro: true })))
       trocar(caixas.comercial, bloco({ titulo: 'Treinamentos do Comercial', icone: 'briefcase' }, aviso(mensagemDeErro(e), { erro: true })))
+      trocar(caixas.endomarketing, bloco({ titulo: TITULO_DO_ENDOMARKETING, icone: 'party-popper' }, aviso(mensagemDeErro(e), { erro: true })))
     }
   }
 
@@ -378,6 +391,60 @@ export function montar(raiz, { pessoa }) {
               ]),
             })
           : el('p', { class: 'texto-suave' }, `Nenhum Treinamento Comercial no ${texto}.`),
+      ),
+    )
+  }
+
+  // Ações de Endomarketing e Eventos do período: quantos participaram (convocados ou não) e a presença dos convocados.
+  function desenharEndomarketing(r, texto) {
+    const ultimos = [...r.treinamentos].slice(0, 8).reverse()
+    const g = ultimos.length
+      ? grafico({
+          titulo: 'Participantes por ação ou evento',
+          configuracao: {
+            tipo: 'barras',
+            rotulos: ultimos.map((t) => `${formatarDiaMes(Number(t.lista.data.slice(8, 10)), Number(t.lista.data.slice(5, 7)))} ${t.lista.nome}`),
+            series: [
+              { nome: 'Convocados', valores: ultimos.map((t) => t.convocados), cor: CORES.medioClaro },
+              { nome: 'Participantes', valores: ultimos.map((t) => t.presentes), cor: CORES.brilhante },
+            ],
+          },
+        })
+      : null
+    if (g) graficos.push(g)
+    trocar(
+      caixas.endomarketing,
+      bloco(
+        {
+          titulo: TITULO_DO_ENDOMARKETING,
+          icone: 'party-popper',
+          descricao: `Ações de Endomarketing e Eventos no ${texto}.`,
+          acoes: [link({ texto: 'Quem mais participou', href: '#/colaboradores/participacao', classe: 'botao--pequeno' })],
+        },
+        indicadores(
+          [
+            { rotulo: 'Ações e eventos', valor: formatarNumero(r.treinamentos.length), detalhe: `${plural(r.acoes, 'ação', 'ações')} e ${plural(r.eventos, 'evento', 'eventos')}` },
+            { rotulo: 'Participantes', valor: formatarNumero(r.presentes), detalhe: r.mediaDePresentes === null ? '' : `média de ${r.mediaDePresentes} por lista` },
+            { rotulo: 'Presença média', valor: r.mediaDaTaxa === null ? 'Sem dados' : `${r.mediaDaTaxa}%`, detalhe: 'dos convocados' },
+          ],
+          { classe: 'indicadores--tres indicadores--compactos' },
+        ),
+        g?.no,
+        r.treinamentos.length
+          ? tabela({
+              itens: r.treinamentos,
+              chave: (t) => t.lista.id,
+              classe: 'tabela--compacta',
+              colunas: [
+                { rotulo: 'Ação ou evento', principal: true, celula: (x) => el('a', { class: 'tabela__nome', href: endereco('listas', x.lista.id, 'resumo') }, x.lista.nome) },
+                { rotulo: 'Tipo', celula: (x) => etiqueta(x.lista.tipo === 'Evento' ? 'Evento' : 'Endomarketing', x.lista.tipo === 'Evento' ? '' : 'marinho') },
+                { rotulo: 'Data', classe: 'numero', celula: (x) => formatarData(x.lista.data) },
+                { rotulo: 'Participantes', classe: 'numero', ordem: (x) => x.presentes, celula: (x) => formatarNumero(x.presentes) },
+                { rotulo: 'Presentes / convocados', classe: 'numero', celula: (x) => `${formatarNumero(x.presentesConvocados)} / ${formatarNumero(x.convocados)}` },
+                { rotulo: 'Presença', classe: 'numero', celula: (x) => (x.taxa === null ? 'Sem convocados' : `${x.taxa}%`) },
+              ],
+            })
+          : el('p', { class: 'texto-suave' }, `Nenhuma ação de endomarketing ou evento no ${texto}.`),
       ),
     )
   }

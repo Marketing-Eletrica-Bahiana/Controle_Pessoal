@@ -48,6 +48,7 @@ fornecedores, eletricistas do CAE, listas de presença com check-in pelo celular
     Pessoais").
 13. (Feita em 27/11/2026, a pedido) Parte "Participação" em Colaboradores e observações nos rankings dos
     aniversariantes (ver "Participação").
+14. (Feita em 27/11/2026, a pedido) Bloco "Endomarketing e eventos" no Dashboard (ver "Dashboard").
 
 A pessoa autorizou fazer as etapas 2 a 6 em sequência, sem pedir aprovação entre elas, depois de
 conferida a integração da Etapa 1.
@@ -436,6 +437,13 @@ carregado só aqui, só cores da paleta, sem animação com `prefers-reduced-mot
     presentes, gráfico convocados x presentes dos 8 últimos e tabela.
   - Treinamentos do Comercial: presença média, faltas do comercial (soma), gráfico da taxa e tabela
     com quantos do comercial faltaram em cada um.
+  - Endomarketing e eventos (Etapa 14, a pedido: "só tem CAE, Treinamento de Fornecedor e Comercial"): bloco largo
+    abaixo de CAE e Comercial com as listas dos tipos `TIPOS_DO_ENDOMARKETING` ("Ação de Endomarketing" e "Evento";
+    o pedido falou em "Eventos do Endomarketing", e Evento não aparecia em lugar nenhum do Dashboard). Indicadores:
+    ações e eventos (quantos de cada), participantes (soma dos presentes, convocados ou não, e a média por lista) e
+    presença média dos convocados. Gráfico convocados x participantes das 8 últimas e tabela com tipo, data,
+    participantes, presentes/convocados e presença. Contagens de `contagensDaLista`; resumo em
+    `resumoDoEndomarketing` (`js/lib/dashboard.js`, com teste). Atalho "Quem mais participou" para a Participação.
 - Só entram listas que já aconteceram (data até hoje).
 
 ## Revisão (Etapa 6)

@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
-  anosDisponiveis, descricaoDoPeriodo, listasAbertas, listasDoPeriodo, numerosGerais, rankingDeFornecedores, resumoDosTreinamentos,
+  TIPOS_DO_ENDOMARKETING, anosDisponiveis, descricaoDoPeriodo, listasAbertas, listasDoPeriodo, numerosGerais, rankingDeFornecedores,
+  resumoDoEndomarketing, resumoDosTreinamentos,
 } from '../js/lib/dashboard.js'
 
 const listas = [
@@ -50,6 +51,24 @@ describe('dashboard', () => {
     assert.equal(r.mediaDaTaxa, 63)
     assert.equal(r.mediaDePresentes, 11)
     assert.equal(resumoDosTreinamentos([], new Map()).mediaDaTaxa, null)
+  })
+
+  it('endomarketing e eventos: só esses dois tipos, com o total de presentes', () => {
+    const doPeriodo = [
+      { id: 'acao', tipo: 'Ação de Endomarketing', data: '2026-11-25' },
+      { id: 'evento', tipo: 'Evento', data: '2026-11-05' },
+      { id: 'cae', tipo: 'Treinamento CAE', data: '2026-11-10' },
+      { id: 'sem', tipo: 'Ação de Endomarketing', data: '2026-10-01' },
+    ]
+    const contagens = new Map([
+      ['acao', { convocados: 10, presentesConvocados: 8, presentes: 12 }],
+      ['evento', { convocados: 0, presentesConvocados: 0, presentes: 30 }],
+      ['cae', { convocados: 5, presentesConvocados: 5, presentes: 5 }],
+    ])
+    const r = resumoDoEndomarketing(doPeriodo, contagens)
+    assert.deepEqual(r.treinamentos.map((t) => [t.lista.id, t.taxa]), [['acao', 80], ['evento', null], ['sem', null]])
+    assert.deepEqual([r.presentes, r.acoes, r.eventos, r.mediaDaTaxa], [42, 2, 1, 80])
+    assert.deepEqual(TIPOS_DO_ENDOMARKETING, ['Ação de Endomarketing', 'Evento'])
   })
 
   it('listas abertas: as próximas primeiro', () => {

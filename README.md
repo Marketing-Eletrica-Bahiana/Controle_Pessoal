@@ -3,7 +3,7 @@
 App interno da Elétrica Bahiana para organizar, num lugar só:
 
 - **Dashboard** (tela inicial): números gerais, listas abertas, aniversariantes do mês, setores,
-  participação das marcas, presença nos treinamentos do CAE e do Comercial.
+  participação das marcas, presença nos treinamentos do CAE e do Comercial e nas ações de endomarketing e eventos.
 - **Colaboradores**: quem trabalha em cada setor e loja, com gerentes, coordenadores e supervisores.
   A parte **Pais e mães** mostra quem é pai ou mãe na empresa, com os contatos, e a parte **Desligados**
   mostra quem saiu, com a data de desligamento. A ficha de cada pessoa tem as **Informações Pessoais** (pet,
@@ -226,6 +226,8 @@ entre no GitHub com uma conta que tenha acesso à organização Marketing-Eletri
 
 A mais recente primeiro. Cada alteração entra aqui no mesmo envio em que vai para o site.
 
+- **27/11/2026**: no Dashboard, o bloco **Endomarketing e eventos**, com as listas do tipo Ação de Endomarketing e
+  Evento do período: quantas foram, quantos participaram, a presença dos convocados, um gráfico e a tabela de cada uma.
 - **27/11/2026**: em Colaboradores, a parte **Participação**, com o ranking de quem mais participou das ações de
   endomarketing (ou de outro tipo de lista) e dos aniversariantes. Em Aniversariantes > Histórico, o ranking de quem
   mais participou e as **observações** nos rankings e na tabela por colaborador.

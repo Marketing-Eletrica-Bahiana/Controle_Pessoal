@@ -56,6 +56,20 @@ export function resumoDosTreinamentos(listas, contagens) {
   }
 }
 
+// Bloco "Endomarketing e eventos": as ações de endomarketing e os eventos do período.
+export const TIPOS_DO_ENDOMARKETING = ['Ação de Endomarketing', 'Evento']
+
+// Mesmo resumo dos treinamentos, mais o total de presentes (convocados ou não) e quantas ações e eventos.
+export function resumoDoEndomarketing(listas, contagens) {
+  const r = resumoDosTreinamentos(listas.filter((l) => TIPOS_DO_ENDOMARKETING.includes(l.tipo)), contagens)
+  return {
+    ...r,
+    presentes: r.treinamentos.reduce((soma, t) => soma + (t.presentes ?? 0), 0),
+    acoes: r.treinamentos.filter((t) => t.lista.tipo === 'Ação de Endomarketing').length,
+    eventos: r.treinamentos.filter((t) => t.lista.tipo === 'Evento').length,
+  }
+}
+
 // Listas abertas (fora os controles de aniversário), das mais próximas para as mais distantes.
 export function listasAbertas(listas, hoje) {
   return listas
