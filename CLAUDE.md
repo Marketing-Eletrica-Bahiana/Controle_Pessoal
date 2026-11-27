@@ -598,16 +598,11 @@ Se a semente mudar aqui, a do outro computador continua a antiga, o que não atr
   terceiros, porque o site está no GitHub Pages e o login no domínio do Firebase.
 - Testes de tela feitos na demonstração local; o login real e as regras publicadas só podem ser
   conferidos com uma conta de verdade.
+- Regras: em 27/11/2026 a pessoa publicou no console o `firestore.rules` inteiro (com `outrasPessoas` e `sorteio`, Etapa
+  22), então o console e o arquivo estão iguais. Ao mudar regra de novo, mandar o texto completo para ela colar.
 
 ## Pendências
 
-- Regras: o pedido da Etapa 1 não trouxe o texto publicado no console. `firestore.rules` foi
-  escrito a partir das permissões combinadas e cobre tudo o que o app grava (inclusive `status` e
-  `observacao` nas presenças, presença criada pelo organizador com `convocado: false`, leitura em
-  grupo de `presencas`). Em 31/10/2026 a pessoa decidiu publicar este arquivo no console no lugar
-  das regras antigas; falta ela confirmar que publicou.
-- Etapa 22 (27/11/2026): `firestore.rules` ganhou `outrasPessoas` e `sorteio` na lista do que o organizador muda na
-  presença. Falta a pessoa publicar no console; até lá a aba Outras pessoas mostra o aviso das regras.
 - Índice de `pessoaId` para grupos de coleção (README); sem ele, o histórico lê lista por lista.
 - Lista de ramais: a aba está vazia até a lista chegar (ver "Pais e mães e Ramal").
 - Arquivos da Klavika em `fontes/` quando chegarem.

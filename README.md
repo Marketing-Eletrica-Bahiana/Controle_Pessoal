@@ -285,6 +285,8 @@ entre no GitHub com uma conta que tenha acesso à organização Marketing-Eletri
 
 A mais recente primeiro. Cada alteração entra aqui no mesmo envio em que vai para o site.
 
+- **27/11/2026**: as regras novas do Firebase (`firestore.rules`, com Outras pessoas e o sorteio) foram publicadas no
+  console. O arquivo e o console estão iguais.
 - **27/11/2026**: **sorteio** nas listas. Em Editar, a opção **Esta lista tem sorteio**; no check-in, cada pessoa fica
   **No sorteio** ou **Fora do sorteio** (um toque troca; Diretoria e prestadores começam fora); as planilhas ganham a
   coluna **Participa do sorteio** e há o botão **Baixar lista do sorteio** (só presentes que participam).
